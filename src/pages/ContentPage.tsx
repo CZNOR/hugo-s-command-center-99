@@ -1,79 +1,92 @@
-import { motion } from "framer-motion";
-import { Smartphone, Instagram, Youtube, Tv } from "lucide-react";
-
-import { stagger, fadeUp } from "@/lib/animations";
-
-const platforms = [
-  { name: "Instagram", followers: "12.4K", reach: "45.2K", engagement: "4.8%", posts: 8, color: "#E4405F", delta: "+320" },
-  { name: "TikTok", followers: "28.7K", reach: "189K", engagement: "7.2%", posts: 12, color: "#00F2EA", delta: "+1.2K" },
-  { name: "YouTube", followers: "5.8K", reach: "32K", engagement: "6.1%", posts: 3, color: "#FF0000", delta: "+180" },
-  { name: "Dlive.tv", followers: "890", reach: "2.1K", engagement: "12.4%", posts: 2, color: "#FFD700", delta: "+45" },
-];
-
-const contentPipeline = [
-  { col: "Idée", items: [{ title: "Tutoriel agents IA avancé", platform: "YouTube" }, { title: "Day in my life CEO", platform: "TikTok" }] },
-  { col: "Script", items: [{ title: "Comment j'utilise l'IA", platform: "YouTube" }] },
-  { col: "Montage", items: [{ title: "Review outils no-code", platform: "TikTok" }] },
-  { col: "Programmé", items: [{ title: "Reel — 5 tips productivité", platform: "Instagram" }] },
-  { col: "Publié", items: [{ title: "Thread IA business", platform: "TikTok" }, { title: "Vlog bureau setup", platform: "YouTube" }] },
-];
+import { BookOpen, Plus, Video, FileText, Image, TrendingUp } from "lucide-react";
+import { useBusiness } from "@/lib/businessContext";
 
 export default function ContentPage() {
-  return (
-    <motion.div variants={stagger} initial="hidden" animate="visible" className="space-y-5 max-w-7xl mx-auto">
-      <motion.div variants={fadeUp}>
-        <h2 className="text-xl font-bold text-foreground">Contenu & Réseaux</h2>
-      </motion.div>
+  const { activeBusiness } = useBusiness();
 
-      {/* Platform Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {platforms.map((p) => (
-          <motion.div key={p.name} variants={fadeUp} className="glass-card-hover p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: `${p.color}12` }}>
-                <Smartphone className="w-4 h-4" style={{ color: p.color }} />
-              </div>
-              <span className="text-sm font-semibold text-foreground">{p.name}</span>
+  const contentTypes = [
+    { icon: Video, label: "Vidéos", count: 0 },
+    { icon: FileText, label: "Articles", count: 0 },
+    { icon: Image, label: "Posts", count: 0 },
+    { icon: TrendingUp, label: "Campagnes", count: 0 },
+  ];
+
+  const statuses = ["Tous", "Brouillon", "Publié", "Planifié"];
+
+  return (
+    <div className="p-4 lg:p-6 min-h-screen">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-white/90">Contenu</h1>
+          <p className="text-sm text-white/40 mt-1">Créez et gérez votre stratégie de contenu</p>
+        </div>
+        <button
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
+          style={{ background: activeBusiness.gradient, boxShadow: `0 4px 12px ${activeBusiness.glow}` }}
+        >
+          <Plus className="w-4 h-4" />
+          Créer
+        </button>
+      </div>
+
+      {/* Type cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        {contentTypes.map(({ icon: Icon, label, count }) => (
+          <div
+            key={label}
+            className="rounded-2xl p-4 cursor-pointer transition-all hover:opacity-80"
+            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
+          >
+            <div className="mb-3" style={{ color: activeBusiness.accent }}>
+              <Icon className="w-5 h-5" />
             </div>
-            <p className="font-mono-data text-2xl font-bold text-foreground">{p.followers}</p>
-            <p className="text-xs text-hugoos-green font-medium mt-0.5">{p.delta} cette semaine</p>
-            <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-border/50">
-              <div>
-                <p className="text-[10px] text-muted-foreground">Reach</p>
-                <p className="text-xs font-mono-data font-medium text-foreground">{p.reach}</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground">Engage.</p>
-                <p className="text-xs font-mono-data font-medium text-hugoos-green">{p.engagement}</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground">Posts</p>
-                <p className="text-xs font-mono-data font-medium text-foreground">{p.posts}</p>
-              </div>
-            </div>
-          </motion.div>
+            <p className="text-2xl font-bold text-white/90">{count}</p>
+            <p className="text-xs text-white/40 mt-0.5">{label}</p>
+          </div>
         ))}
       </div>
 
-      {/* Content Pipeline Kanban */}
-      <motion.div variants={fadeUp} className="glass-card p-5">
-        <h2 className="text-base font-semibold text-foreground mb-4">Pipeline Contenu</h2>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          {contentPipeline.map((col) => (
-            <div key={col.col}>
-              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">{col.col}</h3>
-              <div className="space-y-2">
-                {col.items.map((item, i) => (
-                  <div key={i} className="p-3 rounded-xl border border-border/50 bg-white/30 hover:bg-white/50 transition-colors cursor-pointer">
-                    <p className="text-sm text-foreground">{item.title}</p>
-                    <p className="text-[11px] text-muted-foreground mt-1">{item.platform}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
+      {/* Status filter */}
+      <div className="flex gap-2 mb-5">
+        {statuses.map((s, i) => (
+          <button
+            key={s}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium border transition-all"
+            style={{
+              background: i === 0 ? `${activeBusiness.accent}22` : "rgba(255,255,255,0.04)",
+              borderColor: i === 0 ? activeBusiness.accent : "rgba(255,255,255,0.08)",
+              color: i === 0 ? activeBusiness.accent : "rgba(248,250,252,0.5)",
+            }}
+          >
+            {s}
+          </button>
+        ))}
+      </div>
+
+      {/* Empty state */}
+      <div
+        className="rounded-2xl flex flex-col items-center justify-center py-20 gap-4"
+        style={{ background: "rgba(255,255,255,0.02)", border: "1px dashed rgba(255,255,255,0.08)" }}
+      >
+        <div
+          className="w-16 h-16 rounded-2xl flex items-center justify-center"
+          style={{ background: `${activeBusiness.accent}15`, border: `1px solid ${activeBusiness.accent}30` }}
+        >
+          <BookOpen className="w-8 h-8" style={{ color: activeBusiness.accent }} />
         </div>
-      </motion.div>
-    </motion.div>
+        <div className="text-center">
+          <p className="text-white/60 font-medium">Aucun contenu pour l'instant</p>
+          <p className="text-white/30 text-sm mt-1">Commencez à créer votre stratégie de contenu</p>
+        </div>
+        <button
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white mt-1"
+          style={{ background: activeBusiness.gradient, boxShadow: `0 4px 12px ${activeBusiness.glow}` }}
+        >
+          <Plus className="w-4 h-4" />
+          Créer mon premier contenu
+        </button>
+      </div>
+    </div>
   );
 }
