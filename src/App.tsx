@@ -3,7 +3,16 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import Index from "./pages/Index.tsx";
+import AppLayout from "@/components/layout/AppLayout";
+import CommandCenter from "@/pages/CommandCenter";
+import AgentsPage from "@/pages/AgentsPage";
+import BusinessPage from "@/pages/BusinessPage";
+import ContentPage from "@/pages/ContentPage";
+import TasksPage from "@/pages/TasksPage";
+import AgendaPage from "@/pages/AgendaPage";
+import TeamPage from "@/pages/TeamPage";
+import GoalsPage from "@/pages/GoalsPage";
+import GamificationPage from "@/pages/GamificationPage";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -15,8 +24,17 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route element={<AppLayout />}>
+            <Route path="/" element={<CommandCenter />} />
+            <Route path="/agents" element={<AgentsPage />} />
+            <Route path="/business" element={<BusinessPage />} />
+            <Route path="/content" element={<ContentPage />} />
+            <Route path="/tasks" element={<TasksPage />} />
+            <Route path="/agenda" element={<AgendaPage />} />
+            <Route path="/team" element={<TeamPage />} />
+            <Route path="/goals" element={<GoalsPage />} />
+            <Route path="/gamification" element={<GamificationPage />} />
+          </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
