@@ -34,9 +34,9 @@ export default function CommandCenter() {
   };
 
   const priorityColors = {
-    urgent: "bg-hugoos-red/20 text-hugoos-red",
-    high: "bg-hugoos-orange/20 text-hugoos-orange",
-    medium: "bg-hugoos-indigo/20 text-hugoos-indigo",
+    urgent: "bg-hugoos-red/10 text-hugoos-red",
+    high: "bg-hugoos-orange/10 text-hugoos-orange",
+    medium: "bg-hugoos-indigo/10 text-hugoos-indigo",
     low: "bg-muted text-muted-foreground",
   };
 
@@ -67,8 +67,8 @@ export default function CommandCenter() {
               <span>Record: {g.score_record.toLocaleString()}</span>
               <span>{Math.round(scorePercent)}%</span>
             </div>
-            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "hsl(235 22% 18%)" }}>
-              <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(scorePercent, 100)}%`, background: "linear-gradient(90deg, hsl(43 96% 56%), hsl(25 95% 53%))" }} />
+            <div className="h-1.5 rounded-full overflow-hidden bg-black/[0.06]">
+              <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(scorePercent, 100)}%`, background: "linear-gradient(90deg, hsl(33 100% 55%), hsl(25 95% 53%))" }} />
             </div>
           </div>
         </motion.div>
@@ -101,8 +101,8 @@ export default function CommandCenter() {
               <span>Lv.{g.level} — {g.level_title}</span>
               <span className="font-mono-data">{g.total_xp.toLocaleString()} / {g.xp_for_next_level.toLocaleString()}</span>
             </div>
-            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "hsl(235 22% 18%)" }}>
-              <div className="h-full rounded-full" style={{ width: `${(g.total_xp / g.xp_for_next_level) * 100}%`, background: "linear-gradient(90deg, hsl(239 84% 67%), hsl(263 70% 66%))" }} />
+            <div className="h-1.5 rounded-full overflow-hidden bg-black/[0.06]">
+              <div className="h-full rounded-full" style={{ width: `${(g.total_xp / g.xp_for_next_level) * 100}%`, background: "linear-gradient(90deg, hsl(239 84% 67%), hsl(263 70% 62%))" }} />
             </div>
           </div>
         </motion.div>
@@ -120,10 +120,10 @@ export default function CommandCenter() {
               key={m.id}
               onClick={() => handleMissionComplete(m.id)}
               disabled={m.completed}
-              className={`relative text-left p-3 rounded-lg border transition-all duration-200 active:scale-[0.97] ${
+              className={`relative text-left p-3.5 rounded-xl border transition-all duration-200 active:scale-[0.97] ${
                 m.completed
-                  ? "border-hugoos-green/20 bg-hugoos-green/5 opacity-70"
-                  : "border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.05] hover:-translate-y-0.5"
+                  ? "border-hugoos-green/20 bg-hugoos-green/[0.06] opacity-70"
+                  : "border-border/60 bg-white/30 hover:bg-white/50 hover:-translate-y-0.5 hover:shadow-sm"
               }`}
             >
               <span className="text-lg mb-1 block">{m.icon}</span>
@@ -144,29 +144,24 @@ export default function CommandCenter() {
             <h2 className="text-base font-semibold text-foreground">Business Live</h2>
             <div className="flex gap-1">
               {businesses.map((b) => (
-                <span key={b.id} className="px-2.5 py-1 rounded-md text-xs font-medium cursor-pointer transition-colors" style={{ background: b.id === "1" ? `${b.color}22` : "transparent", color: b.id === "1" ? b.color : "hsl(215 19% 62%)" }}>
+                <span key={b.id} className="px-2.5 py-1 rounded-lg text-xs font-medium cursor-pointer transition-colors" style={{ background: b.id === "1" ? `${b.color}15` : "transparent", color: b.id === "1" ? b.color : "hsl(220 10% 46%)" }}>
                   {b.name}
                 </span>
               ))}
             </div>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="p-3 rounded-lg" style={{ background: "hsl(235 22% 14%)" }}>
-              <p className="text-xs text-muted-foreground mb-1">Revenue MTD</p>
-              <p className="font-mono-data text-xl font-bold text-hugoos-green">€{activeBusiness.revenue_mtd.toLocaleString()}</p>
-            </div>
-            <div className="p-3 rounded-lg" style={{ background: "hsl(235 22% 14%)" }}>
-              <p className="text-xs text-muted-foreground mb-1">MRR</p>
-              <p className="font-mono-data text-xl font-bold text-hugoos-cyan">€{activeBusiness.mrr.toLocaleString()}</p>
-            </div>
-            <div className="p-3 rounded-lg" style={{ background: "hsl(235 22% 14%)" }}>
-              <p className="text-xs text-muted-foreground mb-1">Deals actifs</p>
-              <p className="font-mono-data text-xl font-bold text-foreground">{activeBusiness.deals_active}</p>
-            </div>
-            <div className="p-3 rounded-lg" style={{ background: "hsl(235 22% 14%)" }}>
-              <p className="text-xs text-muted-foreground mb-1">Dépenses</p>
-              <p className="font-mono-data text-xl font-bold text-hugoos-red/80">€{activeBusiness.expenses.toLocaleString()}</p>
-            </div>
+            {[
+              { label: "Revenue MTD", value: `€${activeBusiness.revenue_mtd.toLocaleString()}`, color: "text-hugoos-green" },
+              { label: "MRR", value: `€${activeBusiness.mrr.toLocaleString()}`, color: "text-hugoos-cyan" },
+              { label: "Deals actifs", value: activeBusiness.deals_active, color: "text-foreground" },
+              { label: "Dépenses", value: `€${activeBusiness.expenses.toLocaleString()}`, color: "text-hugoos-red/80" },
+            ].map((item, i) => (
+              <div key={i} className="p-3 rounded-xl bg-black/[0.03]">
+                <p className="text-xs text-muted-foreground mb-1">{item.label}</p>
+                <p className={`font-mono-data text-xl font-bold ${item.color}`}>{item.value}</p>
+              </div>
+            ))}
           </div>
         </motion.div>
 
@@ -177,8 +172,11 @@ export default function CommandCenter() {
           </div>
           <div className="space-y-2.5">
             {aiAgents.slice(0, 4).map((agent) => (
-              <div key={agent.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/[0.03] transition-colors">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold" style={{ background: agent.status === "active" ? "hsl(189 94% 43% / 0.15)" : agent.status === "paused" ? "hsl(43 96% 56% / 0.15)" : "hsl(235 15% 25%)", color: agent.status === "active" ? "hsl(189 94% 65%)" : agent.status === "paused" ? "hsl(43 96% 70%)" : "hsl(215 19% 55%)" }}>
+              <div key={agent.id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-black/[0.03] transition-colors">
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold" style={{
+                  background: agent.status === "active" ? "hsl(189 94% 43% / 0.1)" : agent.status === "paused" ? "hsl(33 100% 55% / 0.1)" : "hsl(220 14% 92%)",
+                  color: agent.status === "active" ? "hsl(189 94% 33%)" : agent.status === "paused" ? "hsl(33 100% 38%)" : "hsl(220 10% 46%)"
+                }}>
                   {agent.avatar}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -201,12 +199,12 @@ export default function CommandCenter() {
           </div>
           <div className="space-y-1.5">
             {taskList.filter(t => t.status !== "done").slice(0, 5).map((task) => (
-              <div key={task.id} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-white/[0.03] transition-colors group relative">
-                <button onClick={() => handleTaskComplete(task.id)} className="w-4.5 h-4.5 rounded border border-white/20 flex-shrink-0 hover:border-hugoos-green hover:bg-hugoos-green/20 transition-colors active:scale-90" />
+              <div key={task.id} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-black/[0.03] transition-colors group relative">
+                <button onClick={() => handleTaskComplete(task.id)} className="w-[18px] h-[18px] rounded-md border border-border flex-shrink-0 hover:border-hugoos-green hover:bg-hugoos-green/10 transition-colors active:scale-90" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-foreground truncate">{task.title}</p>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${priorityColors[task.priority]}`}>{task.priority}</span>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-md ${priorityColors[task.priority]}`}>{task.priority}</span>
                     <span className="text-[11px] text-muted-foreground">{task.due_date}</span>
                   </div>
                 </div>
@@ -224,19 +222,18 @@ export default function CommandCenter() {
               value={captureText}
               onChange={(e) => setCaptureText(e.target.value)}
               placeholder="Nouvelle tâche... (appuie sur Entrée)"
-              className="w-full px-4 py-3 rounded-lg text-sm text-foreground placeholder:text-muted-foreground border border-white/[0.06] focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all"
-              style={{ background: "hsl(235 22% 14%)" }}
+              className="w-full px-4 py-3 rounded-xl text-sm text-foreground placeholder:text-muted-foreground border border-border/60 bg-white/40 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all"
               onKeyDown={(e) => { if (e.key === "Enter" && captureText.trim()) { triggerXP(10); setCaptureText(""); } }}
             />
             <div className="flex items-center justify-between">
               <div className="flex gap-1.5">
                 {(["low", "medium", "high", "urgent"] as const).map((p) => (
-                  <span key={p} className={`text-[10px] px-2 py-1 rounded cursor-pointer ${priorityColors[p]}`}>{p}</span>
+                  <span key={p} className={`text-[10px] px-2 py-1 rounded-lg cursor-pointer ${priorityColors[p]}`}>{p}</span>
                 ))}
               </div>
               <span className="chip-purple text-[10px]">+10 XP</span>
             </div>
-            <button className="w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors active:scale-[0.97] flex items-center justify-center gap-1.5">
+            <button className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-all active:scale-[0.97] flex items-center justify-center gap-1.5 shadow-sm">
               <Plus className="w-4 h-4" />
               Ajouter
             </button>

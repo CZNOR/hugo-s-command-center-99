@@ -20,9 +20,9 @@ export default function BusinessPage() {
   return (
     <motion.div variants={stagger} initial="hidden" animate="visible" className="space-y-5 max-w-7xl mx-auto">
       {/* Tabs */}
-      <motion.div variants={fadeUp} className="flex items-center gap-1 p-1 rounded-lg" style={{ background: "hsl(235 22% 11%)" }}>
+      <motion.div variants={fadeUp} className="flex items-center gap-1 p-1 rounded-2xl glass-card">
         {businesses.map((b) => (
-          <button key={b.id} onClick={() => setActiveBiz(b.id)} className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeBiz === b.id ? "bg-white/[0.08] text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+          <button key={b.id} onClick={() => setActiveBiz(b.id)} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${activeBiz === b.id ? "bg-white/60 text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
             {b.name}
           </button>
         ))}
@@ -55,16 +55,16 @@ export default function BusinessPage() {
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={revenueData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(235 15% 18%)" />
-              <XAxis dataKey="month" stroke="hsl(215 19% 55%)" fontSize={12} />
-              <YAxis stroke="hsl(215 19% 55%)" fontSize={12} tickFormatter={(v) => `€${(v/1000).toFixed(0)}k`} />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 15% 90%)" />
+              <XAxis dataKey="month" stroke="hsl(220 10% 56%)" fontSize={12} />
+              <YAxis stroke="hsl(220 10% 56%)" fontSize={12} tickFormatter={(v) => `€${(v/1000).toFixed(0)}k`} />
               <Tooltip
-                contentStyle={{ background: "hsl(235 22% 11%)", border: "1px solid hsl(0 0% 100% / 0.06)", borderRadius: "8px", color: "hsl(213 31% 95%)", fontSize: "12px" }}
+                contentStyle={{ background: "rgba(255,255,255,0.9)", backdropFilter: "blur(12px)", border: "1px solid hsl(220 15% 88%)", borderRadius: "12px", color: "hsl(220 20% 10%)", fontSize: "12px", boxShadow: "0 4px 16px rgba(0,0,0,0.06)" }}
                 formatter={(value: number) => [`€${value.toLocaleString()}`, undefined]}
               />
-              <Bar dataKey="agence" fill="#6366F1" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="saas" fill="#06B6D4" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="contenu" fill="#EC4899" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="agence" fill="#6366F1" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="saas" fill="#06B6D4" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="contenu" fill="#EC4899" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -84,14 +84,14 @@ export default function BusinessPage() {
                 </div>
                 <div className="space-y-2">
                   {stageDeals.map((deal) => (
-                    <div key={deal.id} className={`p-3 rounded-lg border-l-2 ${stageColors[stage]} hover:bg-white/[0.03] transition-colors cursor-pointer`} style={{ background: "hsl(235 22% 14%)" }}>
+                    <div key={deal.id} className={`p-3 rounded-xl border-l-2 ${stageColors[stage]} hover:bg-black/[0.02] transition-colors cursor-pointer bg-white/30`}>
                       <p className="text-sm font-medium text-foreground">{deal.title}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">{deal.client}</p>
                       <p className="font-mono-data text-sm font-bold text-foreground mt-1.5">€{deal.value?.toLocaleString()}</p>
                     </div>
                   ))}
                   {stageDeals.length === 0 && (
-                    <div className="p-3 rounded-lg border border-dashed border-white/[0.06] text-center">
+                    <div className="p-3 rounded-xl border border-dashed border-border text-center">
                       <p className="text-xs text-muted-foreground">Aucun deal</p>
                     </div>
                   )}

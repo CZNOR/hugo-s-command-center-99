@@ -27,31 +27,36 @@ export default function AppLayout() {
       <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
-        <header className="h-14 flex items-center justify-between px-4 lg:px-6 border-b border-white/[0.06] flex-shrink-0" style={{ background: "hsl(235 28% 7% / 0.8)", backdropFilter: "blur(12px)" }}>
+        {/* Header — Liquid Glass */}
+        <header className="h-14 flex items-center justify-between px-4 lg:px-6 border-b border-border/50 flex-shrink-0 sticky top-0 z-30"
+          style={{
+            background: "rgba(255, 255, 255, 0.6)",
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
+          }}>
           <div className="flex items-center gap-3">
-            <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-1.5 rounded-lg hover:bg-white/[0.06] text-muted-foreground">
+            <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-1.5 rounded-xl hover:bg-black/[0.04] text-muted-foreground transition-colors">
               <Menu className="w-5 h-5" />
             </button>
             <h1 className="text-base font-semibold tracking-tight text-foreground">{title}</h1>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             {/* Score */}
-            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg" style={{ background: "hsl(43 96% 56% / 0.1)" }}>
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-hugoos-orange/[0.08]">
               <Star className="w-3.5 h-3.5 text-hugoos-orange" />
               <span className="font-mono-data text-sm font-bold text-hugoos-orange">{g.score_today.toLocaleString()}</span>
               <span className="text-hugoos-orange/60 text-xs">pts</span>
             </div>
 
             {/* Streak */}
-            <div className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg" style={{ background: "hsl(43 96% 56% / 0.1)" }}>
+            <div className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-hugoos-orange/[0.08]">
               <Flame className="w-3.5 h-3.5 text-hugoos-orange" />
               <span className="font-mono-data text-sm font-bold text-hugoos-orange">{g.current_streak}</span>
             </div>
 
             {/* Quick add */}
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors active:scale-[0.97]">
+            <button className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-all active:scale-[0.97] shadow-sm">
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">Tâche</span>
             </button>

@@ -26,7 +26,7 @@ export default function AgendaPage() {
           <h2 className="text-xl font-bold text-foreground">Agenda</h2>
           <span className="chip-indigo">Semaine 13</span>
         </div>
-        <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors active:scale-[0.97]">
+        <button className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-all active:scale-[0.97] shadow-sm">
           <Plus className="w-4 h-4" /> Événement
         </button>
       </motion.div>
@@ -37,7 +37,7 @@ export default function AgendaPage() {
           <div className="grid grid-cols-[60px_repeat(7,1fr)] gap-0 mb-2">
             <div />
             {days.map((day, i) => (
-              <div key={day} className={`text-center text-xs font-medium py-2 rounded-lg ${i === 0 ? "bg-primary/10 text-primary" : "text-muted-foreground"}`}>
+              <div key={day} className={`text-center text-xs font-medium py-2 rounded-xl ${i === 0 ? "bg-primary/8 text-primary" : "text-muted-foreground"}`}>
                 {day}
               </div>
             ))}
@@ -51,17 +51,17 @@ export default function AgendaPage() {
                   {hour}:00
                 </div>
                 {days.map((_, dayIdx) => (
-                  <div key={dayIdx} className="h-12 border-t border-white/[0.04] relative">
+                  <div key={dayIdx} className="h-12 border-t border-border/30 relative">
                     {events
                       .filter((e) => e.day === dayIdx && e.start === hour)
                       .map((event, i) => (
                         <div
                           key={i}
-                          className="absolute inset-x-1 rounded-md px-2 py-1 text-xs font-medium cursor-pointer hover:brightness-110 transition-all z-10 overflow-hidden"
+                          className="absolute inset-x-1 rounded-xl px-2 py-1 text-xs font-medium cursor-pointer hover:brightness-105 transition-all z-10 overflow-hidden"
                           style={{
                             top: 0,
                             height: `${event.duration * 48}px`,
-                            background: `${event.color}22`,
+                            background: `${event.color}12`,
                             borderLeft: `2px solid ${event.color}`,
                             color: event.color,
                           }}

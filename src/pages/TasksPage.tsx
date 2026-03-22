@@ -7,9 +7,9 @@ import { useState } from "react";
 import { stagger, fadeUp } from "@/lib/animations";
 
 const priorityConfig = {
-  urgent: { label: "Urgent", color: "bg-hugoos-red/20 text-hugoos-red", icon: AlertTriangle },
-  high: { label: "High", color: "bg-hugoos-orange/20 text-hugoos-orange", icon: Clock },
-  medium: { label: "Medium", color: "bg-hugoos-indigo/20 text-hugoos-indigo", icon: Circle },
+  urgent: { label: "Urgent", color: "bg-hugoos-red/10 text-hugoos-red", icon: AlertTriangle },
+  high: { label: "High", color: "bg-hugoos-orange/10 text-hugoos-orange", icon: Clock },
+  medium: { label: "Medium", color: "bg-hugoos-indigo/10 text-hugoos-indigo", icon: Circle },
   low: { label: "Low", color: "bg-muted text-muted-foreground", icon: Circle },
 };
 
@@ -37,7 +37,7 @@ export default function TasksPage() {
 
       <motion.div variants={fadeUp} className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-foreground">Tâches & Projets</h2>
-        <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors active:scale-[0.97]">
+        <button className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-all active:scale-[0.97] shadow-sm">
           <Plus className="w-4 h-4" />
           Nouvelle Tâche
         </button>
@@ -56,7 +56,7 @@ export default function TasksPage() {
               </div>
               <div className="space-y-1.5">
                 {items.map((item) => (
-                  <div key={item.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/[0.03] transition-colors">
+                  <div key={item.id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-black/[0.03] transition-colors">
                     {item.done ? (
                       <CheckCircle2 className="w-4 h-4 text-hugoos-green flex-shrink-0" />
                     ) : (
@@ -87,14 +87,14 @@ export default function TasksPage() {
               {groupTasks.map((task) => {
                 const p = priorityConfig[task.priority];
                 return (
-                  <div key={task.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/[0.03] transition-colors group">
+                  <div key={task.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-black/[0.03] transition-colors group">
                     <button
                       onClick={() => handleComplete(task.id)}
                       disabled={task.status === "done"}
-                      className={`w-5 h-5 rounded border flex-shrink-0 flex items-center justify-center transition-all active:scale-90 ${
+                      className={`w-5 h-5 rounded-md border flex-shrink-0 flex items-center justify-center transition-all active:scale-90 ${
                         task.status === "done"
-                          ? "bg-hugoos-green/20 border-hugoos-green/50"
-                          : "border-white/20 hover:border-hugoos-green hover:bg-hugoos-green/10"
+                          ? "bg-hugoos-green/15 border-hugoos-green/40"
+                          : "border-border hover:border-hugoos-green hover:bg-hugoos-green/10"
                       }`}
                     >
                       {task.status === "done" && <CheckCircle2 className="w-3.5 h-3.5 text-hugoos-green" />}
@@ -102,7 +102,7 @@ export default function TasksPage() {
                     <div className="flex-1 min-w-0">
                       <p className={`text-sm ${task.status === "done" ? "line-through text-muted-foreground" : "text-foreground"}`}>{task.title}</p>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded ${p.color}`}>{p.label}</span>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-md ${p.color}`}>{p.label}</span>
                         <span className="text-[11px] text-muted-foreground">{task.due_date}</span>
                         <span className="text-[11px] text-muted-foreground">• {task.project}</span>
                       </div>
