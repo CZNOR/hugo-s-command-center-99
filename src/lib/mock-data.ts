@@ -24,7 +24,18 @@ export const aiAgents = [
   { id: "5", name: "Atlas", role: "Customer Support", model: "Claude 3.5", tools: ["Intercom", "API"], status: "building" as const, tasks_total: 0, tasks_success: 0, avatar: "At", last_action: "en construction" },
 ];
 
-export const tasks = [
+export interface Task {
+  id: string;
+  title: string;
+  priority: "urgent" | "high" | "medium" | "low";
+  status: "inbox" | "todo" | "in_progress" | "done" | "cancelled";
+  due_date: string;
+  assignee: string;
+  xp: number;
+  project: string;
+}
+
+export const tasks: Task[] = [
   { id: "1", title: "Finaliser proposition client Meridian", priority: "urgent" as const, status: "in_progress" as const, due_date: "Aujourd'hui", assignee: "self", xp: 50, project: "Agence Made" },
   { id: "2", title: "Revue des métriques Q1 SaaS Vision", priority: "high" as const, status: "todo" as const, due_date: "Demain", assignee: "self", xp: 20, project: "SaaS Vision" },
   { id: "3", title: "Publier vidéo YouTube — IA agents tutoriel", priority: "high" as const, status: "in_progress" as const, due_date: "Aujourd'hui", assignee: "Aria", xp: 75, project: "Hugo Contenu" },
