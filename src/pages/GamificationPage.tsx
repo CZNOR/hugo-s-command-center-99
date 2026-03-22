@@ -38,7 +38,7 @@ export default function GamificationPage() {
                   className="h-full rounded-full"
                   initial={{ width: 0 }}
                   animate={{ width: `${xpPercent}%` }}
-                  transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+                  transition={{ duration: 1.2, ease: "easeOut" }}
                   style={{ background: "linear-gradient(90deg, hsl(239 84% 67%), hsl(263 70% 66%))" }}
                 />
               </div>
