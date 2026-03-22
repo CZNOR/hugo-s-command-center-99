@@ -9,33 +9,24 @@
     /* ─── HUGOOS Dark Violet Base ─── */
     --background: 262 58% 4%;
     --foreground: 213 31% 95%;
-
     --card: 262 40% 7%;
     --card-foreground: 213 31% 95%;
     --card-hover: 262 35% 10%;
-
     --popover: 262 40% 7%;
     --popover-foreground: 213 31% 95%;
-
     --primary: 272 84% 62%;
     --primary-foreground: 0 0% 100%;
-
     --secondary: 262 30% 12%;
     --secondary-foreground: 213 31% 80%;
-
     --muted: 262 30% 10%;
     --muted-foreground: 215 16% 47%;
-
     --accent: 272 84% 62%;
     --accent-foreground: 0 0% 100%;
-
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-
     --border: 262 30% 12%;
     --input: 262 30% 12%;
     --ring: 272 84% 62%;
-
     --radius: 0.75rem;
 
     /* ─── Sidebar ─── */
@@ -115,7 +106,6 @@ body {
     box-shadow: 0 4px 12px var(--business-glow, rgba(168,85,247,0.4));
     transition: all 0.2s ease;
   }
-
   .btn-primary:hover {
     transform: translateY(-1px);
     box-shadow: 0 6px 20px var(--business-glow, rgba(168,85,247,0.5));
@@ -130,11 +120,60 @@ body {
     border-radius: 14px;
     transition: all 0.25s ease;
   }
-
   .stat-card:hover {
     background: rgba(255, 255, 255, 0.07);
     border-color: rgba(255, 255, 255, 0.12);
     transform: translateY(-2px);
+  }
+
+  /* ─── Violet reflet / shimmer card ─── */
+  .violet-card {
+    position: relative;
+    overflow: hidden;
+    background: rgba(124, 58, 237, 0.06);
+    border: 1px solid rgba(124, 58, 237, 0.2);
+    border-radius: 16px;
+    transition: all 0.3s ease;
+  }
+  .violet-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(168, 85, 247, 0.15) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .violet-card::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -60%;
+    width: 40%;
+    height: 200%;
+    background: linear-gradient(105deg, transparent 40%, rgba(192, 132, 252, 0.12) 50%, transparent 60%);
+    animation: shimmer 4s ease-in-out infinite;
+    pointer-events: none;
+  }
+  .violet-card:hover {
+    border-color: rgba(168, 85, 247, 0.4);
+    box-shadow: 0 0 24px rgba(124, 58, 237, 0.2), inset 0 0 24px rgba(124, 58, 237, 0.05);
+    transform: translateY(-2px);
+  }
+
+  /* Glow pulse ring */
+  .violet-glow {
+    box-shadow: 0 0 20px rgba(124, 58, 237, 0.3), 0 0 40px rgba(124, 58, 237, 0.1);
+    animation: glow-pulse 3s ease-in-out infinite;
+  }
+
+  /* Float animation class */
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  /* Gradient shift background */
+  .animate-gradient {
+    background-size: 200% 200%;
+    animation: gradient-shift 4s ease infinite;
   }
 }
 
@@ -167,7 +206,6 @@ body {
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
-
 .text-gradient-gold {
   background: linear-gradient(135deg, #F59E0B, #10B981);
   -webkit-background-clip: text;
@@ -176,7 +214,116 @@ body {
 }
 
 /* ─── Glow ring on focused inputs ─── */
-input:focus, textarea:focus, select:focus {
+input:focus,
+textarea:focus,
+select:focus {
   outline: none;
   box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.4);
+}
+
+/* ═══════════════════════════════════════════
+   KEYFRAME ANIMATIONS
+═══════════════════════════════════════════ */
+
+/* Violet glow pulse */
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(124, 58, 237, 0.3), 0 0 40px rgba(124, 58, 237, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(168, 85, 247, 0.5), 0 0 60px rgba(168, 85, 247, 0.2);
+  }
+}
+
+/* Shimmer sweep */
+@keyframes shimmer {
+  0% { left: -60%; opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { left: 120%; opacity: 0; }
+}
+
+/* Floating levitation */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+/* Gradient background shift */
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Fade in from below */
+@keyframes fade-up {
+  0% { opacity: 0; transform: translateY(16px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Scale pop-in */
+@keyframes scale-in {
+  0% { opacity: 0; transform: scale(0.92); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* Violet orb drift */
+@keyframes orb-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -20px) scale(1.05); }
+  66% { transform: translate(-20px, 15px) scale(0.97); }
+}
+
+/* ─── Animation utility classes ─── */
+.animate-fade-up {
+  animation: fade-up 0.5s ease forwards;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.3s ease forwards;
+}
+
+.animate-orb {
+  animation: orb-drift 12s ease-in-out infinite;
+}
+
+/* Staggered children animation */
+.stagger-children > * {
+  opacity: 0;
+  animation: fade-up 0.4s ease forwards;
+}
+.stagger-children > *:nth-child(1) { animation-delay: 0.05s; }
+.stagger-children > *:nth-child(2) { animation-delay: 0.1s; }
+.stagger-children > *:nth-child(3) { animation-delay: 0.15s; }
+.stagger-children > *:nth-child(4) { animation-delay: 0.2s; }
+.stagger-children > *:nth-child(5) { animation-delay: 0.25s; }
+.stagger-children > *:nth-child(6) { animation-delay: 0.3s; }
+
+/* ─── Violet reflet orbs (absolute positioned decorations) ─── */
+.violet-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  pointer-events: none;
+  opacity: 0.15;
+  animation: orb-drift 12s ease-in-out infinite;
+}
+
+.violet-orb-primary {
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, #7c3aed 0%, transparent 70%);
+}
+
+.violet-orb-secondary {
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, #a855f7 0%, transparent 70%);
+  animation-delay: -4s;
+}
+
+/* ─── Page entrance animation ─── */
+.page-enter {
+  animation: fade-up 0.4s ease forwards;
 }
