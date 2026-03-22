@@ -7,12 +7,78 @@ const corsHeaders = {
   "Content-Type": "application/json",
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
+    // ── POST: create a new content entry ──────────────────────
+    if (req.method === "POST") {
+      const body = await req.json();
+      const { action } = body;
+
+      if (action === "create") {
+        const { sujet, format, date, statut, business, notes } = body;
+
+        const properties: any = {
+          Name: { title: [{ text: { content: sujet || "" } }] },
+        };
+
+        if (format) properties.Format = { select: { name: format } };
+        if (date) properties.Date = { date: { start: date } };
+        if (statut) properties.Statut = { select: { name: statut } };
+        if (business) properties.Business = { select: { name: business } };
+        if (notes) properties["Notes perf"] = { rich_text: [{ text: { content: notes } }] };
+
+        const notionRes = await fetch("https://api.notion.com/v1/pages", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${NOTION_TOKEN}`,
+            "Notion-Version": "2022-06-28",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ parent: { database_id: DATABASE_ID }, properties }),
+        });
+
+        if (!notionRes.ok) {
+          const err = await notionRes.text();
+          return new Response(JSON.stringify({ error: err }), { status: 500, headers: corsHeaders });
+        }
+
+        const page = await notionRes.json();
+        return new Response(JSON.stringify({ success: true, id: page.id }), { headers: corsHeaders });
+      }
+
+      if (action === "update") {
+        const { id, statut } = body;
+        if (!id) return new Response(JSON.stringify({ error: "id required" }), { status: 400, headers: corsHeaders });
+
+        const notionRes = await fetch(`https://api.notion.com/v1/pages/${id}`, {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${NOTION_TOKEN}`,
+            "Notion-Version": "2022-06-28",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            properties: {
+              ...(statut && { Statut: { select: { name: statut } } }),
+            },
+          }),
+        });
+
+        if (!notionRes.ok) {
+          const err = await notionRes.text();
+          return new Response(JSON.stringify({ error: err }), { status: 500, headers: corsHeaders });
+        }
+
+        return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+      }
+    }
+
+    // ── GET / default: list all content ────────────────────────
     const response = await fetch(
       `https://api.notion.com/v1/databases/${DATABASE_ID}/query`,
       {
@@ -47,6 +113,9 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ items }), { headers: corsHeaders });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders });
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: corsHeaders,
+    });
   }
 });
