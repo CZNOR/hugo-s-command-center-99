@@ -39,7 +39,7 @@ export default function GoalsPage() {
                   className="h-full rounded-full"
                   initial={{ width: 0 }}
                   animate={{ width: `${goal.progress}%` }}
-                  transition={{ duration: 1, ease: [0.16, 1, 0.3, 1], delay: i * 0.1 }}
+                  transition={{ duration: 1, ease: "easeOut", delay: i * 0.1 }}
                   style={{ background: goal.progress >= 75 ? "hsl(160 84% 40%)" : goal.progress >= 40 ? "hsl(239 84% 67%)" : "hsl(43 96% 56%)" }}
                 />
               </div>
