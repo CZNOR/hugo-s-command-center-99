@@ -1,3 +1,4 @@
+import { type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Zap, Target, Calendar, Users, LayoutGrid,
@@ -6,18 +7,25 @@ import {
 import { useBusiness, BUSINESSES } from "@/lib/businessContext";
 import { gamificationProfile } from "@/lib/mock-data";
 
-const NAV_SHORTCUTS = [
-  { icon: <Calendar className="w-5 h-5" />, label: "Planning", path: "/agenda", desc: "Calendrier semaine" },
-  { icon: <Target className="w-5 h-5" />, label: "Objectifs", path: "/goals", desc: "KPIs & targets" },
-  { icon: <CheckSquare className="w-5 h-5" />, label: "Tâches", path: "/tasks", desc: "Todo & backlog" },
-  { icon: <LayoutGrid className="w-5 h-5" />, label: "Business", path: "/business", desc: "Dashboard & deals" },
-  { icon: <Bot className="w-5 h-5" />, label: "Agents IA", path: "/agents", desc: "Automatisations" },
-  { icon: <Users className="w-5 h-5" />, label: "Équipe", path: "/team", desc: "Membres & rôles" },
-  { icon: <BookOpen className="w-5 h-5" />, label: "Contenu", path: "/content", desc: "Pipeline créatif" },
-  { icon: <Zap className="w-5 h-5" />, label: "Progression", path: "/gamification", desc: "XP & badges" },
+interface NavShortcut {
+  icon: ReactNode;
+  label: string;
+  path: string;
+  desc: string;
+}
+
+const NAV_SHORTCUTS: NavShortcut[] = [
+  { icon: <Calendar className="w-5 h-5" />,     label: "Planning",    path: "/agenda",       desc: "Calendrier semaine" },
+  { icon: <Target className="w-5 h-5" />,        label: "Objectifs",   path: "/goals",        desc: "KPIs & targets" },
+  { icon: <CheckSquare className="w-5 h-5" />,   label: "Tâches",      path: "/tasks",        desc: "Todo & backlog" },
+  { icon: <LayoutGrid className="w-5 h-5" />,    label: "Business",    path: "/business",     desc: "Dashboard & deals" },
+  { icon: <Bot className="w-5 h-5" />,           label: "Agents IA",   path: "/agents",       desc: "Automatisations" },
+  { icon: <Users className="w-5 h-5" />,         label: "Équipe",      path: "/team",         desc: "Membres & rôles" },
+  { icon: <BookOpen className="w-5 h-5" />,      label: "Contenu",     path: "/content",      desc: "Pipeline créatif" },
+  { icon: <Zap className="w-5 h-5" />,           label: "Progression", path: "/gamification", desc: "XP & badges" },
 ];
 
-function GreetingBanner({ name, accent, gradient, glow }: { name: string; accent: string; gradient: string; glow: string }) {
+function GreetingBanner({ accent, gradient, glow }: { accent: string; gradient: string; glow: string }) {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Bonjour" : hour < 18 ? "Bon après-midi" : "Bonsoir";
   const g = gamificationProfile;
@@ -30,14 +38,13 @@ function GreetingBanner({ name, accent, gradient, glow }: { name: string; accent
         border: `1px solid ${accent}25`,
       }}
     >
-      {/* Glow orb */}
       <div
         className="absolute -right-10 -top-10 w-40 h-40 rounded-full pointer-events-none"
         style={{ background: glow, filter: "blur(40px)", opacity: 0.3 }}
       />
       <div className="relative">
         <p className="text-xs text-white/40 font-medium uppercase tracking-wider">{greeting}</p>
-        <h2 className="text-2xl font-bold text-white/90 mt-0.5">{name} 👋</h2>
+        <h2 className="text-2xl font-bold text-white/90 mt-0.5">Hugo 👋</h2>
         <p className="text-sm text-white/40 mt-1">Prêt à tout déchirer aujourd'hui ?</p>
       </div>
       <div className="relative flex flex-col items-end gap-2">
@@ -64,10 +71,7 @@ function QuickActionGrid({ accent, gradient, glow }: { accent: string; gradient:
           key={item.path}
           onClick={() => navigate(item.path)}
           className="flex flex-col items-start gap-3 p-4 rounded-2xl text-left transition-all hover:scale-[1.02] group"
-          style={{
-            background: "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(255,255,255,0.07)",
-          }}
+          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
         >
           <div
             className="w-9 h-9 rounded-xl flex items-center justify-center transition-all group-hover:scale-110"
@@ -85,28 +89,27 @@ function QuickActionGrid({ accent, gradient, glow }: { accent: string; gradient:
   );
 }
 
-function BusinessOverview({ accent, gradient, glow }: { accent: string; gradient: string; glow: string }) {
+function BusinessOverview() {
   const navigate = useNavigate();
+  const { activeBusiness } = useBusiness();
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-white/70">Mes business</h3>
+        <h3 className="text-xs font-semibold text-white/35 uppercase tracking-wider">Mes business</h3>
         <button
           onClick={() => navigate('/business')}
           className="flex items-center gap-1 text-xs text-white/40 hover:text-white/70 transition-colors"
         >
-          Voir tout <ArrowRight className="w-3 h-3" />
+          Voir tout <ArrowRight className="w-3 h-3 ml-0.5" />
         </button>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {BUSINESSES.map(b => (
           <div
             key={b.id}
+            onClick={() => !b.disabled && navigate('/business')}
             className={`rounded-2xl p-4 flex items-center gap-3 transition-all ${b.disabled ? "opacity-40" : "hover:scale-[1.01] cursor-pointer"}`}
-            style={{
-              background: `${b.accent}10`,
-              border: `1px solid ${b.accent}20`,
-            }}
+            style={{ background: `${b.accent}10`, border: `1px solid ${b.accent}20` }}
           >
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0"
@@ -135,12 +138,10 @@ export default function CommandCenter() {
   return (
     <div className="space-y-6 max-w-5xl">
       <GreetingBanner
-        name="Hugo"
         accent={activeBusiness.accent}
         gradient={activeBusiness.gradient}
         glow={activeBusiness.glow}
       />
-
       <div>
         <h3 className="text-xs font-semibold text-white/35 uppercase tracking-wider mb-3">Navigation rapide</h3>
         <QuickActionGrid
@@ -149,12 +150,7 @@ export default function CommandCenter() {
           glow={activeBusiness.glow}
         />
       </div>
-
-      <BusinessOverview
-        accent={activeBusiness.accent}
-        gradient={activeBusiness.gradient}
-        glow={activeBusiness.glow}
-      />
+      <BusinessOverview />
     </div>
   );
 }
