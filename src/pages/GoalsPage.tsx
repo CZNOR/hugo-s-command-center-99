@@ -18,7 +18,7 @@ export default function GoalsPage() {
     <motion.div variants={stagger} initial="hidden" animate="visible" className="space-y-5 max-w-5xl mx-auto">
       <motion.div variants={fadeUp} className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-foreground">Objectifs</h2>
-        <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors active:scale-[0.97]">
+        <button className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-all active:scale-[0.97] shadow-sm">
           <Plus className="w-4 h-4" /> Nouvel Objectif
         </button>
       </motion.div>
@@ -34,13 +34,13 @@ export default function GoalsPage() {
               <span className={`${horizonColors[goal.horizon]} text-[10px]`}>{goal.horizon}</span>
             </div>
             <div className="flex items-center gap-3">
-              <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "hsl(235 22% 18%)" }}>
+              <div className="flex-1 h-2 rounded-full overflow-hidden bg-black/[0.06]">
                 <motion.div
                   className="h-full rounded-full"
                   initial={{ width: 0 }}
                   animate={{ width: `${goal.progress}%` }}
                   transition={{ duration: 1, ease: "easeOut", delay: i * 0.1 }}
-                  style={{ background: goal.progress >= 75 ? "hsl(160 84% 40%)" : goal.progress >= 40 ? "hsl(239 84% 67%)" : "hsl(43 96% 56%)" }}
+                  style={{ background: goal.progress >= 75 ? "hsl(152 76% 44%)" : goal.progress >= 40 ? "hsl(239 84% 67%)" : "hsl(33 100% 55%)" }}
                 />
               </div>
               <span className="font-mono-data text-sm font-bold text-foreground min-w-[3rem] text-right">{goal.progress}%</span>

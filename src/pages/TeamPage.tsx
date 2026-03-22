@@ -14,11 +14,11 @@ export default function TeamPage() {
         <h2 className="text-xl font-bold text-foreground">Équipe</h2>
       </motion.div>
 
-      <motion.div variants={fadeUp} className="flex gap-1 p-1 rounded-lg" style={{ background: "hsl(235 22% 11%)" }}>
-        <button onClick={() => setTab("humans")} className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${tab === "humans" ? "bg-white/[0.08] text-foreground" : "text-muted-foreground"}`}>
+      <motion.div variants={fadeUp} className="flex gap-1 p-1 rounded-2xl glass-card">
+        <button onClick={() => setTab("humans")} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${tab === "humans" ? "bg-white/60 text-foreground shadow-sm" : "text-muted-foreground"}`}>
           <Users className="w-4 h-4" /> Humains
         </button>
-        <button onClick={() => setTab("ai")} className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${tab === "ai" ? "bg-white/[0.08] text-foreground" : "text-muted-foreground"}`}>
+        <button onClick={() => setTab("ai")} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${tab === "ai" ? "bg-white/60 text-foreground shadow-sm" : "text-muted-foreground"}`}>
           <Bot className="w-4 h-4" /> Agents IA
         </button>
       </motion.div>
@@ -28,7 +28,7 @@ export default function TeamPage() {
           {teamMembers.map((m) => (
             <motion.div key={m.id} variants={fadeUp} className="glass-card-hover p-5">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-hugoos-green/15 flex items-center justify-center text-sm font-bold text-hugoos-green">{m.avatar}</div>
+                <div className="w-10 h-10 rounded-xl bg-hugoos-green/10 flex items-center justify-center text-sm font-bold text-hugoos-green">{m.avatar}</div>
                 <div>
                   <p className="font-semibold text-foreground">{m.name}</p>
                   <p className="text-xs text-muted-foreground">{m.role}</p>
@@ -46,7 +46,7 @@ export default function TeamPage() {
           {aiAgents.map((agent) => (
             <motion.div key={agent.id} variants={fadeUp} className="glass-card-hover p-5">
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-xl bg-hugoos-cyan/15 flex items-center justify-center text-sm font-bold text-hugoos-cyan">{agent.avatar}</div>
+                <div className="w-10 h-10 rounded-xl bg-hugoos-cyan/10 flex items-center justify-center text-sm font-bold text-hugoos-cyan">{agent.avatar}</div>
                 <div>
                   <p className="font-semibold text-foreground">{agent.name}</p>
                   <p className="text-xs text-muted-foreground">{agent.role}</p>
@@ -54,7 +54,7 @@ export default function TeamPage() {
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="chip-cyan text-[10px]">{agent.model}</span>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full ${agent.status === "active" ? "bg-hugoos-green/20 text-hugoos-green" : agent.status === "paused" ? "bg-hugoos-orange/20 text-hugoos-orange" : "bg-muted text-muted-foreground"}`}>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full ${agent.status === "active" ? "bg-hugoos-green/10 text-hugoos-green" : agent.status === "paused" ? "bg-hugoos-orange/10 text-hugoos-orange" : "bg-muted text-muted-foreground"}`}>
                   {agent.status === "active" ? "Actif" : agent.status === "paused" ? "Pause" : "En dev"}
                 </span>
               </div>

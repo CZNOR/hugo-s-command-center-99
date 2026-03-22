@@ -5,7 +5,7 @@ import AnimatedNumber from "@/components/ui/AnimatedNumber";
 
 import { stagger, fadeUp } from "@/lib/animations";
 
-const rarityBorder = { common: "border-muted-foreground/30", rare: "border-hugoos-cyan/50", epic: "border-hugoos-purple/50", legendary: "border-hugoos-orange/50 shadow-[0_0_12px_hsl(43_96%_56%/0.2)]" };
+const rarityBorder = { common: "border-border", rare: "border-hugoos-cyan/40", epic: "border-hugoos-purple/40", legendary: "border-hugoos-orange/40 shadow-[0_0_12px_hsl(33_100%_55%/0.15)]" };
 const rarityLabel = { common: "text-muted-foreground", rare: "text-hugoos-cyan", epic: "text-hugoos-purple", legendary: "text-hugoos-orange" };
 
 export default function GamificationPage() {
@@ -18,10 +18,10 @@ export default function GamificationPage() {
       <motion.div variants={fadeUp} className="glass-card gradient-border p-6 lg:p-8">
         <div className="flex flex-col md:flex-row items-center gap-6">
           <div className="relative">
-            <div className="w-20 h-20 rounded-2xl bg-primary/20 flex items-center justify-center text-3xl font-bold text-primary glow-indigo">
+            <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center text-3xl font-bold text-primary">
               H
             </div>
-            <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-lg bg-hugoos-purple flex items-center justify-center text-xs font-bold text-primary-foreground glow-purple">
+            <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-xl bg-hugoos-purple flex items-center justify-center text-xs font-bold text-white shadow-md">
               {g.level}
             </div>
           </div>
@@ -33,13 +33,13 @@ export default function GamificationPage() {
                 <span>Niveau {g.level}</span>
                 <span className="font-mono-data">{g.total_xp.toLocaleString()} / {g.xp_for_next_level.toLocaleString()} XP</span>
               </div>
-              <div className="h-2.5 rounded-full overflow-hidden" style={{ background: "hsl(235 22% 18%)" }}>
+              <div className="h-2.5 rounded-full overflow-hidden bg-black/[0.06]">
                 <motion.div
                   className="h-full rounded-full"
                   initial={{ width: 0 }}
                   animate={{ width: `${xpPercent}%` }}
                   transition={{ duration: 1.2, ease: "easeOut" }}
-                  style={{ background: "linear-gradient(90deg, hsl(239 84% 67%), hsl(263 70% 66%))" }}
+                  style={{ background: "linear-gradient(90deg, hsl(239 84% 67%), hsl(263 70% 62%))" }}
                 />
               </div>
             </div>
@@ -71,10 +71,10 @@ export default function GamificationPage() {
           {skills.map((skill) => {
             const pct = (skill.xp / skill.max_xp) * 100;
             return (
-              <div key={skill.name} className="p-4 rounded-lg text-center" style={{ background: "hsl(235 22% 14%)" }}>
+              <div key={skill.name} className="p-4 rounded-xl text-center bg-black/[0.03]">
                 <p className="text-sm font-medium text-foreground">{skill.name}</p>
                 <p className="font-mono-data text-lg font-bold mt-1" style={{ color: skill.color }}>Lv.{skill.level}</p>
-                <div className="h-1.5 rounded-full overflow-hidden mt-2" style={{ background: "hsl(235 22% 18%)" }}>
+                <div className="h-1.5 rounded-full overflow-hidden mt-2 bg-black/[0.06]">
                   <div className="h-full rounded-full" style={{ width: `${pct}%`, background: skill.color }} />
                 </div>
                 <p className="text-[10px] text-muted-foreground font-mono-data mt-1">{skill.xp.toLocaleString()} / {skill.max_xp.toLocaleString()}</p>
@@ -89,7 +89,7 @@ export default function GamificationPage() {
         <h2 className="text-base font-semibold text-foreground mb-4">Badges & Achievements</h2>
         <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
           {badges.map((badge) => (
-            <div key={badge.id} className={`relative p-4 rounded-xl border text-center transition-all ${badge.earned ? rarityBorder[badge.rarity] : "border-white/[0.04] opacity-40"} ${badge.earned ? "hover:scale-105 cursor-pointer" : ""}`} style={{ background: "hsl(235 22% 14%)" }}>
+            <div key={badge.id} className={`relative p-4 rounded-2xl border text-center transition-all ${badge.earned ? rarityBorder[badge.rarity] : "border-border/50 opacity-40"} ${badge.earned ? "hover:scale-105 cursor-pointer bg-white/30" : "bg-black/[0.02]"}`}>
               <span className="text-2xl block mb-1.5">{badge.earned ? badge.icon : "🔒"}</span>
               <p className="text-xs font-medium text-foreground truncate">{badge.earned ? badge.name : "???"}</p>
               <p className={`text-[10px] capitalize mt-0.5 ${rarityLabel[badge.rarity]}`}>{badge.rarity}</p>
@@ -103,7 +103,7 @@ export default function GamificationPage() {
         <h2 className="text-base font-semibold text-foreground mb-4">Historique XP</h2>
         <div className="space-y-2">
           {xpHistory.map((entry) => (
-            <div key={entry.id} className="flex items-center justify-between p-2.5 rounded-lg hover:bg-white/[0.03] transition-colors">
+            <div key={entry.id} className="flex items-center justify-between p-2.5 rounded-xl hover:bg-black/[0.03] transition-colors">
               <div className="flex items-center gap-3">
                 <Gem className="w-4 h-4 text-hugoos-purple flex-shrink-0" />
                 <p className="text-sm text-foreground">{entry.reason}</p>

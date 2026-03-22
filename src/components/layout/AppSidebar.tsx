@@ -28,14 +28,20 @@ export default function AppSidebar({ open, onClose }: AppSidebarProps) {
     <>
       {/* Mobile overlay */}
       {open && (
-        <div className="fixed inset-0 z-40 bg-black/60 lg:hidden" onClick={onClose} />
+        <div className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm lg:hidden" onClick={onClose} />
       )}
 
-      <aside className={`fixed top-0 left-0 z-50 h-full w-64 flex flex-col border-r border-white/[0.06] transition-transform duration-300 lg:translate-x-0 lg:static lg:z-auto ${open ? "translate-x-0" : "-translate-x-full"}`}
-        style={{ background: "hsl(235 28% 7%)" }}>
+      <aside
+        className={`fixed top-0 left-0 z-50 h-full w-64 flex flex-col border-r border-border/50 transition-transform duration-300 lg:translate-x-0 lg:static lg:z-auto ${open ? "translate-x-0" : "-translate-x-full"}`}
+        style={{
+          background: "rgba(255, 255, 255, 0.5)",
+          backdropFilter: "blur(24px)",
+          WebkitBackdropFilter: "blur(24px)",
+        }}
+      >
         {/* Logo */}
         <div className="flex items-center gap-2.5 px-5 py-6">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center glow-indigo">
+          <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center shadow-sm">
             <Zap className="w-4 h-4 text-primary-foreground" />
           </div>
           <span className="text-lg font-bold tracking-tight text-foreground">HUGOOS</span>
@@ -51,10 +57,10 @@ export default function AppSidebar({ open, onClose }: AppSidebarProps) {
                 key={item.path}
                 to={item.path}
                 onClick={onClose}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                   active
-                    ? "bg-primary/15 text-primary shadow-[0_0_12px_hsl(239_84%_67%/0.15)]"
-                    : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04]"
+                    ? "bg-primary/10 text-primary shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-black/[0.03]"
                 }`}
               >
                 <item.icon className="w-[18px] h-[18px] flex-shrink-0" />
@@ -65,7 +71,7 @@ export default function AppSidebar({ open, onClose }: AppSidebarProps) {
         </nav>
 
         {/* Bottom: XP + Streak */}
-        <div className="px-4 py-4 border-t border-white/[0.06] space-y-3">
+        <div className="px-4 py-4 border-t border-border/50 space-y-3">
           <div className="flex items-center justify-between text-xs">
             <div className="flex items-center gap-1.5">
               <span className="chip-purple text-[10px] font-bold">Lv.{g.level}</span>
@@ -76,12 +82,12 @@ export default function AppSidebar({ open, onClose }: AppSidebarProps) {
               <span className="font-mono-data text-hugoos-orange font-semibold text-xs">{g.current_streak}j</span>
             </div>
           </div>
-          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "hsl(235 22% 18%)" }}>
+          <div className="h-1.5 rounded-full overflow-hidden bg-black/[0.06]">
             <div
               className="h-full rounded-full transition-all duration-700"
               style={{
                 width: `${xpPercent}%`,
-                background: "linear-gradient(90deg, hsl(239 84% 67%), hsl(263 70% 66%))",
+                background: "linear-gradient(90deg, hsl(239 84% 67%), hsl(263 70% 62%))",
               }}
             />
           </div>
