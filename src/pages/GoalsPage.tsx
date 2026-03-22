@@ -1,57 +1,182 @@
-import { motion } from "framer-motion";
-import { Target, Plus } from "lucide-react";
+import { useState } from "react";
+import { Target, Plus, TrendingUp, TrendingDown, Minus, ChevronDown } from "lucide-react";
+import { useBusiness } from "@/lib/businessContext";
+import type { Goal } from "@/lib/mock-data";
 
-import { stagger, fadeUp } from "@/lib/animations";
+// Données vides — à connecter Supabase
+const goals: Goal[] = [];
 
-const goals = [
-  { title: "Atteindre 40K€ MRR consolidé", horizon: "Trimestre", progress: 67, current: "€26.8K", target: "€40K", business: "Global" },
-  { title: "Lancer SaaS Vision v2", horizon: "Mois", progress: 45, current: "45%", target: "100%", business: "SaaS Vision" },
-  { title: "100 clients agence actifs", horizon: "Année", progress: 38, current: "38", target: "100", business: "Agence Made" },
-  { title: "50K followers total", horizon: "Trimestre", progress: 82, current: "41K", target: "50K", business: "Hugo Contenu" },
-  { title: "Déployer 10 agents IA", horizon: "Année", progress: 50, current: "5", target: "10", business: "Global" },
-];
+const CATEGORIES = [
+  { id: "all", label: "Tous" },
+  { id: "revenue", label: "Revenus" },
+  { id: "growth", label: "Croissance" },
+  { id: "content", label: "Contenu" },
+  { id: "ops", label: "Ops" },
+  { id: "personal", label: "Perso" },
+] as const;
 
-const horizonColors: Record<string, string> = { Mois: "chip-indigo", Trimestre: "chip-cyan", Année: "chip-purple" };
+function ProgressBar({ current, target, color }: { current: number; target: number; color: string }) {
+  const pct = Math.min(100, target > 0 ? Math.round((current / target) * 100) : 0);
+  return (
+    <div className="relative h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.08)" }}>
+      <div
+        className="absolute left-0 top-0 h-full rounded-full transition-all duration-700"
+        style={{ width: `${pct}%`, background: color }}
+      />
+    </div>
+  );
+}
+
+function GoalCard({ goal, accent, gradient }: { goal: Goal; accent: string; gradient: string }) {
+  const pct = Math.min(100, goal.target > 0 ? Math.round((goal.current / goal.target) * 100) : 0);
+  const delta = goal.current - goal.target;
+  const trend = delta >= 0 ? "up" : "down";
+
+  return (
+    <div
+      className="rounded-2xl p-4 flex flex-col gap-3 transition-all hover:scale-[1.01]"
+      style={{
+        background: "rgba(255,255,255,0.04)",
+        border: "1px solid rgba(255,255,255,0.07)",
+      }}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-white/90 leading-tight truncate">{goal.title}</p>
+          <p className="text-xs text-white/35 mt-0.5">Échéance : {goal.deadline}</p>
+        </div>
+        <span
+          className="text-[10px] font-semibold px-2 py-0.5 rounded-lg shrink-0"
+          style={{ background: `${accent}20`, color: accent }}
+        >
+          {goal.category}
+        </span>
+      </div>
+
+      <ProgressBar current={goal.current} target={goal.target} color={accent} />
+
+      <div className="flex items-center justify-between text-xs">
+        <div>
+          <span className="font-mono font-bold text-white/80">{goal.current.toLocaleString()}</span>
+          <span className="text-white/30"> / {goal.target.toLocaleString()} {goal.unit}</span>
+        </div>
+        <div className="flex items-center gap-1">
+          {trend === "up" ? (
+            <TrendingUp className="w-3 h-3" style={{ color: "#10B981" }} />
+          ) : trend === "down" ? (
+            <TrendingDown className="w-3 h-3 text-red-400" />
+          ) : (
+            <Minus className="w-3 h-3 text-white/30" />
+          )}
+          <span
+            className="font-mono font-semibold"
+            style={{ color: pct >= 100 ? "#10B981" : pct >= 60 ? accent : "rgba(255,255,255,0.4)" }}
+          >
+            {pct}%
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function GoalsPage() {
-  return (
-    <motion.div variants={stagger} initial="hidden" animate="visible" className="space-y-5 max-w-5xl mx-auto">
-      <motion.div variants={fadeUp} className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-foreground">Objectifs</h2>
-        <button className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-all active:scale-[0.97] shadow-sm">
-          <Plus className="w-4 h-4" /> Nouvel Objectif
-        </button>
-      </motion.div>
+  const { activeBusiness } = useBusiness();
+  const [activeCategory, setActiveCategory] = useState<string>("all");
 
-      <div className="space-y-3">
-        {goals.map((goal, i) => (
-          <motion.div key={i} variants={fadeUp} className="glass-card-hover p-5">
-            <div className="flex items-start justify-between mb-3">
-              <div>
-                <p className="text-sm font-semibold text-foreground">{goal.title}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{goal.business}</p>
-              </div>
-              <span className={`${horizonColors[goal.horizon]} text-[10px]`}>{goal.horizon}</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-2 rounded-full overflow-hidden bg-black/[0.06]">
-                <motion.div
-                  className="h-full rounded-full"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${goal.progress}%` }}
-                  transition={{ duration: 1, ease: "easeOut", delay: i * 0.1 }}
-                  style={{ background: goal.progress >= 75 ? "hsl(152 76% 44%)" : goal.progress >= 40 ? "hsl(239 84% 67%)" : "hsl(33 100% 55%)" }}
-                />
-              </div>
-              <span className="font-mono-data text-sm font-bold text-foreground min-w-[3rem] text-right">{goal.progress}%</span>
-            </div>
-            <div className="flex justify-between mt-2">
-              <span className="text-xs text-muted-foreground font-mono-data">Actuel: {goal.current}</span>
-              <span className="text-xs text-muted-foreground font-mono-data">Cible: {goal.target}</span>
-            </div>
-          </motion.div>
+  const filtered = activeCategory === "all"
+    ? goals.filter(g => g.business_id === activeBusiness.id || !g.business_id)
+    : goals.filter(g =>
+        g.category === activeCategory &&
+        (g.business_id === activeBusiness.id || !g.business_id)
+      );
+
+  const total = filtered.length;
+  const done = filtered.filter(g => g.current >= g.target).length;
+  const avgPct = total > 0
+    ? Math.round(filtered.reduce((acc, g) => acc + Math.min(100, (g.current / g.target) * 100), 0) / total)
+    : 0;
+
+  return (
+    <div className="space-y-5 max-w-4xl">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Target className="w-5 h-5" style={{ color: activeBusiness.accent }} />
+          <h1 className="text-lg font-semibold text-white/90">Objectifs</h1>
+          {total > 0 && (
+            <span className="text-xs text-white/35">
+              {done}/{total} atteints · {avgPct}% moyen
+            </span>
+          )}
+        </div>
+        <button
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-white"
+          style={{ background: activeBusiness.gradient, boxShadow: `0 4px 12px ${activeBusiness.glow}` }}
+        >
+          <Plus className="w-3.5 h-3.5" />
+          Objectif
+        </button>
+      </div>
+
+      {/* Category tabs */}
+      <div className="flex items-center gap-1 p-1 rounded-xl w-fit" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+        {CATEGORIES.map(cat => (
+          <button
+            key={cat.id}
+            onClick={() => setActiveCategory(cat.id)}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+            style={
+              activeCategory === cat.id
+                ? { background: activeBusiness.gradient, color: "#fff" }
+                : { color: "rgba(255,255,255,0.45)" }
+            }
+          >
+            {cat.label}
+          </button>
         ))}
       </div>
-    </motion.div>
+
+      {/* Goals grid */}
+      {filtered.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {filtered.map(goal => (
+            <GoalCard
+              key={goal.id}
+              goal={goal}
+              accent={activeBusiness.accent}
+              gradient={activeBusiness.gradient}
+            />
+          ))}
+        </div>
+      ) : (
+        /* Empty state */
+        <div
+          className="rounded-2xl p-12 flex flex-col items-center justify-center gap-4"
+          style={{ background: "rgba(255,255,255,0.02)", border: "1px dashed rgba(255,255,255,0.08)" }}
+        >
+          <div
+            className="w-14 h-14 rounded-2xl flex items-center justify-center"
+            style={{ background: `${activeBusiness.accent}15` }}
+          >
+            <Target className="w-7 h-7" style={{ color: activeBusiness.accent }} />
+          </div>
+          <div className="text-center">
+            <p className="text-white/50 font-medium">Aucun objectif défini</p>
+            <p className="text-white/25 text-sm mt-1">
+              Ajoute des objectifs pour suivre ta progression sur{" "}
+              <span style={{ color: activeBusiness.accent }}>{activeBusiness.label}</span>
+            </p>
+          </div>
+          <button
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white mt-1"
+            style={{ background: activeBusiness.gradient, boxShadow: `0 4px 16px ${activeBusiness.glow}` }}
+          >
+            <Plus className="w-4 h-4" />
+            Créer mon premier objectif
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
