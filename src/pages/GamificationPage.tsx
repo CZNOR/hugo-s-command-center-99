@@ -3,8 +3,7 @@ import { Trophy, Gem, Flame, Star, Zap, Lock } from "lucide-react";
 import { gamificationProfile, skills, badges, xpHistory, dailyMissions } from "@/lib/mock-data";
 import AnimatedNumber from "@/components/ui/AnimatedNumber";
 
-const stagger = { hidden: {}, visible: { transition: { staggerChildren: 0.08 } } };
-const fadeUp = { hidden: { opacity: 0, y: 16, filter: "blur(4px)" }, visible: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } } };
+import { stagger, fadeUp } from "@/lib/animations";
 
 const rarityBorder = { common: "border-muted-foreground/30", rare: "border-hugoos-cyan/50", epic: "border-hugoos-purple/50", legendary: "border-hugoos-orange/50 shadow-[0_0_12px_hsl(43_96%_56%/0.2)]" };
 const rarityLabel = { common: "text-muted-foreground", rare: "text-hugoos-cyan", epic: "text-hugoos-purple", legendary: "text-hugoos-orange" };

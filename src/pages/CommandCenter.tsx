@@ -5,8 +5,7 @@ import { useXPFloat, XPFloats } from "@/components/ui/XPFloat";
 import { gamificationProfile, businesses, aiAgents, tasks, dailyMissions } from "@/lib/mock-data";
 import { useState } from "react";
 
-const stagger = { hidden: {}, visible: { transition: { staggerChildren: 0.08 } } };
-const fadeUp = { hidden: { opacity: 0, y: 16, filter: "blur(4px)" }, visible: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } } };
+import { stagger, fadeUp } from "@/lib/animations";
 
 export default function CommandCenter() {
   const g = gamificationProfile;

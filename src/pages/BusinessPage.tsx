@@ -5,8 +5,7 @@ import AnimatedNumber from "@/components/ui/AnimatedNumber";
 import { useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
-const stagger = { hidden: {}, visible: { transition: { staggerChildren: 0.08 } } };
-const fadeUp = { hidden: { opacity: 0, y: 16, filter: "blur(4px)" }, visible: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } } };
+import { stagger, fadeUp } from "@/lib/animations";
 
 const stageLabels: Record<string, string> = { lead: "Lead", qualified: "Qualifié", proposal: "Proposition", negotiation: "Négo", won: "Gagné", lost: "Perdu" };
 const stageColors: Record<string, string> = { lead: "border-muted-foreground/30", qualified: "border-hugoos-cyan/40", proposal: "border-hugoos-indigo/40", negotiation: "border-hugoos-orange/40", won: "border-hugoos-green/40", lost: "border-hugoos-red/40" };

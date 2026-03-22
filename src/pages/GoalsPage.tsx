@@ -1,8 +1,7 @@
 import { motion } from "framer-motion";
 import { Target, Plus } from "lucide-react";
 
-const fadeUp = { hidden: { opacity: 0, y: 16, filter: "blur(4px)" }, visible: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } } };
-const stagger = { hidden: {}, visible: { transition: { staggerChildren: 0.08 } } };
+import { stagger, fadeUp } from "@/lib/animations";
 
 const goals = [
   { title: "Atteindre 40K€ MRR consolidé", horizon: "Trimestre", progress: 67, current: "€26.8K", target: "€40K", business: "Global" },

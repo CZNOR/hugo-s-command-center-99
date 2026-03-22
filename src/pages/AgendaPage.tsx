@@ -1,8 +1,7 @@
 import { motion } from "framer-motion";
 import { Calendar, Clock, Plus } from "lucide-react";
 
-const fadeUp = { hidden: { opacity: 0, y: 16, filter: "blur(4px)" }, visible: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } } };
-const stagger = { hidden: {}, visible: { transition: { staggerChildren: 0.08 } } };
+import { stagger, fadeUp } from "@/lib/animations";
 
 const hours = Array.from({ length: 14 }, (_, i) => i + 7);
 const days = ["Lun 22", "Mar 23", "Mer 24", "Jeu 25", "Ven 26", "Sam 27", "Dim 28"];

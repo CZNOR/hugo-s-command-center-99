@@ -3,8 +3,7 @@ import { Bot, Plus, ExternalLink, Activity, CheckCircle2, XCircle, Info } from "
 import { aiAgents } from "@/lib/mock-data";
 import AnimatedNumber from "@/components/ui/AnimatedNumber";
 
-const stagger = { hidden: {}, visible: { transition: { staggerChildren: 0.08 } } };
-const fadeUp = { hidden: { opacity: 0, y: 16, filter: "blur(4px)" }, visible: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } } };
+import { stagger, fadeUp } from "@/lib/animations";
 
 const statusConfig = {
   active: { label: "Actif", color: "bg-hugoos-green/20 text-hugoos-green", dot: "bg-hugoos-green" },
