@@ -1,3 +1,4 @@
+import { type ReactNode } from "react";
 import { TrendingUp, DollarSign, Handshake, BarChart3, Plus, ArrowUpRight, Layers } from "lucide-react";
 import { useBusiness, BUSINESSES } from "@/lib/businessContext";
 import type { Deal } from "@/lib/mock-data";
@@ -6,7 +7,7 @@ import type { Deal } from "@/lib/mock-data";
 const deals: Deal[] = [];
 
 interface MetricCardProps {
-  icon: React.ReactNode;
+  icon: ReactNode;
   label: string;
   value: string;
   sub?: string;
@@ -52,7 +53,7 @@ function MetricCard({ icon, label, value, sub, accent, gradient, glow, featured 
   );
 }
 
-function DealPipelineEmpty({ accent, gradient, glow }: { accent: string; gradient: string; glow: string }) {
+function DealPipelineEmpty({ gradient, glow }: { gradient: string; glow: string }) {
   return (
     <div
       className="rounded-2xl p-8 flex flex-col items-center gap-3"
@@ -72,23 +73,19 @@ function DealPipelineEmpty({ accent, gradient, glow }: { accent: string; gradien
 }
 
 const PIPELINE_STAGES = [
-  { id: "lead", label: "Lead", color: "rgba(255,255,255,0.25)" },
-  { id: "qualified", label: "Qualifié", color: "#06B6D4" },
-  { id: "proposal", label: "Proposition", color: "#8B5CF6" },
-  { id: "negotiation", label: "Négo", color: "#F59E0B" },
-  { id: "won", label: "Gagné", color: "#10B981" },
+  { id: "lead",        label: "Lead",        color: "rgba(255,255,255,0.25)" },
+  { id: "qualified",   label: "Qualifié",    color: "#06B6D4" },
+  { id: "proposal",    label: "Proposition", color: "#8B5CF6" },
+  { id: "negotiation", label: "Négo",        color: "#F59E0B" },
+  { id: "won",         label: "Gagné",       color: "#10B981" },
 ];
 
 export default function BusinessPage() {
   const { activeBusiness } = useBusiness();
   const businessDeals = deals.filter(d => d.business_id === activeBusiness.id);
-
   const totalPipeline = businessDeals.reduce((acc, d) => acc + d.value, 0);
-  const wonDeals = businessDeals.filter(d => d.stage === "won");
-  const wonValue = wonDeals.reduce((acc, d) => acc + d.value, 0);
 
-  const fmt = (n: number) =>
-    n >= 1000 ? `${(n / 1000).toFixed(1)}k€` : `${n}€`;
+  const fmt = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}k€` : `${n}€`;
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -113,11 +110,10 @@ export default function BusinessPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {/* Business switcher compact */}
           {BUSINESSES.filter(b => !b.disabled).map(b => (
             <div
               key={b.id}
-              className="text-lg p-2 rounded-xl transition-all"
+              className="text-lg p-2 rounded-xl"
               style={{
                 background: b.id === activeBusiness.id ? `${b.accent}25` : "rgba(255,255,255,0.04)",
                 opacity: b.id === activeBusiness.id ? 1 : 0.5,
@@ -133,40 +129,26 @@ export default function BusinessPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <MetricCard
           icon={<DollarSign className="w-4 h-4" />}
-          label="CA du mois"
-          value="—"
-          sub="Aucune donnée"
-          accent={activeBusiness.accent}
-          gradient={activeBusiness.gradient}
-          glow={activeBusiness.glow}
+          label="CA du mois" value="—" sub="Aucune donnée"
+          accent={activeBusiness.accent} gradient={activeBusiness.gradient} glow={activeBusiness.glow}
           featured
         />
         <MetricCard
           icon={<TrendingUp className="w-4 h-4" />}
-          label="MRR"
-          value="—"
-          sub="Récurrent mensuel"
-          accent={activeBusiness.accent}
-          gradient={activeBusiness.gradient}
-          glow={activeBusiness.glow}
+          label="MRR" value="—" sub="Récurrent mensuel"
+          accent={activeBusiness.accent} gradient={activeBusiness.gradient} glow={activeBusiness.glow}
         />
         <MetricCard
           icon={<Handshake className="w-4 h-4" />}
           label="Deals actifs"
-          value={businessDeals.filter(d => d.stage !== "won" && d.stage !== "lost").length.toString() || "0"}
+          value={String(businessDeals.filter(d => d.stage !== "won" && d.stage !== "lost").length)}
           sub="En cours"
-          accent={activeBusiness.accent}
-          gradient={activeBusiness.gradient}
-          glow={activeBusiness.glow}
+          accent={activeBusiness.accent} gradient={activeBusiness.gradient} glow={activeBusiness.glow}
         />
         <MetricCard
           icon={<BarChart3 className="w-4 h-4" />}
-          label="Pipeline"
-          value={totalPipeline > 0 ? fmt(totalPipeline) : "—"}
-          sub="Valeur totale"
-          accent={activeBusiness.accent}
-          gradient={activeBusiness.gradient}
-          glow={activeBusiness.glow}
+          label="Pipeline" value={totalPipeline > 0 ? fmt(totalPipeline) : "—"} sub="Valeur totale"
+          accent={activeBusiness.accent} gradient={activeBusiness.gradient} glow={activeBusiness.glow}
         />
       </div>
 
@@ -177,20 +159,13 @@ export default function BusinessPage() {
             <Layers className="w-4 h-4" style={{ color: activeBusiness.accent }} />
             <h2 className="text-sm font-semibold text-white/80">Pipeline deals</h2>
           </div>
-          <button
-            className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors"
-          >
-            <Plus className="w-3 h-3" />
-            Deal
+          <button className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors">
+            <Plus className="w-3 h-3" /> Deal
           </button>
         </div>
 
         {businessDeals.length === 0 ? (
-          <DealPipelineEmpty
-            accent={activeBusiness.accent}
-            gradient={activeBusiness.gradient}
-            glow={activeBusiness.glow}
-          />
+          <DealPipelineEmpty gradient={activeBusiness.gradient} glow={activeBusiness.glow} />
         ) : (
           <div className="grid grid-cols-5 gap-2">
             {PIPELINE_STAGES.map(stage => {
@@ -198,9 +173,7 @@ export default function BusinessPage() {
               return (
                 <div key={stage.id} className="space-y-2">
                   <div className="flex items-center justify-between px-1">
-                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: stage.color }}>
-                      {stage.label}
-                    </span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: stage.color }}>{stage.label}</span>
                     <span className="text-[10px] text-white/30">{stageDeal.length}</span>
                   </div>
                   <div className="space-y-1.5 min-h-[80px]">
@@ -210,11 +183,9 @@ export default function BusinessPage() {
                         className="rounded-xl p-2.5 cursor-pointer hover:scale-[1.02] transition-all"
                         style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}
                       >
-                        <p className="text-xs font-medium text-white/80 leading-tight truncate">{deal.title}</p>
+                        <p className="text-xs font-medium text-white/80 truncate">{deal.title}</p>
                         <p className="text-[10px] text-white/35 mt-0.5">{deal.client}</p>
-                        <p className="text-xs font-bold mt-1.5" style={{ color: stage.color }}>
-                          {fmt(deal.value)}
-                        </p>
+                        <p className="text-xs font-bold mt-1.5" style={{ color: stage.color }}>{fmt(deal.value)}</p>
                       </div>
                     ))}
                   </div>
