@@ -1,106 +1,229 @@
-import { motion } from "framer-motion";
-import { TrendingUp, TrendingDown, ArrowUpRight } from "lucide-react";
-import { businesses, revenueData, deals } from "@/lib/mock-data";
-import AnimatedNumber from "@/components/ui/AnimatedNumber";
-import { useState } from "react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { TrendingUp, DollarSign, Handshake, BarChart3, Plus, ArrowUpRight, Layers } from "lucide-react";
+import { useBusiness, BUSINESSES } from "@/lib/businessContext";
+import type { Deal } from "@/lib/mock-data";
 
-import { stagger, fadeUp } from "@/lib/animations";
+// Données vides — à connecter Supabase
+const deals: Deal[] = [];
 
-const stageLabels: Record<string, string> = { lead: "Lead", qualified: "Qualifié", proposal: "Proposition", negotiation: "Négo", won: "Gagné", lost: "Perdu" };
-const stageColors: Record<string, string> = { lead: "border-muted-foreground/30", qualified: "border-hugoos-cyan/40", proposal: "border-hugoos-indigo/40", negotiation: "border-hugoos-orange/40", won: "border-hugoos-green/40", lost: "border-hugoos-red/40" };
+interface MetricCardProps {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  sub?: string;
+  accent: string;
+  gradient: string;
+  glow: string;
+  featured?: boolean;
+}
+
+function MetricCard({ icon, label, value, sub, accent, gradient, glow, featured }: MetricCardProps) {
+  return (
+    <div
+      className="rounded-2xl p-4 flex flex-col gap-3 transition-all hover:scale-[1.01]"
+      style={{
+        background: featured ? gradient : "rgba(255,255,255,0.04)",
+        border: `1px solid ${featured ? "transparent" : "rgba(255,255,255,0.07)"}`,
+        boxShadow: featured ? `0 8px 32px ${glow}` : undefined,
+      }}
+    >
+      <div className="flex items-center justify-between">
+        <div
+          className="w-9 h-9 rounded-xl flex items-center justify-center"
+          style={{ background: featured ? "rgba(255,255,255,0.2)" : `${accent}20` }}
+        >
+          <div style={{ color: featured ? "#fff" : accent }}>{icon}</div>
+        </div>
+        <ArrowUpRight className="w-4 h-4 opacity-30" style={{ color: featured ? "#fff" : accent }} />
+      </div>
+      <div>
+        <p className="text-[11px] font-medium uppercase tracking-wider" style={{ color: featured ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.4)" }}>
+          {label}
+        </p>
+        <p className="text-2xl font-bold mt-0.5" style={{ color: featured ? "#fff" : "rgba(255,255,255,0.9)" }}>
+          {value}
+        </p>
+        {sub && (
+          <p className="text-xs mt-0.5" style={{ color: featured ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.35)" }}>
+            {sub}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DealPipelineEmpty({ accent, gradient, glow }: { accent: string; gradient: string; glow: string }) {
+  return (
+    <div
+      className="rounded-2xl p-8 flex flex-col items-center gap-3"
+      style={{ background: "rgba(255,255,255,0.02)", border: "1px dashed rgba(255,255,255,0.08)" }}
+    >
+      <Handshake className="w-8 h-8 text-white/15" />
+      <p className="text-white/35 text-sm">Aucun deal en cours</p>
+      <button
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-white"
+        style={{ background: gradient, boxShadow: `0 4px 12px ${glow}` }}
+      >
+        <Plus className="w-3.5 h-3.5" />
+        Ajouter un deal
+      </button>
+    </div>
+  );
+}
+
+const PIPELINE_STAGES = [
+  { id: "lead", label: "Lead", color: "rgba(255,255,255,0.25)" },
+  { id: "qualified", label: "Qualifié", color: "#06B6D4" },
+  { id: "proposal", label: "Proposition", color: "#8B5CF6" },
+  { id: "negotiation", label: "Négo", color: "#F59E0B" },
+  { id: "won", label: "Gagné", color: "#10B981" },
+];
 
 export default function BusinessPage() {
-  const [activeBiz, setActiveBiz] = useState("1");
-  const biz = businesses.find((b) => b.id === activeBiz) || businesses[0];
-  const margin = biz.revenue_mtd - biz.expenses;
-  const marginPct = biz.revenue_mtd > 0 ? Math.round((margin / biz.revenue_mtd) * 100) : 0;
-  const stages = ["lead", "qualified", "proposal", "negotiation", "won"];
+  const { activeBusiness } = useBusiness();
+  const businessDeals = deals.filter(d => d.business_id === activeBusiness.id);
+
+  const totalPipeline = businessDeals.reduce((acc, d) => acc + d.value, 0);
+  const wonDeals = businessDeals.filter(d => d.stage === "won");
+  const wonValue = wonDeals.reduce((acc, d) => acc + d.value, 0);
+
+  const fmt = (n: number) =>
+    n >= 1000 ? `${(n / 1000).toFixed(1)}k€` : `${n}€`;
 
   return (
-    <motion.div variants={stagger} initial="hidden" animate="visible" className="space-y-5 max-w-7xl mx-auto">
-      {/* Tabs */}
-      <motion.div variants={fadeUp} className="flex items-center gap-1 p-1 rounded-2xl glass-card">
-        {businesses.map((b) => (
-          <button key={b.id} onClick={() => setActiveBiz(b.id)} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${activeBiz === b.id ? "bg-white/60 text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-            {b.name}
-          </button>
-        ))}
-      </motion.div>
-
-      {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: "Revenue MTD", value: biz.revenue_mtd, prefix: "€", color: "text-hugoos-green", trend: "+18%" },
-          { label: "MRR", value: biz.mrr, prefix: "€", color: "text-hugoos-cyan", trend: "+7%" },
-          { label: "Dépenses", value: biz.expenses, prefix: "€", color: "text-hugoos-red/80", trend: "+3%" },
-          { label: "Marge", value: marginPct, suffix: "%", color: marginPct > 50 ? "text-hugoos-green" : "text-hugoos-orange", trend: `€${margin.toLocaleString()}` },
-        ].map((kpi, i) => (
-          <motion.div key={i} variants={fadeUp} className="glass-card p-4">
-            <p className="text-xs text-muted-foreground mb-1">{kpi.label}</p>
-            <p className={`font-mono-data text-2xl font-bold ${kpi.color}`}>
-              {kpi.prefix}<AnimatedNumber value={kpi.value} />{kpi.suffix}
-            </p>
-            <div className="flex items-center gap-1 mt-1.5">
-              <TrendingUp className="w-3 h-3 text-hugoos-green" />
-              <span className="text-[11px] text-hugoos-green">{kpi.trend}</span>
+    <div className="space-y-6 max-w-5xl">
+      {/* Business header */}
+      <div
+        className="rounded-2xl p-5 flex items-center justify-between"
+        style={{
+          background: `linear-gradient(135deg, ${activeBusiness.accent}15, transparent)`,
+          border: `1px solid ${activeBusiness.accent}30`,
+        }}
+      >
+        <div className="flex items-center gap-4">
+          <div
+            className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl"
+            style={{ background: activeBusiness.gradient, boxShadow: `0 4px 16px ${activeBusiness.glow}` }}
+          >
+            {activeBusiness.emoji}
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-white/90">{activeBusiness.label}</h1>
+            <p className="text-sm text-white/40 mt-0.5">Vue d'ensemble · Mars 2026</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {/* Business switcher compact */}
+          {BUSINESSES.filter(b => !b.disabled).map(b => (
+            <div
+              key={b.id}
+              className="text-lg p-2 rounded-xl transition-all"
+              style={{
+                background: b.id === activeBusiness.id ? `${b.accent}25` : "rgba(255,255,255,0.04)",
+                opacity: b.id === activeBusiness.id ? 1 : 0.5,
+              }}
+            >
+              {b.emoji}
             </div>
-          </motion.div>
-        ))}
+          ))}
+        </div>
       </div>
 
-      {/* Revenue Chart */}
-      <motion.div variants={fadeUp} className="glass-card p-5">
-        <h2 className="text-base font-semibold text-foreground mb-4">Évolution Revenue — 6 mois</h2>
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={revenueData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 15% 90%)" />
-              <XAxis dataKey="month" stroke="hsl(220 10% 56%)" fontSize={12} />
-              <YAxis stroke="hsl(220 10% 56%)" fontSize={12} tickFormatter={(v) => `€${(v/1000).toFixed(0)}k`} />
-              <Tooltip
-                contentStyle={{ background: "rgba(255,255,255,0.9)", backdropFilter: "blur(12px)", border: "1px solid hsl(220 15% 88%)", borderRadius: "12px", color: "hsl(220 20% 10%)", fontSize: "12px", boxShadow: "0 4px 16px rgba(0,0,0,0.06)" }}
-                formatter={(value: number) => [`€${value.toLocaleString()}`, undefined]}
-              />
-              <Bar dataKey="agence" fill="#6366F1" radius={[6, 6, 0, 0]} />
-              <Bar dataKey="saas" fill="#06B6D4" radius={[6, 6, 0, 0]} />
-              <Bar dataKey="contenu" fill="#EC4899" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </motion.div>
+      {/* KPI grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <MetricCard
+          icon={<DollarSign className="w-4 h-4" />}
+          label="CA du mois"
+          value="—"
+          sub="Aucune donnée"
+          accent={activeBusiness.accent}
+          gradient={activeBusiness.gradient}
+          glow={activeBusiness.glow}
+          featured
+        />
+        <MetricCard
+          icon={<TrendingUp className="w-4 h-4" />}
+          label="MRR"
+          value="—"
+          sub="Récurrent mensuel"
+          accent={activeBusiness.accent}
+          gradient={activeBusiness.gradient}
+          glow={activeBusiness.glow}
+        />
+        <MetricCard
+          icon={<Handshake className="w-4 h-4" />}
+          label="Deals actifs"
+          value={businessDeals.filter(d => d.stage !== "won" && d.stage !== "lost").length.toString() || "0"}
+          sub="En cours"
+          accent={activeBusiness.accent}
+          gradient={activeBusiness.gradient}
+          glow={activeBusiness.glow}
+        />
+        <MetricCard
+          icon={<BarChart3 className="w-4 h-4" />}
+          label="Pipeline"
+          value={totalPipeline > 0 ? fmt(totalPipeline) : "—"}
+          sub="Valeur totale"
+          accent={activeBusiness.accent}
+          gradient={activeBusiness.gradient}
+          glow={activeBusiness.glow}
+        />
+      </div>
 
       {/* Pipeline */}
-      <motion.div variants={fadeUp} className="glass-card p-5">
-        <h2 className="text-base font-semibold text-foreground mb-4">Pipeline Deals</h2>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          {stages.map((stage) => {
-            const stageDeals = deals.filter((d) => d.stage === stage);
-            return (
-              <div key={stage} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{stageLabels[stage]}</h3>
-                  <span className="text-[10px] text-muted-foreground">{stageDeals.length}</span>
-                </div>
-                <div className="space-y-2">
-                  {stageDeals.map((deal) => (
-                    <div key={deal.id} className={`p-3 rounded-xl border-l-2 ${stageColors[stage]} hover:bg-black/[0.02] transition-colors cursor-pointer bg-white/30`}>
-                      <p className="text-sm font-medium text-foreground">{deal.title}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{deal.client}</p>
-                      <p className="font-mono-data text-sm font-bold text-foreground mt-1.5">€{deal.value?.toLocaleString()}</p>
-                    </div>
-                  ))}
-                  {stageDeals.length === 0 && (
-                    <div className="p-3 rounded-xl border border-dashed border-border text-center">
-                      <p className="text-xs text-muted-foreground">Aucun deal</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Layers className="w-4 h-4" style={{ color: activeBusiness.accent }} />
+            <h2 className="text-sm font-semibold text-white/80">Pipeline deals</h2>
+          </div>
+          <button
+            className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors"
+          >
+            <Plus className="w-3 h-3" />
+            Deal
+          </button>
         </div>
-      </motion.div>
-    </motion.div>
+
+        {businessDeals.length === 0 ? (
+          <DealPipelineEmpty
+            accent={activeBusiness.accent}
+            gradient={activeBusiness.gradient}
+            glow={activeBusiness.glow}
+          />
+        ) : (
+          <div className="grid grid-cols-5 gap-2">
+            {PIPELINE_STAGES.map(stage => {
+              const stageDeal = businessDeals.filter(d => d.stage === stage.id);
+              return (
+                <div key={stage.id} className="space-y-2">
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: stage.color }}>
+                      {stage.label}
+                    </span>
+                    <span className="text-[10px] text-white/30">{stageDeal.length}</span>
+                  </div>
+                  <div className="space-y-1.5 min-h-[80px]">
+                    {stageDeal.map(deal => (
+                      <div
+                        key={deal.id}
+                        className="rounded-xl p-2.5 cursor-pointer hover:scale-[1.02] transition-all"
+                        style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}
+                      >
+                        <p className="text-xs font-medium text-white/80 leading-tight truncate">{deal.title}</p>
+                        <p className="text-[10px] text-white/35 mt-0.5">{deal.client}</p>
+                        <p className="text-xs font-bold mt-1.5" style={{ color: stage.color }}>
+                          {fmt(deal.value)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
