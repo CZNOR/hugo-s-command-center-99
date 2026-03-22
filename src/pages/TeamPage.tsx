@@ -1,67 +1,89 @@
-import { motion } from "framer-motion";
-import { Users, Bot } from "lucide-react";
-import { teamMembers, aiAgents } from "@/lib/mock-data";
-import { useState } from "react";
-
-import { stagger, fadeUp } from "@/lib/animations";
+import { Users, Plus, Mail, UserCheck, UserX } from "lucide-react";
+import { useBusiness } from "@/lib/businessContext";
 
 export default function TeamPage() {
-  const [tab, setTab] = useState<"humans" | "ai">("humans");
+  const { activeBusiness } = useBusiness();
+
+  const roles = ["Tous", "Freelance", "Salarié", "Partenaire"];
 
   return (
-    <motion.div variants={stagger} initial="hidden" animate="visible" className="space-y-5 max-w-5xl mx-auto">
-      <motion.div variants={fadeUp} className="flex items-center gap-3">
-        <h2 className="text-xl font-bold text-foreground">Équipe</h2>
-      </motion.div>
-
-      <motion.div variants={fadeUp} className="flex gap-1 p-1 rounded-2xl glass-card">
-        <button onClick={() => setTab("humans")} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${tab === "humans" ? "bg-white/60 text-foreground shadow-sm" : "text-muted-foreground"}`}>
-          <Users className="w-4 h-4" /> Humains
-        </button>
-        <button onClick={() => setTab("ai")} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${tab === "ai" ? "bg-white/60 text-foreground shadow-sm" : "text-muted-foreground"}`}>
-          <Bot className="w-4 h-4" /> Agents IA
-        </button>
-      </motion.div>
-
-      {tab === "humans" ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {teamMembers.map((m) => (
-            <motion.div key={m.id} variants={fadeUp} className="glass-card-hover p-5">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-hugoos-green/10 flex items-center justify-center text-sm font-bold text-hugoos-green">{m.avatar}</div>
-                <div>
-                  <p className="font-semibold text-foreground">{m.name}</p>
-                  <p className="text-xs text-muted-foreground">{m.role}</p>
-                </div>
-                <div className="ml-auto flex items-center gap-2">
-                  <span className="chip-green text-[10px]">{m.status}</span>
-                  <span className="text-xs text-muted-foreground font-mono-data">{m.tasks_assigned} tâches</span>
-                </div>
-              </div>
-            </motion.div>
-          ))}
+    <div className="p-4 lg:p-6 min-h-screen">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-white/90">Équipe</h1>
+          <p className="text-sm text-white/40 mt-1">Vos collaborateurs et partenaires</p>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {aiAgents.map((agent) => (
-            <motion.div key={agent.id} variants={fadeUp} className="glass-card-hover p-5">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-xl bg-hugoos-cyan/10 flex items-center justify-center text-sm font-bold text-hugoos-cyan">{agent.avatar}</div>
-                <div>
-                  <p className="font-semibold text-foreground">{agent.name}</p>
-                  <p className="text-xs text-muted-foreground">{agent.role}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="chip-cyan text-[10px]">{agent.model}</span>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full ${agent.status === "active" ? "bg-hugoos-green/10 text-hugoos-green" : agent.status === "paused" ? "bg-hugoos-orange/10 text-hugoos-orange" : "bg-muted text-muted-foreground"}`}>
-                  {agent.status === "active" ? "Actif" : agent.status === "paused" ? "Pause" : "En dev"}
-                </span>
-              </div>
-            </motion.div>
-          ))}
+        <button
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
+          style={{ background: activeBusiness.gradient, boxShadow: `0 4px 12px ${activeBusiness.glow}` }}
+        >
+          <Plus className="w-4 h-4" />
+          Inviter
+        </button>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-3 mb-6">
+        {[
+          { icon: <Users className="w-4 h-4" />, label: "Membres", value: "0" },
+          { icon: <UserCheck className="w-4 h-4" />, label: "Actifs", value: "0" },
+          { icon: <UserX className="w-4 h-4" />, label: "En attente", value: "0" },
+        ].map((s) => (
+          <div
+            key={s.label}
+            className="rounded-2xl p-4"
+            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
+          >
+            <div className="flex items-center gap-2 mb-2" style={{ color: activeBusiness.accent }}>
+              {s.icon}
+            </div>
+            <p className="text-2xl font-bold text-white/90">{s.value}</p>
+            <p className="text-xs text-white/40 mt-0.5">{s.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Filter tabs */}
+      <div className="flex gap-2 mb-5 flex-wrap">
+        {roles.map((r, i) => (
+          <button
+            key={r}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium border transition-all"
+            style={{
+              background: i === 0 ? `${activeBusiness.accent}22` : "rgba(255,255,255,0.04)",
+              borderColor: i === 0 ? activeBusiness.accent : "rgba(255,255,255,0.08)",
+              color: i === 0 ? activeBusiness.accent : "rgba(248,250,252,0.5)",
+            }}
+          >
+            {r}
+          </button>
+        ))}
+      </div>
+
+      {/* Empty state */}
+      <div
+        className="rounded-2xl flex flex-col items-center justify-center py-20 gap-4"
+        style={{ background: "rgba(255,255,255,0.02)", border: "1px dashed rgba(255,255,255,0.08)" }}
+      >
+        <div
+          className="w-16 h-16 rounded-2xl flex items-center justify-center"
+          style={{ background: `${activeBusiness.accent}15`, border: `1px solid ${activeBusiness.accent}30` }}
+        >
+          <Users className="w-8 h-8" style={{ color: activeBusiness.accent }} />
         </div>
-      )}
-    </motion.div>
+        <div className="text-center">
+          <p className="text-white/60 font-medium">Aucun membre d'équipe</p>
+          <p className="text-white/30 text-sm mt-1">Invitez vos collaborateurs pour commencer</p>
+        </div>
+        <button
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white mt-1"
+          style={{ background: activeBusiness.gradient, boxShadow: `0 4px 12px ${activeBusiness.glow}` }}
+        >
+          <Mail className="w-4 h-4" />
+          Envoyer une invitation
+        </button>
+      </div>
+    </div>
   );
 }
