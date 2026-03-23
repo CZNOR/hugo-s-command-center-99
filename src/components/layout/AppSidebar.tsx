@@ -1,6 +1,6 @@
 import { useLocation, Link } from "react-router-dom";
 import {
-  Zap, Calendar, CheckSquare, LayoutDashboard, TrendingUp,
+  Calendar, CheckSquare, LayoutDashboard, TrendingUp,
   Phone, Mic, DollarSign, Edit2, Percent, Users, Settings, Flame,
 } from "lucide-react";
 import { useBusiness, type BusinessId } from "@/lib/businessContext";
@@ -15,9 +15,9 @@ interface NavItem {
 
 // ─── Navigation config ────────────────────────────────────────
 const TOP_ITEMS: NavItem[] = [
-  { path: "/",       label: "Command Center", icon: Zap         },
-  { path: "/agenda", label: "Agenda",         icon: Calendar    },
-  { path: "/tasks",  label: "Tâches",         icon: CheckSquare },
+  { path: "/",       label: "Command Center", icon: LayoutDashboard },
+  { path: "/agenda", label: "Agenda",         icon: Calendar        },
+  { path: "/tasks",  label: "Tâches",         icon: CheckSquare     },
 ];
 
 const COACHING_ITEMS: NavItem[] = [
@@ -43,17 +43,14 @@ const BOTTOM_ITEMS: NavItem[] = [
 ];
 
 // ─── Style constants ──────────────────────────────────────────
-const COACHING_ACCENT = "#7c3aed";
+const COACHING_ACCENT   = "#7c3aed";
 const COACHING_ACTIVE_BG = "rgba(139,92,246,0.15)";
-const CASINO_ACCENT = "#00cc44";
-const CASINO_ACTIVE_BG = "rgba(0,204,68,0.15)";
+const CASINO_ACCENT     = "#00cc44";
+const CASINO_ACTIVE_BG  = "rgba(0,204,68,0.15)";
 
 // ─── Nav link ─────────────────────────────────────────────────
 function NavLink({
-  item,
-  accentColor,
-  activeBg,
-  onClick,
+  item, accentColor, activeBg, onClick,
 }: {
   item: NavItem;
   accentColor: string;
@@ -70,19 +67,19 @@ function NavLink({
     <Link
       to={item.path}
       onClick={onClick}
-      className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150"
+      className="flex items-center gap-3 py-2 rounded-lg text-sm transition-all duration-150"
       style={
         active
           ? {
               background: activeBg,
               color: "rgba(255,255,255,0.9)",
               borderLeft: `2px solid ${accentColor}`,
-              paddingLeft: "10px", // compensate for border
+              paddingLeft: 10,
             }
           : {
               color: "rgba(255,255,255,0.4)",
               borderLeft: "2px solid transparent",
-              paddingLeft: "10px",
+              paddingLeft: 10,
             }
       }
       onMouseEnter={e => {
@@ -92,14 +89,7 @@ function NavLink({
         if (!active) (e.currentTarget as HTMLElement).style.background = "transparent";
       }}
     >
-      <item.icon
-        style={{
-          width: 16,
-          height: 16,
-          flexShrink: 0,
-          color: active ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.4)",
-        }}
-      />
+      <item.icon style={{ width: 16, height: 16, flexShrink: 0, color: active ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.4)" }} />
       <span className="font-medium">{item.label}</span>
     </Link>
   );
@@ -120,7 +110,7 @@ interface AppSidebarProps {
 export default function AppSidebar({ open, onClose }: AppSidebarProps) {
   const { activeBusiness, setActiveBusiness } = useBusiness();
   const g = gamificationProfile;
-  const isCoaching = activeBusiness.id === "coaching";
+  const isCoaching  = activeBusiness.id === "coaching";
   const accentColor = isCoaching ? COACHING_ACCENT : CASINO_ACCENT;
   const activeBg    = isCoaching ? COACHING_ACTIVE_BG : CASINO_ACTIVE_BG;
   const contextItems = isCoaching ? COACHING_ITEMS : CASINO_ITEMS;
@@ -138,35 +128,17 @@ export default function AppSidebar({ open, onClose }: AppSidebarProps) {
       )}
 
       <aside
-        className={`fixed top-0 left-0 z-50 h-full flex flex-col transition-transform duration-300 lg:translate-x-0 lg:static lg:z-auto ${open ? "translate-x-0" : "-translate-x-full"}`}
+        className={`fixed left-0 z-50 flex flex-col transition-transform duration-300 lg:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}
         style={{
           width: 220,
+          top: 56,
+          height: "calc(100vh - 56px)",
           background: "#08080f",
           borderRight: "1px solid rgba(255,255,255,0.06)",
         }}
       >
-
-        {/* Logo */}
-        <div className="flex items-center gap-2.5 px-4 py-5">
-          <div
-            className="w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: "linear-gradient(135deg, #7c3aed, #a855f7)", boxShadow: "0 0 12px rgba(139,92,246,0.5)" }}
-          >
-            <Zap className="w-3.5 h-3.5 text-white" />
-          </div>
-          <span className="text-sm font-bold text-white tracking-tight">HUGOOS</span>
-          <span
-            className="ml-auto text-[10px] px-1.5 py-0.5 rounded-md font-bold"
-            style={{ background: "rgba(139,92,246,0.2)", color: "#a855f7", border: "1px solid rgba(139,92,246,0.3)" }}
-          >
-            v1.0
-          </span>
-        </div>
-
-        <Sep />
-
         {/* ── Scroll zone ── */}
-        <div className="flex-1 overflow-y-auto px-3 space-y-0.5">
+        <div className="flex-1 overflow-y-auto px-3 pt-3 space-y-0.5">
 
           {/* TOP: always visible */}
           {TOP_ITEMS.map(item => (
@@ -180,26 +152,24 @@ export default function AppSidebar({ open, onClose }: AppSidebarProps) {
             className="flex rounded-lg overflow-hidden"
             style={{ border: "1px solid rgba(255,255,255,0.08)" }}
           >
-            {/* COACHING */}
             <button
               onClick={() => setActiveBusiness("coaching" as BusinessId)}
               className="flex-1 py-2 text-xs font-bold tracking-wide transition-all duration-150"
               style={
                 isCoaching
                   ? { background: COACHING_ACCENT, color: "#fff" }
-                  : { background: "transparent", color: COACHING_ACCENT, border: `1px solid ${COACHING_ACCENT}40` }
+                  : { background: "transparent", color: COACHING_ACCENT }
               }
             >
               COACHING
             </button>
-            {/* CASINO */}
             <button
               onClick={() => setActiveBusiness("casino" as BusinessId)}
               className="flex-1 py-2 text-xs font-bold tracking-wide transition-all duration-150"
               style={
                 !isCoaching
                   ? { background: CASINO_ACCENT, color: "#000" }
-                  : { background: "transparent", color: CASINO_ACCENT, border: `1px solid ${CASINO_ACCENT}40` }
+                  : { background: "transparent", color: CASINO_ACCENT }
               }
             >
               CASINO
