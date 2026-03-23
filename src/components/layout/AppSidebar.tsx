@@ -1,19 +1,49 @@
 import { useLocation, Link } from "react-router-dom";
-import { Zap, Bot, Briefcase, Smartphone, CheckSquare, Calendar, Users, Target, Trophy, Flame, TrendingUp, DollarSign } from "lucide-react";
+import { Zap, Bot, Briefcase, Smartphone, CheckSquare, Calendar, Users, Target, Trophy, Flame, TrendingUp, DollarSign, LayoutDashboard, Instagram, Link2, Phone, PhoneCall, CreditCard, UserCheck, ChevronDown, ChevronRight } from "lucide-react";
 import { gamificationProfile } from "@/lib/mock-data";
+import { useState } from "react";
 
-const navItems = [
-  { path: "/", label: "Command Center", icon: Zap },
-  { path: "/agents", label: "Agents IA", icon: Bot },
-  { path: "/business", label: "Business", icon: Briefcase },
-  { path: "/content", label: "Contenu", icon: Smartphone },
-  { path: "/ventes", label: "Ventes Coaching", icon: TrendingUp },
-  { path: "/finances", label: "Finances", icon: DollarSign },
-  { path: "/tasks", label: "Tâches", icon: CheckSquare },
-  { path: "/agenda", label: "Agenda", icon: Calendar },
-  { path: "/team", label: "Équipe", icon: Users },
-  { path: "/goals", label: "Objectifs", icon: Target },
-  { path: "/gamification", label: "Progression", icon: Trophy },
+interface NavItem {
+  path: string;
+  label: string;
+  icon: React.ElementType;
+}
+
+interface NavSection {
+  label?: string;
+  items: NavItem[];
+  collapsible?: boolean;
+}
+
+const navSections: NavSection[] = [
+  {
+    items: [
+      { path: "/", label: "Command Center", icon: Zap },
+      { path: "/agents", label: "Agents IA", icon: Bot },
+      { path: "/business", label: "Business", icon: Briefcase },
+      { path: "/content", label: "Contenu", icon: Smartphone },
+      { path: "/ventes", label: "Ventes", icon: TrendingUp },
+      { path: "/finances", label: "Finances", icon: DollarSign },
+      { path: "/tasks", label: "Tâches", icon: CheckSquare },
+      { path: "/agenda", label: "Agenda", icon: Calendar },
+      { path: "/team", label: "Équipe", icon: Users },
+      { path: "/goals", label: "Objectifs", icon: Target },
+      { path: "/gamification", label: "Progression", icon: Trophy },
+    ],
+  },
+  {
+    label: "Coaching",
+    collapsible: true,
+    items: [
+      { path: "/coaching", label: "Dashboard", icon: LayoutDashboard },
+      { path: "/coaching/social", label: "Réseaux sociaux", icon: Instagram },
+      { path: "/coaching/beacons", label: "Beacons", icon: Link2 },
+      { path: "/coaching/leads", label: "Leads", icon: Phone },
+      { path: "/coaching/appels", label: "Appels", icon: PhoneCall },
+      { path: "/coaching/paiements", label: "Paiements", icon: CreditCard },
+      { path: "/coaching/equipe", label: "Équipe", icon: UserCheck },
+    ],
+  },
 ];
 
 interface AppSidebarProps {
@@ -25,6 +55,9 @@ export default function AppSidebar({ open, onClose }: AppSidebarProps) {
   const location = useLocation();
   const g = gamificationProfile;
   const xpPercent = (g.total_xp / g.xp_for_next_level) * 100;
+  const [coachingOpen, setCoachingOpen] = useState(
+    location.pathname.startsWith("/coaching")
+  );
 
   return (
     <>
@@ -53,8 +86,9 @@ export default function AppSidebar({ open, onClose }: AppSidebarProps) {
         <div className="absolute top-0 left-0 right-0 h-32 pointer-events-none" style={{ background: "radial-gradient(ellipse at 50% -20%, rgba(139,92,246,0.15) 0%, transparent 70%)" }} />
 
         {/* Nav */}
-        <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto relative z-10">
-          {navItems.map((item) => {
+        <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto relative z-10 pb-4">
+          {/* Main nav items */}
+          {navSections[0].items.map((item) => {
             const active = location.pathname === item.path;
             return (
               <Link
@@ -78,6 +112,50 @@ export default function AppSidebar({ open, onClose }: AppSidebarProps) {
               </Link>
             );
           })}
+
+          {/* Coaching section */}
+          <div className="pt-2">
+            <button
+              onClick={() => setCoachingOpen(!coachingOpen)}
+              className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-left transition-all"
+              style={{ color: "rgba(255,255,255,0.3)" }}
+            >
+              <span className="text-[10px] font-bold uppercase tracking-widest flex-1">Coaching</span>
+              {coachingOpen
+                ? <ChevronDown className="w-3 h-3" />
+                : <ChevronRight className="w-3 h-3" />
+              }
+            </button>
+
+            {coachingOpen && (
+              <div className="mt-0.5 space-y-0.5">
+                {navSections[1].items.map((item) => {
+                  const active = location.pathname === item.path;
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      onClick={onClose}
+                      className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200 ml-1"
+                      style={active ? {
+                        background: "linear-gradient(135deg, rgba(124,58,237,0.25), rgba(168,85,247,0.15))",
+                        color: "#c4b5fd",
+                        boxShadow: "0 0 12px rgba(139,92,246,0.15), inset 0 1px 0 rgba(255,255,255,0.05)",
+                        border: "1px solid rgba(139,92,246,0.3)",
+                      } : {
+                        color: "rgba(255,255,255,0.4)",
+                        border: "1px solid transparent",
+                      }}
+                    >
+                      <item.icon className="w-[16px] h-[16px] flex-shrink-0" />
+                      <span className="text-sm">{item.label}</span>
+                      {active && <div className="ml-auto w-1.5 h-1.5 rounded-full" style={{ background: "#a855f7", boxShadow: "0 0 6px #a855f7" }} />}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </nav>
 
         {/* Bottom: XP + Streak */}

@@ -15,6 +15,13 @@ import GoalsPage from "@/pages/GoalsPage";
 import GamificationPage from "@/pages/GamificationPage";
 import VentesPage from "@/pages/VentesPage";
 import FinancesPage from "@/pages/FinancesPage";
+import CoachingDashboard from "@/pages/CoachingDashboard";
+import SocialPage from "@/pages/SocialPage";
+import BeaconsPage from "@/pages/BeaconsPage";
+import LeadsPage from "@/pages/LeadsPage";
+import AppelsPage from "@/pages/AppelsPage";
+import PaiementsPage from "@/pages/PaiementsPage";
+import EquipePage from "@/pages/EquipePage";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -38,6 +45,14 @@ const App = () => (
             <Route path="/gamification" element={<GamificationPage />} />
             <Route path="/ventes" element={<VentesPage />} />
             <Route path="/finances" element={<FinancesPage />} />
+            {/* Coaching */}
+            <Route path="/coaching" element={<CoachingDashboard />} />
+            <Route path="/coaching/social" element={<SocialPage />} />
+            <Route path="/coaching/beacons" element={<BeaconsPage />} />
+            <Route path="/coaching/leads" element={<LeadsPage />} />
+            <Route path="/coaching/appels" element={<AppelsPage />} />
+            <Route path="/coaching/paiements" element={<PaiementsPage />} />
+            <Route path="/coaching/equipe" element={<EquipePage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

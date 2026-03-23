@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Calendar, RefreshCw, Plus, X, Sparkles, ChevronDown } from "lucide-react";
+import { Calendar, RefreshCw, Plus, X, Sparkles, ChevronDown, LayoutGrid, CalendarDays, Target } from "lucide-react";
 import { useBusiness } from "@/lib/businessContext";
 const supabase = { functions: { invoke: async (name: string, opts?: { body?: object }) => { const r = await fetch(`https://blrafgywziqparlbbznv.supabase.co/functions/v1/${name}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(opts?.body ?? {}) }); return { data: await r.json(), error: r.ok ? null : new Error(r.statusText) }; } } };
 
@@ -261,6 +261,51 @@ function Section({ title, items, emptyMsg, onStatusChange }: {
   );
 }
 
+const OBJECTIF_MENSUEL = 20;
+
+// ─── Week view component ─────────────────────────────────────
+function WeekView({ items, onStatusChange }: { items: ContentItem[]; onStatusChange?: (id: string, statut: string) => void }) {
+  const now = new Date();
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(now);
+    d.setDate(now.getDate() - now.getDay() + 1 + i);
+    return d;
+  });
+
+  return (
+    <div className="grid grid-cols-7 gap-2">
+      {days.map((day) => {
+        const key = day.toISOString().split("T")[0];
+        const dayItems = items.filter((i) => i.date === key);
+        const isToday = key === now.toISOString().split("T")[0];
+        return (
+          <div key={key} className="min-h-[120px] rounded-xl p-2" style={{
+            background: isToday ? "rgba(139,92,246,0.08)" : "rgba(255,255,255,0.02)",
+            border: isToday ? "1px solid rgba(139,92,246,0.3)" : "1px solid rgba(139,92,246,0.08)",
+          }}>
+            <p className="text-[10px] font-semibold mb-1 text-center" style={{ color: isToday ? "#a855f7" : "rgba(255,255,255,0.35)" }}>
+              {day.toLocaleDateString("fr-FR", { weekday: "short" }).toUpperCase()}
+            </p>
+            <p className="text-sm font-bold text-center mb-2" style={{ color: isToday ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.5)" }}>
+              {day.getDate()}
+            </p>
+            <div className="space-y-1">
+              {dayItems.map((item) => {
+                const color = STATUT_COLORS[item.statut] || "#6b7280";
+                return (
+                  <div key={item.id} className="text-[10px] leading-tight px-1.5 py-1 rounded-lg truncate" style={{ background: color + "18", color, border: `1px solid ${color}22` }}>
+                    {item.sujet || "Sans titre"}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── Main Page ──────────────────────────────────────────────
 export default function ContentPage() {
   const { activeBusiness } = useBusiness();
@@ -269,6 +314,7 @@ export default function ContentPage() {
   const [error, setError] = useState<string | null>(null);
   const [lastSync, setLastSync] = useState<Date>(new Date());
   const [showCreate, setShowCreate] = useState(false);
+  const [viewMode, setViewMode] = useState<"liste" | "semaine">("liste");
 
   const fetchContent = async () => {
     setLoading(true);
@@ -302,6 +348,13 @@ export default function ContentPage() {
 
   useEffect(() => { fetchContent(); }, []);
 
+  const now2 = new Date();
+  const publishedThisMonth = items.filter((i) => {
+    if (i.statut !== "Publié" || !i.date) return false;
+    const d = new Date(i.date + "T12:00:00");
+    return d.getMonth() === now2.getMonth() && d.getFullYear() === now2.getFullYear();
+  }).length;
+
   const today = new Date().toISOString().split("T")[0];
   const now = new Date();
   const weekEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7);
@@ -316,12 +369,29 @@ export default function ContentPage() {
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Contenu</h1>
           <p className="text-sm text-muted-foreground mt-1">Calendrier éditorial — sync Notion</p>
         </div>
         <div className="flex items-center gap-2">
+          {/* View toggle */}
+          <div className="flex rounded-xl overflow-hidden" style={{ border: "1px solid rgba(139,92,246,0.2)" }}>
+            <button
+              onClick={() => setViewMode("liste")}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-all"
+              style={viewMode === "liste" ? { background: "rgba(139,92,246,0.2)", color: "#c4b5fd" } : { background: "transparent", color: "rgba(255,255,255,0.4)" }}
+            >
+              <LayoutGrid className="w-3.5 h-3.5" /> Liste
+            </button>
+            <button
+              onClick={() => setViewMode("semaine")}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-all"
+              style={viewMode === "semaine" ? { background: "rgba(139,92,246,0.2)", color: "#c4b5fd" } : { background: "transparent", color: "rgba(255,255,255,0.4)" }}
+            >
+              <CalendarDays className="w-3.5 h-3.5" /> Semaine
+            </button>
+          </div>
           <button
             onClick={() => setShowCreate(true)}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity"
@@ -339,6 +409,34 @@ export default function ContentPage() {
           </button>
         </div>
       </div>
+
+      {/* Objectif mensuel */}
+      {!loading && (
+        <div className="p-4 rounded-xl" style={{ background: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.15)" }}>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Target className="w-4 h-4" style={{ color: "#a855f7" }} />
+              <span className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.7)" }}>
+                Objectif mensuel
+              </span>
+            </div>
+            <span className="text-sm font-bold" style={{ color: publishedThisMonth >= OBJECTIF_MENSUEL ? "#22c55e" : "#a855f7" }}>
+              {publishedThisMonth} / {OBJECTIF_MENSUEL} publiés
+            </span>
+          </div>
+          <div className="h-2 rounded-full" style={{ background: "rgba(255,255,255,0.06)" }}>
+            <div
+              className="h-full rounded-full transition-all duration-700"
+              style={{
+                width: `${Math.min((publishedThisMonth / OBJECTIF_MENSUEL) * 100, 100)}%`,
+                background: publishedThisMonth >= OBJECTIF_MENSUEL
+                  ? "#22c55e"
+                  : "linear-gradient(90deg, #7c3aed, #a855f7)",
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Error */}
       {error && (
@@ -382,7 +480,14 @@ export default function ContentPage() {
       )}
 
       {/* Content */}
-      {!loading && (
+      {!loading && viewMode === "semaine" && (
+        <div className="space-y-4">
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">📅 Vue semaine</h2>
+          <WeekView items={items} onStatusChange={handleStatusChange} />
+        </div>
+      )}
+
+      {!loading && viewMode === "liste" && (
         <div className="space-y-6">
           <Section title="🎬 À tourner aujourd'hui" items={todayItems} emptyMsg="Rien à tourner aujourd'hui" onStatusChange={handleStatusChange} />
           <Section title="✍️ Scripts & idées en cours" items={scriptItems} emptyMsg="Aucun script en attente" onStatusChange={handleStatusChange} />
