@@ -28,12 +28,10 @@ const INITIAL_TRANSACTIONS: Transaction[] = [
   { id: "10", label: "Microphone Shure SM7B", amount: 399, type: "expense", category: "Équipement", date: "2026-03-08" },
   { id: "11", label: "Loyer bureau partagé", amount: 280, type: "expense", category: "Charges fixes", date: "2026-03-01" },
   { id: "12", label: "Assurance pro", amount: 85, type: "expense", category: "Charges fixes", date: "2026-03-01" },
-  // Février
   { id: "13", label: "Coaching - Février", amount: 2100, type: "income", category: "Revenus coaching", date: "2026-02-28" },
   { id: "14", label: "Agence - Février", amount: 4200, type: "income", category: "Revenus agence", date: "2026-02-28" },
   { id: "15", label: "Charges fixes - Février", amount: 720, type: "expense", category: "Charges fixes", date: "2026-02-28" },
   { id: "16", label: "Logiciels - Février", amount: 180, type: "expense", category: "Logiciels", date: "2026-02-28" },
-  // Janvier
   { id: "17", label: "Coaching - Janvier", amount: 1600, type: "income", category: "Revenus coaching", date: "2026-01-31" },
   { id: "18", label: "Agence - Janvier", amount: 3800, type: "income", category: "Revenus agence", date: "2026-01-31" },
   { id: "19", label: "Charges fixes - Janvier", amount: 720, type: "expense", category: "Charges fixes", date: "2026-01-31" },
@@ -54,7 +52,7 @@ const MONTHS = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Se
 
 // ─── Mini bar chart ─────────────────────────────────────────
 function BarChart({ data }: { data: { label: string; income: number; expense: number }[] }) {
-  const maxVal = Math.max(...data.flatMap(d => [d.income, d.expense]));
+  const maxVal = Math.max(...data.flatMap(d => [d.income, d.expense]), 1);
   return (
     <div className="flex items-end justify-between gap-2 h-32 px-2">
       {data.map((d, i) => (
@@ -69,3 +67,194 @@ function BarChart({ data }: { data: { label: string; income: number; expense: nu
               }}
             />
             <div
+              className="flex-1 rounded-t-sm transition-all duration-500"
+              style={{
+                height: `${(d.expense / maxVal) * 100}%`,
+                background: "linear-gradient(180deg, #f87171, #ef4444)",
+                minHeight: d.expense > 0 ? 4 : 0,
+              }}
+            />
+          </div>
+          <span className="text-[10px] text-muted-foreground">{d.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── KPI Card ───────────────────────────────────────────────
+function KpiCard({ label, value, sub, icon: Icon, color, trend }: {
+  label: string; value: string; sub?: string;
+  icon: ElementType; color: string; trend?: "up" | "down";
+}) {
+  return (
+    <div className="glass-card p-5 flex flex-col gap-2">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{label}</span>
+        <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: `${color}18` }}>
+          <Icon size={16} style={{ color }} />
+        </div>
+      </div>
+      <div className="flex items-end gap-2">
+        <span className="text-2xl font-bold text-foreground">{value}</span>
+        {trend && (
+          <span className={`text-xs font-medium flex items-center gap-0.5 ${trend === "up" ? "text-green-500" : "text-red-400"}`}>
+            {trend === "up" ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
+          </span>
+        )}
+      </div>
+      {sub && <span className="text-xs text-muted-foreground">{sub}</span>}
+    </div>
+  );
+}
+
+// ─── Main Component ─────────────────────────────────────────
+export default function FinancesPage() {
+  const { activeBusiness } = useBusiness();
+  const [transactions, setTransactions] = useState<Transaction[]>(INITIAL_TRANSACTIONS);
+  const [showForm, setShowForm] = useState(false);
+  const [filter, setFilter] = useState<"all" | "income" | "expense">("all");
+
+  // Compute KPIs
+  const marchTx = transactions.filter(t => t.date.startsWith("2026-03"));
+  const totalIncome = marchTx.filter(t => t.type === "income").reduce((s, t) => s + t.amount, 0);
+  const totalExpense = marchTx.filter(t => t.type === "expense").reduce((s, t) => s + t.amount, 0);
+  const margin = totalIncome - totalExpense;
+  const marginPct = totalIncome > 0 ? Math.round((margin / totalIncome) * 100) : 0;
+
+  // Monthly chart data
+  const chartData = [1, 2, 3].map(m => {
+    const month = `2026-0${m}`;
+    const inc = transactions.filter(t => t.date.startsWith(month) && t.type === "income").reduce((s, t) => s + t.amount, 0);
+    const exp = transactions.filter(t => t.date.startsWith(month) && t.type === "expense").reduce((s, t) => s + t.amount, 0);
+    return { label: MONTHS[m - 1], income: inc, expense: exp };
+  });
+
+  // Category breakdown for March
+  const categoryBreakdown = Object.entries(
+    marchTx.reduce((acc, t) => {
+      acc[t.category] = (acc[t.category] || 0) + t.amount;
+      return acc;
+    }, {} as Record<string, number>)
+  ).sort((a, b) => b[1] - a[1]);
+
+  const filteredTx = marchTx.filter(t => filter === "all" || t.type === filter);
+
+  const handleAddTransaction = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    const newTx: Transaction = {
+      id: Date.now().toString(),
+      label: fd.get("label") as string,
+      amount: Number(fd.get("amount")),
+      type: fd.get("type") as "income" | "expense",
+      category: fd.get("category") as TxCategory,
+      date: fd.get("date") as string,
+    };
+    if (newTx.label && newTx.amount > 0) {
+      setTransactions(prev => [newTx, ...prev]);
+      setShowForm(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6 max-w-6xl mx-auto">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Finances</h1>
+          <p className="text-sm text-muted-foreground mt-1">Suivi des revenus et dépenses — Mars 2026</p>
+        </div>
+        <button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity">
+          {showForm ? <X size={16} /> : <Plus size={16} />}
+          {showForm ? "Fermer" : "Transaction"}
+        </button>
+      </div>
+
+      {/* Add form */}
+      {showForm && (
+        <form onSubmit={handleAddTransaction} className="glass-card p-5 grid grid-cols-2 md:grid-cols-6 gap-3">
+          <input name="label" placeholder="Libellé" required className="col-span-2 px-3 py-2 rounded-xl bg-white/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+          <input name="amount" type="number" min="1" placeholder="Montant €" required className="px-3 py-2 rounded-xl bg-white/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+          <select name="type" className="px-3 py-2 rounded-xl bg-white/50 border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30">
+            <option value="income">Revenu</option>
+            <option value="expense">Dépense</option>
+          </select>
+          <select name="category" className="px-3 py-2 rounded-xl bg-white/50 border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30">
+            {Object.keys(CATEGORY_COLORS).map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <div className="flex gap-2">
+            <input name="date" type="date" defaultValue="2026-03-23" className="flex-1 px-3 py-2 rounded-xl bg-white/50 border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            <button type="submit" className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">OK</button>
+          </div>
+        </form>
+      )}
+
+      {/* KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <KpiCard label="Revenus" value={`${totalIncome.toLocaleString()} €`} icon={TrendingUp} color="#10b981" trend="up" sub="Mars 2026" />
+        <KpiCard label="Dépenses" value={`${totalExpense.toLocaleString()} €`} icon={TrendingDown} color="#ef4444" trend="down" sub="Mars 2026" />
+        <KpiCard label="Marge nette" value={`${margin.toLocaleString()} €`} icon={Wallet} color="#a855f7" sub={`${marginPct}% de marge`} />
+        <KpiCard label="Transactions" value={`${marchTx.length}`} icon={CreditCard} color="#6366f1" sub="ce mois" />
+      </div>
+
+      {/* Chart + Categories */}
+      <div className="grid md:grid-cols-2 gap-4">
+        <div className="glass-card p-5">
+          <h3 className="text-sm font-semibold text-foreground mb-4">Évolution trimestrielle</h3>
+          <BarChart data={chartData} />
+          <div className="flex items-center justify-center gap-6 mt-3">
+            <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: "#a855f7" }} /> Revenus</span>
+            <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: "#ef4444" }} /> Dépenses</span>
+          </div>
+        </div>
+        <div className="glass-card p-5">
+          <h3 className="text-sm font-semibold text-foreground mb-4">Répartition par catégorie</h3>
+          <div className="space-y-3">
+            {categoryBreakdown.map(([cat, amount]) => {
+              const pct = Math.round((amount / marchTx.reduce((s, t) => s + t.amount, 0)) * 100);
+              return (
+                <div key={cat} className="flex items-center gap-3">
+                  <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: CATEGORY_COLORS[cat as TxCategory] || "#94a3b8" }} />
+                  <span className="text-sm text-foreground flex-1 truncate">{cat}</span>
+                  <span className="text-sm font-semibold text-foreground">{amount.toLocaleString()} €</span>
+                  <span className="text-xs text-muted-foreground w-8 text-right">{pct}%</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Transaction list */}
+      <div className="glass-card p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-semibold text-foreground">Transactions — Mars 2026</h3>
+          <div className="flex gap-1">
+            {(["all", "income", "expense"] as const).map(f => (
+              <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${filter === f ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"}`}>
+                {f === "all" ? "Tout" : f === "income" ? "Revenus" : "Dépenses"}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="space-y-1">
+          {filteredTx.map(tx => (
+            <div key={tx.id} className="flex items-center gap-3 py-2.5 px-3 rounded-xl hover:bg-white/30 transition-colors">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${CATEGORY_COLORS[tx.category]}18` }}>
+                {tx.type === "income" ? <ArrowUpRight size={14} style={{ color: CATEGORY_COLORS[tx.category] }} /> : <ArrowDownRight size={14} style={{ color: CATEGORY_COLORS[tx.category] }} />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">{tx.label}</p>
+                <p className="text-xs text-muted-foreground">{tx.category} · {tx.date}</p>
+              </div>
+              <span className={`text-sm font-semibold ${tx.type === "income" ? "text-green-600" : "text-red-400"}`}>
+                {tx.type === "income" ? "+" : "-"}{tx.amount.toLocaleString()} €
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
