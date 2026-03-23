@@ -1,5 +1,5 @@
 import { useState, ElementType } from "react";
-import { TrendingUp, Users, Calendar, DollarSign, Plus, Phone, Mail, CheckCircle, Clock, X, ChevronRight, Target } from "lucide-react";
+import { TrendingUp, Users, Calendar, DollarSign, Plus, Phone, Mail, ChevronRight, Target, X, Trash2, Clock } from "lucide-react";
 import { useBusiness } from "@/lib/businessContext";
 
 // ─── Types ───────────────────────────────────────────────
@@ -63,6 +63,8 @@ const SESSION_TYPE_COLORS: Record<Session["type"], string> = {
   Stratégie: "#f59e0b",
 };
 
+const SESSION_TYPES: Session["type"][] = ["Discovery", "Coaching", "Suivi", "Stratégie"];
+
 // ─── Sub-components ───────────────────────────────────────
 
 function KpiCard({ label, value, sub, icon: Icon, color }: {
@@ -83,7 +85,9 @@ function KpiCard({ label, value, sub, icon: Icon, color }: {
   );
 }
 
-function PipelineColumn({ stage, leads, onMove }: { stage: Stage; leads: Lead[]; onMove: (id: string, to: Stage) => void }) {
+function PipelineColumn({ stage, leads, onMove, onDelete }: {
+  stage: Stage; leads: Lead[]; onMove: (id: string, to: Stage) => void; onDelete: (id: string) => void;
+}) {
   const sc = STAGE_COLORS[stage];
   const stageIdx = STAGES.indexOf(stage);
   return (
@@ -98,7 +102,16 @@ function PipelineColumn({ stage, leads, onMove }: { stage: Stage; leads: Lead[];
           <div key={lead.id} className="glass-card p-3 space-y-2 group">
             <div className="flex items-start justify-between">
               <p className="text-sm font-medium text-foreground">{lead.name}</p>
-              <span className="text-xs font-bold" style={{ color: sc.text }}>{lead.value.toLocaleString()} €</span>
+              <div className="flex items-center gap-1">
+                <span className="text-xs font-bold" style={{ color: sc.text }}>{lead.value.toLocaleString()} €</span>
+                <button
+                  onClick={() => onDelete(lead.id)}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-red-100 text-red-400 hover:text-red-600"
+                  title="Supprimer"
+                >
+                  <Trash2 size={12} />
+                </button>
+              </div>
             </div>
             <p className="text-xs text-muted-foreground line-clamp-1">{lead.notes}</p>
             {lead.nextAction && (
@@ -119,41 +132,168 @@ function PipelineColumn({ stage, leads, onMove }: { stage: Stage; leads: Lead[];
   );
 }
 
+// ─── Modals ──────────────────────────────────────────────
+
+function LeadModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (lead: Lead) => void }) {
+  const [form, setForm] = useState({ name: "", email: "", phone: "", value: "", notes: "", stage: "Prospect" as Stage });
+
+  const handleSubmit = () => {
+    if (!form.name.trim() || !form.email.trim()) return;
+    onConfirm({
+      id: Date.now().toString(),
+      name: form.name,
+      email: form.email,
+      phone: form.phone || undefined,
+      stage: form.stage,
+      value: Number(form.value) || 0,
+      notes: form.notes,
+      date: new Date().toISOString().slice(0, 10),
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="glass-card w-full max-w-lg p-6 space-y-4 shadow-2xl">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-bold text-foreground">Nouveau lead</h3>
+          <button onClick={onClose} className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/30 transition-colors"><X size={18} /></button>
+        </div>
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Nom *</label>
+            <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Nom complet" className="w-full px-3 py-2.5 rounded-xl bg-white/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Email *</label>
+              <input value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} type="email" placeholder="email@exemple.fr" className="w-full px-3 py-2.5 rounded-xl bg-white/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Téléphone</label>
+              <input value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} placeholder="06 12 34 56 78" className="w-full px-3 py-2.5 rounded-xl bg-white/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Valeur (€)</label>
+              <input value={form.value} onChange={e => setForm(p => ({ ...p, value: e.target.value }))} type="number" min="0" placeholder="0" className="w-full px-3 py-2.5 rounded-xl bg-white/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Stage</label>
+              <select value={form.stage} onChange={e => setForm(p => ({ ...p, stage: e.target.value as Stage }))} className="w-full px-3 py-2.5 rounded-xl bg-white/50 border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30">
+                {STAGES.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Notes</label>
+            <textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} placeholder="Contexte, besoins..." rows={2} className="w-full px-3 py-2.5 rounded-xl bg-white/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none" />
+          </div>
+        </div>
+        <div className="flex gap-3 pt-2">
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl text-sm font-medium text-muted-foreground bg-white/40 border border-border hover:bg-white/60 transition-colors">Annuler</button>
+          <button onClick={handleSubmit} disabled={!form.name.trim() || !form.email.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50">Confirmer</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SessionModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (session: Session) => void }) {
+  const [form, setForm] = useState({ clientName: "", date: new Date().toISOString().slice(0, 10), time: "10:00", duration: "60", type: "Coaching" as Session["type"], notes: "" });
+
+  const handleSubmit = () => {
+    if (!form.clientName.trim()) return;
+    onConfirm({
+      id: Date.now().toString(),
+      clientName: form.clientName,
+      date: form.date,
+      time: form.time,
+      duration: Number(form.duration),
+      type: form.type,
+      status: "planned",
+      notes: form.notes || undefined,
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="glass-card w-full max-w-lg p-6 space-y-4 shadow-2xl">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-bold text-foreground">Nouvelle session</h3>
+          <button onClick={onClose} className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/30 transition-colors"><X size={18} /></button>
+        </div>
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Nom du client *</label>
+            <input value={form.clientName} onChange={e => setForm(p => ({ ...p, clientName: e.target.value }))} placeholder="Nom du client" className="w-full px-3 py-2.5 rounded-xl bg-white/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Date</label>
+              <input value={form.date} onChange={e => setForm(p => ({ ...p, date: e.target.value }))} type="date" className="w-full px-3 py-2.5 rounded-xl bg-white/50 border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Heure</label>
+              <input value={form.time} onChange={e => setForm(p => ({ ...p, time: e.target.value }))} type="time" className="w-full px-3 py-2.5 rounded-xl bg-white/50 border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Durée (min)</label>
+              <input value={form.duration} onChange={e => setForm(p => ({ ...p, duration: e.target.value }))} type="number" min="15" className="w-full px-3 py-2.5 rounded-xl bg-white/50 border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Type de session</label>
+            <select value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value as Session["type"] }))} className="w-full px-3 py-2.5 rounded-xl bg-white/50 border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30">
+              {SESSION_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Notes</label>
+            <textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} placeholder="Notes sur la session..." rows={2} className="w-full px-3 py-2.5 rounded-xl bg-white/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none" />
+          </div>
+        </div>
+        <div className="flex gap-3 pt-2">
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl text-sm font-medium text-muted-foreground bg-white/40 border border-border hover:bg-white/60 transition-colors">Annuler</button>
+          <button onClick={handleSubmit} disabled={!form.clientName.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50">Confirmer</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────
 
 export default function VentesPage() {
   const { activeBusiness } = useBusiness();
   const [leads, setLeads] = useState<Lead[]>(INITIAL_LEADS);
-  const [sessions] = useState<Session[]>(INITIAL_SESSIONS);
-  const [showForm, setShowForm] = useState(false);
+  const [sessions, setSessions] = useState<Session[]>(INITIAL_SESSIONS);
+  const [showLeadModal, setShowLeadModal] = useState(false);
+  const [showSessionModal, setShowSessionModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<"pipeline" | "planning">("pipeline");
 
   const moveLead = (id: string, to: Stage) => {
     setLeads(prev => prev.map(l => l.id === id ? { ...l, stage: to } : l));
+  };
+
+  const deleteLead = (id: string) => {
+    setLeads(prev => prev.filter(l => l.id !== id));
+  };
+
+  const addLead = (lead: Lead) => {
+    setLeads(prev => [lead, ...prev]);
+    setShowLeadModal(false);
+  };
+
+  const addSession = (session: Session) => {
+    setSessions(prev => [session, ...prev]);
+    setShowSessionModal(false);
   };
 
   const totalPipeline = leads.filter(l => l.stage !== "Perdu" && l.stage !== "Client").reduce((s, l) => s + l.value, 0);
   const activeClients = leads.filter(l => l.stage === "Client").length;
   const upcomingSessions = sessions.filter(s => s.status === "planned").length;
   const conversionRate = leads.length > 0 ? Math.round((leads.filter(l => l.stage === "Client").length / leads.length) * 100) : 0;
-
-  const handleAddLead = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    const newLead: Lead = {
-      id: Date.now().toString(),
-      name: fd.get("name") as string,
-      email: fd.get("email") as string,
-      phone: (fd.get("phone") as string) || undefined,
-      stage: "Prospect",
-      value: Number(fd.get("value")),
-      notes: fd.get("notes") as string || "",
-      date: new Date().toISOString().slice(0, 10),
-    };
-    if (newLead.name && newLead.email) {
-      setLeads(prev => [newLead, ...prev]);
-      setShowForm(false);
-    }
-  };
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
@@ -163,62 +303,98 @@ export default function VentesPage() {
           <h1 className="text-2xl font-bold text-foreground">Ventes & Pipeline</h1>
           <p className="text-sm text-muted-foreground mt-1">Gestion des prospects, clients et sessions</p>
         </div>
-        <button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity">
-          {showForm ? <X size={16} /> : <Plus size={16} />}
-          {showForm ? "Fermer" : "Nouveau lead"}
+        <button
+          onClick={() => activeTab === "pipeline" ? setShowLeadModal(true) : setShowSessionModal(true)}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity"
+        >
+          <Plus size={16} />
+          {activeTab === "pipeline" ? "Nouveau lead" : "Nouvelle session"}
         </button>
       </div>
-
-      {/* Add lead form */}
-      {showForm && (
-        <form onSubmit={handleAddLead} className="glass-card p-5 grid grid-cols-2 md:grid-cols-5 gap-3">
-          <input name="name" placeholder="Nom" required className="px-3 py-2 rounded-xl bg-white/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
-          <input name="email" type="email" placeholder="Email" required className="px-3 py-2 rounded-xl bg-white/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
-          <input name="phone" placeholder="Téléphone" className="px-3 py-2 rounded-xl bg-white/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
-          <input name="value" type="number" min="0" placeholder="Valeur €" className="px-3 py-2 rounded-xl bg-white/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
-          <button type="submit" className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">Ajouter</button>
-        </form>
-      )}
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <KpiCard label="Pipeline" value={`${totalPipeline.toLocaleString()} €`} icon={TrendingUp} color="#6366f1" sub="Valeur totale en cours" />
         <KpiCard label="Clients actifs" value={`${activeClients}`} icon={Users} color="#10b981" sub={`${conversionRate}% conversion`} />
         <KpiCard label="Sessions à venir" value={`${upcomingSessions}`} icon={Calendar} color="#f59e0b" sub="Cette semaine" />
-        <KpiCard label="Revenue clients" value={`${leads.filter(l => l.stage === "Client").reduce((s, l) => s + l.value, 0).toLocaleString()} €`} icon={DollarSign} color="#a855f7" sub="Clients actifs" />
+        <KpiCard label="Revenus clients" value={`${leads.filter(l => l.stage === "Client").reduce((s, l) => s + l.value, 0).toLocaleString()} €`} icon={DollarSign} color="#a855f7" sub="Clients actifs" />
       </div>
 
-      {/* Pipeline */}
-      <div className="glass-card p-5">
-        <h3 className="text-sm font-semibold text-foreground mb-4">Pipeline de ventes</h3>
-        <div className="flex gap-4 overflow-x-auto pb-2">
-          {STAGES.map(stage => (
-            <PipelineColumn key={stage} stage={stage} leads={leads.filter(l => l.stage === stage)} onMove={moveLead} />
-          ))}
+      {/* Tabs */}
+      <div className="flex gap-1 p-1 rounded-xl bg-white/30 w-fit">
+        <button onClick={() => setActiveTab("pipeline")} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === "pipeline" ? "bg-white shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}>Pipeline</button>
+        <button onClick={() => setActiveTab("planning")} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === "planning" ? "bg-white shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}>Planning</button>
+      </div>
+
+      {activeTab === "pipeline" && (
+        <div className="glass-card p-5">
+          <h3 className="text-sm font-semibold text-foreground mb-4">Pipeline de ventes</h3>
+          <div className="flex gap-4 overflow-x-auto pb-2">
+            {STAGES.map(stage => (
+              <PipelineColumn key={stage} stage={stage} leads={leads.filter(l => l.stage === stage)} onMove={moveLead} onDelete={deleteLead} />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Sessions */}
-      <div className="glass-card p-5">
-        <h3 className="text-sm font-semibold text-foreground mb-4">Sessions à venir</h3>
-        <div className="space-y-2">
-          {sessions.filter(s => s.status === "planned").map(s => (
-            <div key={s.id} className="flex items-center gap-3 py-2.5 px-3 rounded-xl hover:bg-white/30 transition-colors">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${SESSION_TYPE_COLORS[s.type]}18` }}>
-                <Calendar size={14} style={{ color: SESSION_TYPE_COLORS[s.type] }} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground">{s.clientName}</p>
-                <p className="text-xs text-muted-foreground">{s.type} · {s.duration}min</p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm font-medium text-foreground">{s.date}</p>
-                <p className="text-xs text-muted-foreground">{s.time}</p>
-              </div>
+      {activeTab === "planning" && (
+        <div className="space-y-4">
+          {/* Upcoming */}
+          <div className="glass-card p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-foreground">Sessions à venir</h3>
+              <button onClick={() => setShowSessionModal(true)} className="text-xs px-3 py-1.5 rounded-lg bg-primary/10 text-primary font-medium hover:bg-primary/20 transition-colors">
+                <Plus size={12} className="inline mr-1" />Nouvelle session
+              </button>
             </div>
-          ))}
+            <div className="space-y-2">
+              {sessions.filter(s => s.status === "planned").length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-6">Aucune session planifiée</p>
+              )}
+              {sessions.filter(s => s.status === "planned").map(s => (
+                <div key={s.id} className="flex items-center gap-3 py-2.5 px-3 rounded-xl hover:bg-white/30 transition-colors">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${SESSION_TYPE_COLORS[s.type]}18` }}>
+                    <Calendar size={14} style={{ color: SESSION_TYPE_COLORS[s.type] }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">{s.clientName}</p>
+                    <p className="text-xs text-muted-foreground">{s.type} · {s.duration} min</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-medium text-foreground">{new Date(s.date + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" })}</p>
+                    <p className="text-xs text-muted-foreground">{s.time}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Past sessions */}
+          <div className="glass-card p-5">
+            <h3 className="text-sm font-semibold text-foreground mb-4">Sessions passées</h3>
+            <div className="space-y-2">
+              {sessions.filter(s => s.status === "done").map(s => (
+                <div key={s.id} className="flex items-center gap-3 py-2.5 px-3 rounded-xl opacity-60">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-muted/30">
+                    <Clock size={14} className="text-muted-foreground" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">{s.clientName}</p>
+                    <p className="text-xs text-muted-foreground">{s.type} · {s.duration} min</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-muted-foreground">{s.date}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Modals */}
+      {showLeadModal && <LeadModal onClose={() => setShowLeadModal(false)} onConfirm={addLead} />}
+      {showSessionModal && <SessionModal onClose={() => setShowSessionModal(false)} onConfirm={addSession} />}
     </div>
   );
 }
