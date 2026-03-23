@@ -329,10 +329,10 @@ select:focus {
 }
 
 /* ═══════════════════════════════════════════
-   BUSINESS PANEL — Animated border + hover
+   BUSINESS PANEL — Animated border + fluid bg
 ═══════════════════════════════════════════ */
 
-/* Rotating angle CSS custom property */
+/* CSS custom properties for border angle */
 @property --ba-coaching {
   syntax: '<angle>';
   initial-value: 0deg;
@@ -344,36 +344,34 @@ select:focus {
   inherits: false;
 }
 
-@keyframes spin-coaching {
-  to { --ba-coaching: 360deg; }
-}
-@keyframes spin-casino {
-  to { --ba-casino: 360deg; }
-}
+@keyframes spin-coaching { to { --ba-coaching: 360deg; } }
+@keyframes spin-casino   { to { --ba-casino:   360deg; } }
 
-/* Wrapper that renders the spinning gradient border */
+/* ── Border wrappers — light reflection style ── */
 .panel-coaching-wrap {
   --ba-coaching: 0deg;
   border-radius: 18px;
   padding: 1.5px;
   background: conic-gradient(
     from var(--ba-coaching),
-    #7c3aed 0%,
-    #c084fc 20%,
-    rgba(124,58,237,0.15) 45%,
-    rgba(124,58,237,0.05) 50%,
-    rgba(124,58,237,0.15) 55%,
-    #c084fc 80%,
-    #7c3aed 100%
+    rgba(124,58,237,0.04)   0deg,
+    rgba(192,132,252,0.95) 40deg,
+    rgba(168,85,247,0.3)   70deg,
+    rgba(124,58,237,0.04) 120deg,
+    rgba(124,58,237,0.02) 180deg,
+    rgba(216,180,254,0.9) 220deg,
+    rgba(168,85,247,0.25) 250deg,
+    rgba(124,58,237,0.03) 310deg,
+    rgba(124,58,237,0.04) 360deg
   );
-  animation: spin-coaching 5s linear infinite;
-  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
-              filter 0.35s ease;
+  animation: spin-coaching 8s linear infinite;
+  transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1), filter 0.4s ease;
   will-change: transform;
 }
 .panel-coaching-wrap:hover {
-  transform: scale(1.018);
-  filter: drop-shadow(0 0 32px rgba(168,85,247,0.35));
+  transform: scale(1.02);
+  filter: drop-shadow(0 0 40px rgba(168,85,247,0.4));
+  animation-duration: 4s;
 }
 
 .panel-casino-wrap {
@@ -382,37 +380,89 @@ select:focus {
   padding: 1.5px;
   background: conic-gradient(
     from var(--ba-casino),
-    #00cc44 0%,
-    #00ff88 20%,
-    rgba(0,204,68,0.15) 45%,
-    rgba(0,204,68,0.05) 50%,
-    rgba(0,204,68,0.15) 55%,
-    #00ff88 80%,
-    #00cc44 100%
+    rgba(0,180,60,0.04)   0deg,
+    rgba(0,255,136,0.95) 40deg,
+    rgba(0,204,68,0.35)  70deg,
+    rgba(0,150,40,0.04) 120deg,
+    rgba(0,100,30,0.02) 180deg,
+    rgba(120,255,180,0.9) 220deg,
+    rgba(0,204,68,0.3)  250deg,
+    rgba(0,130,40,0.03) 310deg,
+    rgba(0,180,60,0.04) 360deg
   );
-  animation: spin-casino 5s linear infinite;
-  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
-              filter 0.35s ease;
+  animation: spin-casino 8s linear infinite;
+  transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1), filter 0.4s ease;
   will-change: transform;
 }
 .panel-casino-wrap:hover {
-  transform: scale(1.018);
-  filter: drop-shadow(0 0 32px rgba(0,255,136,0.3));
+  transform: scale(1.02);
+  filter: drop-shadow(0 0 40px rgba(0,255,136,0.35));
+  animation-duration: 4s;
 }
 
-/* Inner panel — sits on the dark bg behind the border */
+/* Inner panel */
 .panel-inner {
   border-radius: 17px;
   height: 100%;
   overflow: hidden;
+  position: relative;
 }
 
-/* KPI card hover scale */
+/* ── Fluid blobs inside panels ── */
+@keyframes blob-a {
+  0%,100% { transform: translate(0%,   0%)   scale(1);    }
+  25%     { transform: translate(40%,  20%)  scale(1.15); }
+  50%     { transform: translate(20%,  55%)  scale(0.9);  }
+  75%     { transform: translate(-20%, 30%)  scale(1.1);  }
+}
+@keyframes blob-b {
+  0%,100% { transform: translate(0%,   0%)   scale(1);    }
+  25%     { transform: translate(-30%, 40%)  scale(0.85); }
+  50%     { transform: translate(25%,  -20%) scale(1.2);  }
+  75%     { transform: translate(10%,  50%)  scale(0.95); }
+}
+@keyframes blob-c {
+  0%,100% { transform: translate(0%,   0%)   scale(1);    }
+  33%     { transform: translate(50%,  -30%) scale(1.1);  }
+  66%     { transform: translate(-10%, 40%)  scale(0.88); }
+}
+@keyframes blob-d {
+  0%,100% { transform: translate(0%,   0%)   scale(1);    }
+  40%     { transform: translate(-40%, -20%) scale(1.18); }
+  70%     { transform: translate(30%,  30%)  scale(0.92); }
+}
+
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(55px);
+  opacity: 0;
+  will-change: transform;
+  pointer-events: none;
+}
+/* coaching blobs */
+.blob-cv-1 { width:220px; height:220px; background:#7c3aed; top:-10%;  left:-5%;  opacity:.35; animation: blob-a 18s ease-in-out infinite; }
+.blob-cv-2 { width:180px; height:180px; background:#a855f7; top:30%;   left:50%;  opacity:.28; animation: blob-b 22s ease-in-out infinite; }
+.blob-cv-3 { width:140px; height:140px; background:#c084fc; top:60%;   left:15%;  opacity:.2;  animation: blob-c 16s ease-in-out infinite; }
+.blob-cv-4 { width:100px; height:100px; background:#6366f1; top:10%;   left:70%;  opacity:.22; animation: blob-d 20s ease-in-out infinite; }
+/* casino blobs */
+.blob-ca-1 { width:220px; height:220px; background:#00883a; top:-10%;  left:-5%;  opacity:.3;  animation: blob-a 18s ease-in-out infinite; }
+.blob-ca-2 { width:180px; height:180px; background:#00cc44; top:30%;   left:50%;  opacity:.25; animation: blob-b 22s ease-in-out infinite; }
+.blob-ca-3 { width:140px; height:140px; background:#00ff88; top:60%;   left:15%;  opacity:.18; animation: blob-c 16s ease-in-out infinite; }
+.blob-ca-4 { width:100px; height:100px; background:#00ff66; top:10%;   left:70%;  opacity:.2;  animation: blob-d 20s ease-in-out infinite; }
+
+/* KPI card — frosted glass on top of blobs */
 .kpi-hover {
-  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1),
+              box-shadow 0.22s ease,
               background 0.2s ease;
   cursor: default;
+  position: relative;
+  z-index: 10;
 }
 .kpi-hover:hover {
   transform: scale(1.07);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.3);
 }

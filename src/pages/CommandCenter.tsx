@@ -244,16 +244,13 @@ function CasinoPanel() {
   return (
     <div
       className="panel-inner p-5 flex flex-col gap-4 relative"
-      style={{
-        background: "rgba(0,8,4,0.85)",
-        boxShadow: `inset 0 1px 0 ${CASINO_COLOR}10`,
-      }}
+      style={{ background: "rgba(0,6,2,0.88)" }}
     >
-      {/* Glow orb */}
-      <div
-        className="absolute -top-10 -right-10 w-48 h-48 rounded-full pointer-events-none"
-        style={{ background: CASINO_COLOR, filter: "blur(80px)", opacity: 0.08 }}
-      />
+      {/* Fluid blobs */}
+      <div className="blob blob-ca-1" />
+      <div className="blob blob-ca-2" />
+      <div className="blob blob-ca-3" />
+      <div className="blob blob-ca-4" />
 
       {/* Header */}
       <div className="flex items-center justify-between relative z-10">
@@ -343,16 +340,13 @@ function CoachingPanel() {
   return (
     <div
       className="panel-inner p-5 flex flex-col gap-4 relative"
-      style={{
-        background: "rgba(4,0,12,0.85)",
-        boxShadow: `inset 0 1px 0 ${VIOLET_COLOR}10`,
-      }}
+      style={{ background: "rgba(3,0,10,0.88)" }}
     >
-      {/* Glow orb */}
-      <div
-        className="absolute -top-10 -right-10 w-48 h-48 rounded-full pointer-events-none"
-        style={{ background: VIOLET_COLOR, filter: "blur(80px)", opacity: 0.12 }}
-      />
+      {/* Fluid blobs */}
+      <div className="blob blob-cv-1" />
+      <div className="blob blob-cv-2" />
+      <div className="blob blob-cv-3" />
+      <div className="blob blob-cv-4" />
 
       {/* Header */}
       <div className="flex items-center justify-between relative z-10">
