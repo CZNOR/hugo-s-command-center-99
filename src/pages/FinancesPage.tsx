@@ -1,5 +1,5 @@
 import { useState, ElementType } from "react";
-import { DollarSign, TrendingUp, TrendingDown, CreditCard, PieChart, Plus, X, ArrowUpRight, ArrowDownRight, Wallet } from "lucide-react";
+import { DollarSign, TrendingUp, TrendingDown, CreditCard, Plus, X, ArrowUpRight, ArrowDownRight, Wallet } from "lucide-react";
 import { useBusiness } from "@/lib/businessContext";
 
 // ─── Types ─────────────────────────────────────────────────
@@ -49,6 +49,7 @@ const CATEGORY_COLORS: Record<TxCategory, string> = {
 };
 
 const MONTHS = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
+const CATEGORIES: TxCategory[] = ["Revenus coaching", "Revenus contenu", "Revenus agence", "Logiciels", "Marketing", "Équipement", "Charges fixes", "Autre"];
 
 // ─── Mini bar chart ─────────────────────────────────────────
 function BarChart({ data }: { data: { label: string; income: number; expense: number }[] }) {
@@ -58,22 +59,8 @@ function BarChart({ data }: { data: { label: string; income: number; expense: nu
       {data.map((d, i) => (
         <div key={i} className="flex-1 flex flex-col items-center gap-1">
           <div className="flex items-end gap-0.5 w-full justify-center" style={{ height: 100 }}>
-            <div
-              className="flex-1 rounded-t-sm transition-all duration-500"
-              style={{
-                height: `${(d.income / maxVal) * 100}%`,
-                background: "linear-gradient(180deg, #a855f7, #7c3aed)",
-                minHeight: d.income > 0 ? 4 : 0,
-              }}
-            />
-            <div
-              className="flex-1 rounded-t-sm transition-all duration-500"
-              style={{
-                height: `${(d.expense / maxVal) * 100}%`,
-                background: "linear-gradient(180deg, #f87171, #ef4444)",
-                minHeight: d.expense > 0 ? 4 : 0,
-              }}
-            />
+            <div className="flex-1 rounded-t-sm transition-all duration-500" style={{ height: `${(d.income / maxVal) * 100}%`, background: "linear-gradient(180deg, #a855f7, #7c3aed)", minHeight: d.income > 0 ? 4 : 0 }} />
+            <div className="flex-1 rounded-t-sm transition-all duration-500" style={{ height: `${(d.expense / maxVal) * 100}%`, background: "linear-gradient(180deg, #f87171, #ef4444)", minHeight: d.expense > 0 ? 4 : 0 }} />
           </div>
           <span className="text-[10px] text-muted-foreground">{d.label}</span>
         </div>
@@ -108,21 +95,82 @@ function KpiCard({ label, value, sub, icon: Icon, color, trend }: {
   );
 }
 
+// ─── Transaction Modal ──────────────────────────────────────
+function TransactionModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (tx: Transaction) => void }) {
+  const [form, setForm] = useState({ label: "", amount: "", type: "income" as "income" | "expense", category: "Revenus coaching" as TxCategory, date: new Date().toISOString().slice(0, 10) });
+
+  const handleSubmit = () => {
+    if (!form.label.trim() || !form.amount || Number(form.amount) <= 0) return;
+    onConfirm({
+      id: Date.now().toString(),
+      label: form.label,
+      amount: Number(form.amount),
+      type: form.type,
+      category: form.category,
+      date: form.date,
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="glass-card w-full max-w-lg p-6 space-y-4 shadow-2xl">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-bold text-foreground">Nouvelle transaction</h3>
+          <button onClick={onClose} className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/30 transition-colors"><X size={18} /></button>
+        </div>
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Libellé *</label>
+            <input value={form.label} onChange={e => setForm(p => ({ ...p, label: e.target.value }))} placeholder="Description de la transaction" className="w-full px-3 py-2.5 rounded-xl bg-white/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Montant (€) *</label>
+              <input value={form.amount} onChange={e => setForm(p => ({ ...p, amount: e.target.value }))} type="number" min="1" placeholder="0" className="w-full px-3 py-2.5 rounded-xl bg-white/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Type</label>
+              <select value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value as "income" | "expense" }))} className="w-full px-3 py-2.5 rounded-xl bg-white/50 border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30">
+                <option value="income">Revenu</option>
+                <option value="expense">Dépense</option>
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Catégorie</label>
+              <select value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value as TxCategory }))} className="w-full px-3 py-2.5 rounded-xl bg-white/50 border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30">
+                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Date</label>
+              <input value={form.date} onChange={e => setForm(p => ({ ...p, date: e.target.value }))} type="date" className="w-full px-3 py-2.5 rounded-xl bg-white/50 border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            </div>
+          </div>
+        </div>
+        <div className="flex gap-3 pt-2">
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl text-sm font-medium text-muted-foreground bg-white/40 border border-border hover:bg-white/60 transition-colors">Annuler</button>
+          <button onClick={handleSubmit} disabled={!form.label.trim() || !form.amount || Number(form.amount) <= 0} className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50">Confirmer</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Component ─────────────────────────────────────────
 export default function FinancesPage() {
   const { activeBusiness } = useBusiness();
   const [transactions, setTransactions] = useState<Transaction[]>(INITIAL_TRANSACTIONS);
-  const [showForm, setShowForm] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [filter, setFilter] = useState<"all" | "income" | "expense">("all");
 
-  // Compute KPIs
   const marchTx = transactions.filter(t => t.date.startsWith("2026-03"));
   const totalIncome = marchTx.filter(t => t.type === "income").reduce((s, t) => s + t.amount, 0);
   const totalExpense = marchTx.filter(t => t.type === "expense").reduce((s, t) => s + t.amount, 0);
   const margin = totalIncome - totalExpense;
   const marginPct = totalIncome > 0 ? Math.round((margin / totalIncome) * 100) : 0;
 
-  // Monthly chart data
   const chartData = [1, 2, 3].map(m => {
     const month = `2026-0${m}`;
     const inc = transactions.filter(t => t.date.startsWith(month) && t.type === "income").reduce((s, t) => s + t.amount, 0);
@@ -130,7 +178,6 @@ export default function FinancesPage() {
     return { label: MONTHS[m - 1], income: inc, expense: exp };
   });
 
-  // Category breakdown for March
   const categoryBreakdown = Object.entries(
     marchTx.reduce((acc, t) => {
       acc[t.category] = (acc[t.category] || 0) + t.amount;
@@ -140,21 +187,9 @@ export default function FinancesPage() {
 
   const filteredTx = marchTx.filter(t => filter === "all" || t.type === filter);
 
-  const handleAddTransaction = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    const newTx: Transaction = {
-      id: Date.now().toString(),
-      label: fd.get("label") as string,
-      amount: Number(fd.get("amount")),
-      type: fd.get("type") as "income" | "expense",
-      category: fd.get("category") as TxCategory,
-      date: fd.get("date") as string,
-    };
-    if (newTx.label && newTx.amount > 0) {
-      setTransactions(prev => [newTx, ...prev]);
-      setShowForm(false);
-    }
+  const addTransaction = (tx: Transaction) => {
+    setTransactions(prev => [tx, ...prev]);
+    setShowModal(false);
   };
 
   return (
@@ -165,30 +200,11 @@ export default function FinancesPage() {
           <h1 className="text-2xl font-bold text-foreground">Finances</h1>
           <p className="text-sm text-muted-foreground mt-1">Suivi des revenus et dépenses — Mars 2026</p>
         </div>
-        <button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity">
-          {showForm ? <X size={16} /> : <Plus size={16} />}
-          {showForm ? "Fermer" : "Transaction"}
+        <button onClick={() => setShowModal(true)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity">
+          <Plus size={16} />
+          Nouvelle transaction
         </button>
       </div>
-
-      {/* Add form */}
-      {showForm && (
-        <form onSubmit={handleAddTransaction} className="glass-card p-5 grid grid-cols-2 md:grid-cols-6 gap-3">
-          <input name="label" placeholder="Libellé" required className="col-span-2 px-3 py-2 rounded-xl bg-white/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
-          <input name="amount" type="number" min="1" placeholder="Montant €" required className="px-3 py-2 rounded-xl bg-white/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
-          <select name="type" className="px-3 py-2 rounded-xl bg-white/50 border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30">
-            <option value="income">Revenu</option>
-            <option value="expense">Dépense</option>
-          </select>
-          <select name="category" className="px-3 py-2 rounded-xl bg-white/50 border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30">
-            {Object.keys(CATEGORY_COLORS).map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-          <div className="flex gap-2">
-            <input name="date" type="date" defaultValue="2026-03-23" className="flex-1 px-3 py-2 rounded-xl bg-white/50 border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
-            <button type="submit" className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">OK</button>
-          </div>
-        </form>
-      )}
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -239,6 +255,9 @@ export default function FinancesPage() {
           </div>
         </div>
         <div className="space-y-1">
+          {filteredTx.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-6">Aucune transaction</p>
+          )}
           {filteredTx.map(tx => (
             <div key={tx.id} className="flex items-center gap-3 py-2.5 px-3 rounded-xl hover:bg-white/30 transition-colors">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${CATEGORY_COLORS[tx.category]}18` }}>
@@ -255,6 +274,9 @@ export default function FinancesPage() {
           ))}
         </div>
       </div>
+
+      {/* Modal */}
+      {showModal && <TransactionModal onClose={() => setShowModal(false)} onConfirm={addTransaction} />}
     </div>
   );
 }

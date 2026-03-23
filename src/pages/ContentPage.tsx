@@ -51,8 +51,12 @@ const FORMATS = ["Storytelling", "Double cam", "Valeur rapide", "Valeur travaill
 const STATUTS = ["Idée", "Script", "À tourner", "Tourné", "Monté", "Publié"];
 const BUSINESSES = ["Made Solution", "Hugo Coaching", "Personal Brand"];
 
-// ─── Create Entry Modal ─────────────────────────────────────
-function CreateEntryModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+// ─── Create Entry Modal (glass style) ───────────────────────
+function CreateEntryModal({ onClose, onCreated, onLocalCreate }: {
+  onClose: () => void;
+  onCreated: () => void;
+  onLocalCreate: (item: ContentItem) => void;
+}) {
   const { activeBusiness } = useBusiness();
   const [form, setForm] = useState({
     sujet: "",
@@ -78,155 +82,104 @@ function CreateEntryModal({ onClose, onCreated }: { onClose: () => void; onCreat
       onCreated();
       onClose();
     } catch (err: any) {
-      setError(err.message || "Erreur lors de la création");
+      // Fallback: create locally if Notion sync fails
+      onLocalCreate({
+        id: Date.now().toString(),
+        sujet: form.sujet,
+        script: "",
+        format: form.format,
+        date: form.date,
+        statut: form.statut,
+        business: form.business,
+        notes: form.notes,
+      });
+      onClose();
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(12px)" }}
-      onClick={e => e.target === e.currentTarget && onClose()}
-    >
-      <div
-        className="w-full max-w-lg rounded-2xl p-6 animate-scale-in"
-        style={{
-          background: "rgba(12,6,28,0.98)",
-          border: "1px solid rgba(124,58,237,0.4)",
-          boxShadow: "0 24px 80px rgba(0,0,0,0.6), 0 0 40px rgba(124,58,237,0.15)",
-        }}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="glass-card w-full max-w-lg p-6 space-y-4 shadow-2xl">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #7c3aed, #a855f7)" }}>
-              <Sparkles className="w-4 h-4 text-white" />
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-primary/10">
+              <Sparkles className="w-4 h-4 text-primary" />
             </div>
-            <h3 className="text-lg font-bold text-white">Nouveau contenu</h3>
+            <h3 className="text-lg font-bold text-foreground">Nouveau contenu</h3>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-white/40 hover:text-white transition-colors hover:bg-white/10">
+          <button onClick={onClose} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground transition-colors hover:bg-white/30">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Form */}
-        <div className="space-y-4">
-          {/* Sujet */}
+        <div className="space-y-3">
           <div>
-            <label className="text-xs font-medium text-white/50 mb-1.5 block uppercase tracking-wider">Sujet / Titre</label>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Sujet / Titre *</label>
             <input
               autoFocus
               value={form.sujet}
               onChange={e => setForm(p => ({ ...p, sujet: e.target.value }))}
               placeholder="Mon idée de contenu..."
-              className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-white/20 outline-none transition-all"
-              style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}
-              onFocus={e => { e.currentTarget.style.borderColor = "rgba(168,85,247,0.5)"; }}
-              onBlur={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; }}
+              className="w-full px-3 py-2.5 rounded-xl bg-white/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
 
-          {/* Format + Statut */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-white/50 mb-1.5 block uppercase tracking-wider">Format</label>
-              <select
-                value={form.format}
-                onChange={e => setForm(p => ({ ...p, format: e.target.value }))}
-                className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none appearance-none"
-                style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}
-              >
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Format</label>
+              <select value={form.format} onChange={e => setForm(p => ({ ...p, format: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl bg-white/50 border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30">
                 {FORMATS.map(f => <option key={f} value={f}>{FORMAT_ICONS[f] || "📄"} {f}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs font-medium text-white/50 mb-1.5 block uppercase tracking-wider">Statut</label>
-              <select
-                value={form.statut}
-                onChange={e => setForm(p => ({ ...p, statut: e.target.value }))}
-                className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none appearance-none"
-                style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}
-              >
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Statut</label>
+              <select value={form.statut} onChange={e => setForm(p => ({ ...p, statut: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl bg-white/50 border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30">
                 {STATUTS.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
           </div>
 
-          {/* Date + Business */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-white/50 mb-1.5 block uppercase tracking-wider">Date de tournage</label>
-              <input
-                type="date"
-                value={form.date}
-                onChange={e => setForm(p => ({ ...p, date: e.target.value }))}
-                className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
-                style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", colorScheme: "dark" }}
-              />
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Date</label>
+              <input type="date" value={form.date} onChange={e => setForm(p => ({ ...p, date: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl bg-white/50 border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
             </div>
             <div>
-              <label className="text-xs font-medium text-white/50 mb-1.5 block uppercase tracking-wider">Business</label>
-              <select
-                value={form.business}
-                onChange={e => setForm(p => ({ ...p, business: e.target.value }))}
-                className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none appearance-none"
-                style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}
-              >
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Business</label>
+              <select value={form.business} onChange={e => setForm(p => ({ ...p, business: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl bg-white/50 border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30">
                 {BUSINESSES.map(b => <option key={b} value={b}>{b}</option>)}
               </select>
             </div>
           </div>
 
-          {/* Notes */}
           <div>
-            <label className="text-xs font-medium text-white/50 mb-1.5 block uppercase tracking-wider">Notes / Idées</label>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Notes</label>
             <textarea
               value={form.notes}
               onChange={e => setForm(p => ({ ...p, notes: e.target.value }))}
               placeholder="Contexte, angle, hook..."
-              rows={3}
-              className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-white/20 outline-none resize-none transition-all"
-              style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}
-              onFocus={e => { e.currentTarget.style.borderColor = "rgba(168,85,247,0.5)"; }}
-              onBlur={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; }}
+              rows={2}
+              className="w-full px-3 py-2.5 rounded-xl bg-white/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
             />
           </div>
 
-          {/* Error */}
           {error && (
-            <div className="rounded-xl p-3" style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)" }}>
-              <p className="text-red-400 text-xs">⚠️ {error}</p>
+            <div className="rounded-xl p-3 bg-red-50 border border-red-200">
+              <p className="text-red-600 text-xs">⚠️ {error}</p>
             </div>
           )}
         </div>
 
-        {/* Actions */}
-        <div className="flex gap-3 mt-6">
-          <button
-            onClick={onClose}
-            className="flex-1 py-2.5 rounded-xl text-sm text-white/60 transition-colors hover:text-white/90"
-            style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}
-          >
-            Annuler
-          </button>
+        <div className="flex gap-3 pt-2">
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl text-sm font-medium text-muted-foreground bg-white/40 border border-border hover:bg-white/60 transition-colors">Annuler</button>
           <button
             onClick={handleCreate}
             disabled={saving || !form.sujet.trim()}
-            className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-50 transition-all hover:scale-105"
-            style={{ background: "linear-gradient(135deg, #7c3aed, #a855f7)", boxShadow: "0 4px 16px rgba(124,58,237,0.4)" }}
+            className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
           >
-            {saving ? (
-              <span className="flex items-center justify-center gap-2">
-                <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                Création...
-              </span>
-            ) : (
-              <span className="flex items-center justify-center gap-2">
-                <Plus className="w-4 h-4" /> Créer dans Notion
-              </span>
-            )}
+            {saving ? "Création..." : "Confirmer"}
           </button>
         </div>
       </div>
@@ -234,7 +187,7 @@ function CreateEntryModal({ onClose, onCreated }: { onClose: () => void; onCreat
   );
 }
 
-// ─── Content Card ───────────────────────────────────────────
+// ─── Content Card (glass style) ─────────────────────────────
 function ContentCard({ item, onStatusChange }: { item: ContentItem; onStatusChange?: (id: string, statut: string) => void }) {
   const fmtColor = FORMAT_COLORS[item.format] || "rgba(255,255,255,0.08)";
   const fmtIcon = FORMAT_ICONS[item.format] || "📄";
@@ -242,56 +195,41 @@ function ContentCard({ item, onStatusChange }: { item: ContentItem; onStatusChan
   const [showStatusMenu, setShowStatusMenu] = useState(false);
 
   return (
-    <div
-      className="rounded-2xl p-4 flex items-center gap-4 group relative"
-      style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", transition: "all 0.2s ease" }}
-      onMouseEnter={e => {
-        (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.06)";
-        (e.currentTarget as HTMLElement).style.borderColor = "rgba(168,85,247,0.2)";
-      }}
-      onMouseLeave={e => {
-        (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)";
-        (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.07)";
-      }}
-    >
+    <div className="glass-card p-4 flex items-center gap-4 group relative">
       <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0" style={{ background: fmtColor }}>
         {fmtIcon}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-white/90 font-medium text-sm truncate">{item.sujet || "Sans titre"}</p>
+        <p className="text-foreground font-medium text-sm truncate">{item.sujet || "Sans titre"}</p>
         <div className="flex items-center gap-2 mt-1 flex-wrap">
-          {item.format && <span className="text-xs text-white/50">{item.format}</span>}
-          {item.business && <span className="text-xs text-white/30">· {item.business}</span>}
+          {item.format && <span className="text-xs text-muted-foreground">{item.format}</span>}
+          {item.business && <span className="text-xs text-muted-foreground/60">· {item.business}</span>}
           {item.date && (
-            <span className="text-xs text-white/30">
+            <span className="text-xs text-muted-foreground/60">
               · {new Date(item.date + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" })}
             </span>
           )}
         </div>
       </div>
 
-      {/* Status badge - clickable to change */}
       <div className="relative flex-shrink-0">
         <button
           onClick={() => setShowStatusMenu(!showStatusMenu)}
           className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg font-medium transition-colors"
-          style={{ background: statColor + "25", color: statColor, border: `1px solid ${statColor}40` }}
+          style={{ background: statColor + "18", color: statColor, border: `1px solid ${statColor}30` }}
         >
           {item.statut || "—"}
           <ChevronDown className="w-3 h-3 opacity-60" />
         </button>
 
         {showStatusMenu && onStatusChange && (
-          <div
-            className="absolute right-0 top-8 z-20 rounded-xl overflow-hidden shadow-2xl"
-            style={{ background: "rgba(15,8,30,0.98)", border: "1px solid rgba(255,255,255,0.12)", minWidth: 120 }}
-          >
+          <div className="absolute right-0 top-8 z-20 rounded-xl overflow-hidden shadow-2xl glass-card border border-border" style={{ minWidth: 120 }}>
             {STATUTS.map(s => (
               <button
                 key={s}
                 onClick={() => { onStatusChange(item.id, s); setShowStatusMenu(false); }}
-                className="w-full text-left px-3 py-2 text-xs font-medium transition-colors hover:bg-white/10"
-                style={{ color: STATUT_COLORS[s] || "#fff" }}
+                className="w-full text-left px-3 py-2 text-xs font-medium transition-colors hover:bg-white/30"
+                style={{ color: STATUT_COLORS[s] || "#6b7280" }}
               >
                 {s}
               </button>
@@ -309,10 +247,10 @@ function Section({ title, items, emptyMsg, onStatusChange }: {
 }) {
   return (
     <div>
-      <h2 className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3">{title}</h2>
+      <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">{title}</h2>
       {items.length === 0 ? (
-        <div className="rounded-2xl p-5 text-center" style={{ background: "rgba(255,255,255,0.02)", border: "1px dashed rgba(255,255,255,0.08)" }}>
-          <p className="text-white/30 text-sm">{emptyMsg}</p>
+        <div className="glass-card p-5 text-center border-dashed">
+          <p className="text-muted-foreground text-sm">{emptyMsg}</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -347,15 +285,17 @@ export default function ContentPage() {
     }
   };
 
+  const handleLocalCreate = (item: ContentItem) => {
+    setItems(prev => [item, ...prev]);
+  };
+
   const handleStatusChange = async (id: string, statut: string) => {
-    // Optimistic update
     setItems(prev => prev.map(i => i.id === id ? { ...i, statut } : i));
     try {
       await supabase.functions.invoke("notion-content", {
         body: { action: "update", id, statut },
       });
     } catch {
-      // Revert on error
       fetchContent();
     }
   };
@@ -374,18 +314,17 @@ export default function ContentPage() {
   });
 
   return (
-    <div className="page-enter p-4 lg:p-6 min-h-screen">
+    <div className="space-y-6 max-w-6xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white/90">Contenu</h1>
-          <p className="text-sm text-white/40 mt-1">Calendrier édito — sync Notion</p>
+          <h1 className="text-2xl font-bold text-foreground">Contenu</h1>
+          <p className="text-sm text-muted-foreground mt-1">Calendrier éditorial — sync Notion</p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all hover:scale-105"
-            style={{ background: "linear-gradient(135deg, #7c3aed, #a855f7)", boxShadow: "0 4px 12px rgba(124,58,237,0.4)" }}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity"
           >
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">Nouveau</span>
@@ -393,8 +332,7 @@ export default function ContentPage() {
           <button
             onClick={fetchContent}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-60 transition-all"
-            style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-muted-foreground bg-white/40 border border-border hover:bg-white/60 disabled:opacity-60 transition-colors"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
             <span className="hidden sm:inline">{loading ? "Sync..." : "Actualiser"}</span>
@@ -404,30 +342,30 @@ export default function ContentPage() {
 
       {/* Error */}
       {error && (
-        <div className="rounded-2xl p-4 mb-6" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)" }}>
-          <p className="text-red-400 text-sm font-medium">⚠️ {error}</p>
-          <p className="text-white/30 text-xs mt-1">Vérifie que la Edge Function est déployée et NOTION_TOKEN configuré dans Supabase.</p>
+        <div className="glass-card p-4 border-red-200 bg-red-50/50">
+          <p className="text-red-600 text-sm font-medium">⚠️ {error}</p>
+          <p className="text-muted-foreground text-xs mt-1">Vérifie que la Edge Function est déployée et NOTION_TOKEN configuré.</p>
         </div>
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-3 mb-6 stagger-children">
+      <div className="grid grid-cols-3 gap-3">
         {[
-          { label: "À tourner", value: items.filter(i => i.statut === "À tourner").length, color: activeBusiness.accent },
+          { label: "À tourner", value: items.filter(i => i.statut === "À tourner").length, color: "#f97316" },
           { label: "En prépa", value: scriptItems.length, color: "#eab308" },
           { label: "Cette semaine", value: thisWeekItems.length, color: "#22c55e" },
         ].map(s => (
-          <div key={s.label} className="violet-card p-4">
+          <div key={s.label} className="glass-card p-4">
             <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
-            <p className="text-xs text-white/40 mt-1">{s.label}</p>
+            <p className="text-xs text-muted-foreground mt-1">{s.label}</p>
           </div>
         ))}
       </div>
 
       {/* Formats legend */}
-      <div className="flex flex-wrap gap-2 mb-6">
+      <div className="flex flex-wrap gap-2">
         {["Storytelling", "Double cam", "Valeur rapide", "Valeur travaillée", "YouTube", "Live"].map(fmt => (
-          <span key={fmt} className="text-xs px-2 py-1 rounded-lg" style={{ background: FORMAT_COLORS[fmt], color: "rgba(255,255,255,0.7)" }}>
+          <span key={fmt} className="text-xs px-2 py-1 rounded-lg text-foreground/70" style={{ background: FORMAT_COLORS[fmt] }}>
             {FORMAT_ICONS[fmt]} {fmt}
           </span>
         ))}
@@ -437,8 +375,8 @@ export default function ContentPage() {
       {loading && (
         <div className="flex items-center justify-center py-20">
           <div className="text-center">
-            <div className="w-8 h-8 border-2 border-white/10 border-t-purple-500 rounded-full animate-spin mx-auto mb-3" />
-            <p className="text-white/30 text-sm">Connexion à Notion...</p>
+            <div className="w-8 h-8 border-2 border-border border-t-primary rounded-full animate-spin mx-auto mb-3" />
+            <p className="text-muted-foreground text-sm">Connexion à Notion...</p>
           </div>
         </div>
       )}
@@ -451,27 +389,23 @@ export default function ContentPage() {
           <Section title="📅 Cette semaine" items={thisWeekItems} emptyMsg="Rien de planifié cette semaine" onStatusChange={handleStatusChange} />
           {items.filter(i => i.statut !== "Publié").length > 0 && (
             <div>
-              <h2 className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3">📋 Tout le contenu</h2>
+              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">📋 Tout le contenu</h2>
               <div className="space-y-2">
                 {items.map(item => <ContentCard key={item.id} item={item} onStatusChange={handleStatusChange} />)}
               </div>
             </div>
           )}
           {items.length === 0 && !error && (
-            <div
-              className="rounded-2xl p-12 text-center cursor-pointer transition-all hover:border-purple-500/30"
-              style={{ background: "rgba(255,255,255,0.03)", border: "1px dashed rgba(255,255,255,0.1)" }}
-              onClick={() => setShowCreate(true)}
-            >
-              <Calendar className="w-10 h-10 text-white/15 mx-auto mb-3" />
-              <p className="text-white/50 font-medium">Calendrier vide</p>
-              <p className="text-white/25 text-sm mt-1">Clique pour créer ton premier contenu</p>
+            <div className="glass-card p-12 text-center cursor-pointer border-dashed hover:border-primary/30 transition-colors" onClick={() => setShowCreate(true)}>
+              <Calendar className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
+              <p className="text-foreground/60 font-medium">Calendrier vide</p>
+              <p className="text-muted-foreground text-sm mt-1">Clique pour créer ton premier contenu</p>
             </div>
           )}
         </div>
       )}
 
-      <p className="text-white/15 text-xs mt-8 text-center">
+      <p className="text-muted-foreground/40 text-xs mt-8 text-center">
         Dernière sync · {lastSync.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
       </p>
 
@@ -480,6 +414,7 @@ export default function ContentPage() {
         <CreateEntryModal
           onClose={() => setShowCreate(false)}
           onCreated={() => { fetchContent(); }}
+          onLocalCreate={handleLocalCreate}
         />
       )}
     </div>
