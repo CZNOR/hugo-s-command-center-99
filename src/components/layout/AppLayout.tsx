@@ -4,24 +4,22 @@ import { Plus } from "lucide-react";
 import AppSidebar from "./AppSidebar";
 import StarField from "../StarField";
 import { BusinessProvider } from "@/lib/businessContext";
-import { TaskProvider, useTasks } from "@/lib/taskContext";
+import { TaskProvider, useTasks, type TaskBusiness } from "@/lib/taskContext";
 
 const SIDEBAR_W = 220;
 const HEADER_H  = 56;
 
 // ─── Header (inside TaskProvider + BusinessProvider) ──────────
 function AppHeader({ onOpenSidebar }: { onOpenSidebar: () => void }) {
-  const { tasks, setAdding } = useTasks();
-  const navigate = useNavigate();
+  const { tasks } = useTasks();
+  const navigate  = useNavigate();
 
-  const coachingPending = tasks.filter(t => t.tag === "coaching" && !t.done).length;
-  const casinoPending   = tasks.filter(t => t.tag === "casino"   && !t.done).length;
+  const pending = (biz: TaskBusiness) => tasks.filter(t => t.business === biz && !t.done).length;
+  const coachingPending = pending("coaching");
+  const casinoPending   = pending("casino");
   const totalPending    = tasks.filter(t => !t.done).length;
 
-  const handleAddTask = () => {
-    navigate("/");
-    setAdding(true);
-  };
+  const handleAddTask = () => navigate("/");
 
   return (
     <header
