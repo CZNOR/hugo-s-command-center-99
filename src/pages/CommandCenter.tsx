@@ -215,7 +215,7 @@ function KPICard({ label, value, delta, up, accent, icon: Icon }: {
   return (
     <div
       className="kpi-hover p-4 rounded-2xl flex flex-col gap-2"
-      style={{ background: "rgba(0,0,0,0.3)", border: `1px solid ${accent}18` }}
+      style={{ background: "rgba(0,0,0,0.25)", border: "1px solid rgba(255,255,255,0.04)" }}
     >
       <div className="flex items-center justify-between">
         {Icon && (
