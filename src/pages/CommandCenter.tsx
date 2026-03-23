@@ -242,15 +242,7 @@ function KPICard({ label, value, delta, up, accent, icon: Icon }: {
 function CasinoPanel() {
   const c = CASINO_MOCK;
   return (
-    <div
-      className="panel-inner p-5 flex flex-col gap-4 relative"
-      style={{ background: "rgba(0,6,2,0.88)" }}
-    >
-      {/* Fluid blobs */}
-      <div className="blob blob-ca-1" />
-      <div className="blob blob-ca-2" />
-      <div className="blob blob-ca-3" />
-      <div className="blob blob-ca-4" />
+    <div className="panel-inner panel-fluid-casino p-5 flex flex-col gap-4 relative">
 
       {/* Header */}
       <div className="flex items-center justify-between relative z-10">
@@ -338,15 +330,7 @@ function CasinoPanel() {
 function CoachingPanel() {
   const c = COACHING_MOCK;
   return (
-    <div
-      className="panel-inner p-5 flex flex-col gap-4 relative"
-      style={{ background: "rgba(3,0,10,0.88)" }}
-    >
-      {/* Fluid blobs */}
-      <div className="blob blob-cv-1" />
-      <div className="blob blob-cv-2" />
-      <div className="blob blob-cv-3" />
-      <div className="blob blob-cv-4" />
+    <div className="panel-inner panel-fluid-coaching p-5 flex flex-col gap-4 relative">
 
       {/* Header */}
       <div className="flex items-center justify-between relative z-10">
