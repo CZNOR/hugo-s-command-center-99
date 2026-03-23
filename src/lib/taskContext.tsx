@@ -10,6 +10,7 @@ export interface Task {
   business: TaskBusiness;
   priority: TaskPriority;
   deadline?: string;   // yyyy-mm-dd
+  time?: string;       // HH:MM — pour les calls planifiés
   done: boolean;
   createdAt: string;   // yyyy-mm-dd
 }
@@ -26,14 +27,18 @@ function buildSeed(): Task[] {
   const today = fmt(now);
 
   return [
-    { id: "1", title: "Publier reel TikTok storytelling",      business: "content",  priority: "haute",   deadline: off(0), done: false, createdAt: today },
-    { id: "2", title: "Contacter support Coolaff",              business: "casino",   priority: "haute",   deadline: off(0), done: false, createdAt: today },
-    { id: "3", title: "Relancer les leads chauds de la semaine", business: "coaching", priority: "haute",   deadline: off(0), done: false, createdAt: today },
-    { id: "4", title: "Saisir clics Beacons semaine",           business: "coaching", priority: "normale", deadline: off(0), done: true,  createdAt: today },
-    { id: "5", title: "Préparer script appel de vente",         business: "coaching", priority: "normale", deadline: off(1), done: false, createdAt: today },
-    { id: "6", title: "Vérifier dépôts Coolaff validés",        business: "casino",   priority: "normale", deadline: off(2), done: false, createdAt: today },
-    { id: "7", title: "Tourner vidéo YouTube produit phare",    business: "content",  priority: "normale", deadline: off(3), done: false, createdAt: today },
-    { id: "8", title: "Réunion équipe — point hebdo",           business: "equipe",   priority: "basse",   deadline: off(4), done: false, createdAt: today },
+    { id: "1",  title: "Publier reel TikTok storytelling",       business: "content",  priority: "haute",   deadline: off(0), time: "09:00", done: false, createdAt: today },
+    { id: "2",  title: "Call discovery lead chaud",               business: "coaching", priority: "haute",   deadline: off(0), time: "11:00", done: false, createdAt: today },
+    { id: "3",  title: "Contacter support Coolaff",               business: "casino",   priority: "haute",   deadline: off(0), time: "14:00", done: false, createdAt: today },
+    { id: "4",  title: "Relancer les leads chauds",               business: "coaching", priority: "normale", deadline: off(0),               done: false, createdAt: today },
+    { id: "5",  title: "Saisir clics Beacons semaine",            business: "coaching", priority: "normale", deadline: off(0),               done: true,  createdAt: today },
+    { id: "6",  title: "Call closing prospect qualifié",          business: "coaching", priority: "haute",   deadline: off(1), time: "10:00", done: false, createdAt: today },
+    { id: "7",  title: "Préparer script appel de vente",          business: "coaching", priority: "normale", deadline: off(1),               done: false, createdAt: today },
+    { id: "8",  title: "Vérifier dépôts Coolaff validés",         business: "casino",   priority: "normale", deadline: off(2),               done: false, createdAt: today },
+    { id: "9",  title: "Call suivi client programme 4k",          business: "coaching", priority: "normale", deadline: off(2), time: "15:30", done: false, createdAt: today },
+    { id: "10", title: "Tourner vidéo YouTube produit phare",     business: "content",  priority: "normale", deadline: off(3),               done: false, createdAt: today },
+    { id: "11", title: "Call onboarding nouveau client",          business: "coaching", priority: "haute",   deadline: off(3), time: "11:00", done: false, createdAt: today },
+    { id: "12", title: "Réunion équipe — point hebdo",            business: "equipe",   priority: "basse",   deadline: off(4), time: "09:30", done: false, createdAt: today },
   ];
 }
 
@@ -41,7 +46,7 @@ function buildSeed(): Task[] {
 interface TaskContextType {
   tasks: Task[];
   toggle: (id: string) => void;
-  addTask: (title: string, business: TaskBusiness, priority: TaskPriority, deadline?: string) => void;
+  addTask: (title: string, business: TaskBusiness, priority: TaskPriority, deadline?: string, time?: string) => void;
 }
 
 const TaskContext = createContext<TaskContextType | null>(null);
@@ -52,12 +57,12 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const toggle = (id: string) =>
     setTasks(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t));
 
-  const addTask = (title: string, business: TaskBusiness, priority: TaskPriority, deadline?: string) => {
+  const addTask = (title: string, business: TaskBusiness, priority: TaskPriority, deadline?: string, time?: string) => {
     if (!title.trim()) return;
     const today = new Date().toISOString().split("T")[0];
     setTasks(prev => [
       ...prev,
-      { id: Date.now().toString(), title: title.trim(), business, priority, deadline, done: false, createdAt: today },
+      { id: Date.now().toString(), title: title.trim(), business, priority, deadline, time, done: false, createdAt: today },
     ]);
   };
 
