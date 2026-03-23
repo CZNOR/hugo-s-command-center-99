@@ -225,10 +225,10 @@ export default function TaskBoard() {
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
 
       {/* ══ BLOC 1 — Aujourd'hui ══════════════════════════════ */}
-      <div style={{ ...card, display: "flex", gap: 0 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
 
         {/* Left — Formulaire */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 11, paddingRight: 16 }}>
+        <div style={{ ...card, display: "flex", flexDirection: "column", gap: 11 }}>
           <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)" }}>
             Nouvelle tâche
           </p>
@@ -305,11 +305,8 @@ export default function TaskBoard() {
           </button>
         </div>
 
-        {/* Separateur vertical */}
-        <div style={{ width: 1, background: "rgba(255,255,255,0.06)", flexShrink: 0 }} />
-
         {/* Right — Aujourd'hui */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8, paddingLeft: 16 }}>
+        <div style={{ ...card, display: "flex", flexDirection: "column", gap: 8 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <p style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.7)" }}>Aujourd'hui</p>
             <span style={{ background: "rgba(168,85,247,0.15)", color: "#c084fc", borderRadius: 20, fontSize: 11, fontWeight: 700, padding: "2px 8px" }}>
