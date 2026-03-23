@@ -408,44 +408,99 @@ select:focus {
   position: relative;
 }
 
-/* ── Fluid gradient background (slowly shifting) ── */
-@keyframes fluid-coaching {
-  0%   { background-position: 0%   20%,  100% 80%,  40%  0%,  80% 100%; }
-  25%  { background-position: 60%   0%,  30% 100%,  100% 50%, 10%  60%; }
-  50%  { background-position: 100% 70%,  0%  20%,   60% 100%,  50%  0%; }
-  75%  { background-position: 20% 100%,  80%  0%,   0%  60%,  100% 40%; }
-  100% { background-position: 0%   20%,  100% 80%,  40%  0%,  80% 100%; }
+/* ── Liquid blob bouncing inside panels ── */
+@keyframes blob-bounce-coaching {
+  0%   { transform: translate(-28%, -22%) scale(1.00); }
+  15%  { transform: translate( 32%, -18%) scale(1.06); }
+  30%  { transform: translate( 42%,  28%) scale(0.95); }
+  48%  { transform: translate( 10%,  50%) scale(1.04); }
+  63%  { transform: translate(-32%,  35%) scale(0.97); }
+  80%  { transform: translate(-22%,  -8%) scale(1.03); }
+  100% { transform: translate(-28%, -22%) scale(1.00); }
 }
-@keyframes fluid-casino {
-  0%   { background-position: 10%  10%,  90%  90%,  50%  0%,  70% 100%; }
-  25%  { background-position: 80%   0%,  20% 100%,  100% 60%, 0%  40%;  }
-  50%  { background-position: 90%  80%,  10%  10%,  30% 100%, 60%  0%;  }
-  75%  { background-position: 0%  100%,  100%  0%,  0%  40%,  100% 60%; }
-  100% { background-position: 10%  10%,  90%  90%,  50%  0%,  70% 100%; }
+@keyframes blob-bounce-coaching-b {
+  0%   { transform: translate( 35%,  30%) scale(1.00); }
+  20%  { transform: translate(-20%,  40%) scale(1.05); }
+  42%  { transform: translate(-38%, -15%) scale(0.94); }
+  60%  { transform: translate( 15%, -28%) scale(1.03); }
+  80%  { transform: translate( 40%,   5%) scale(0.98); }
+  100% { transform: translate( 35%,  30%) scale(1.00); }
 }
 
+@keyframes blob-bounce-casino {
+  0%   { transform: translate( 30%, -24%) scale(1.00); }
+  15%  { transform: translate(-26%, -16%) scale(1.07); }
+  32%  { transform: translate(-40%,  32%) scale(0.96); }
+  50%  { transform: translate(  5%,  52%) scale(1.04); }
+  65%  { transform: translate( 38%,  22%) scale(0.98); }
+  82%  { transform: translate( 22%,  -6%) scale(1.02); }
+  100% { transform: translate( 30%, -24%) scale(1.00); }
+}
+@keyframes blob-bounce-casino-b {
+  0%   { transform: translate(-30%,  25%) scale(1.00); }
+  22%  { transform: translate( 20%,  38%) scale(1.04); }
+  44%  { transform: translate( 42%, -18%) scale(0.95); }
+  62%  { transform: translate(-12%, -30%) scale(1.06); }
+  82%  { transform: translate(-36%,   8%) scale(0.97); }
+  100% { transform: translate(-30%,  25%) scale(1.00); }
+}
+
+/* Base background — dark, barely tinted */
 .panel-fluid-coaching {
-  background:
-    radial-gradient(ellipse 70% 55%, rgba(124,58,237,0.45)  0%, transparent 65%),
-    radial-gradient(ellipse 60% 65%, rgba(99,102,241,0.3)   0%, transparent 60%),
-    radial-gradient(ellipse 45% 45%, rgba(192,132,252,0.22) 0%, transparent 55%),
-    radial-gradient(ellipse 50% 40%, rgba(167,139,250,0.18) 0%, transparent 60%),
-    rgba(3,0,10,0.92);
-  background-size: 220% 220%, 200% 200%, 180% 180%, 190% 190%, 100% 100%;
-  animation: fluid-coaching 24s ease-in-out infinite;
-  will-change: background-position;
+  background: rgba(3,0,10,0.94);
+}
+.panel-fluid-casino {
+  background: rgba(0,5,2,0.94);
 }
 
-.panel-fluid-casino {
-  background:
-    radial-gradient(ellipse 70% 55%, rgba(0,136,58,0.4)    0%, transparent 65%),
-    radial-gradient(ellipse 60% 65%, rgba(0,204,68,0.28)   0%, transparent 60%),
-    radial-gradient(ellipse 45% 45%, rgba(0,255,136,0.18)  0%, transparent 55%),
-    radial-gradient(ellipse 50% 40%, rgba(0,180,80,0.15)   0%, transparent 60%),
-    rgba(0,6,2,0.92);
-  background-size: 220% 220%, 200% 200%, 180% 180%, 190% 190%, 100% 100%;
-  animation: fluid-casino 24s ease-in-out infinite;
-  will-change: background-position;
+/* Main blob — large, soft, low opacity */
+.panel-fluid-coaching::before,
+.panel-fluid-casino::before,
+.panel-fluid-coaching::after,
+.panel-fluid-casino::after {
+  content: '';
+  position: absolute;
+  width: 140%;
+  height: 140%;
+  top: -20%;
+  left: -20%;
+  border-radius: 50%;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.panel-fluid-coaching::before {
+  background: radial-gradient(ellipse 58% 52% at 50% 50%,
+    rgba(124,58,237,0.18) 0%,
+    rgba(99,102,241,0.08) 45%,
+    transparent 68%
+  );
+  animation: blob-bounce-coaching 30s ease-in-out infinite;
+}
+.panel-fluid-coaching::after {
+  background: radial-gradient(ellipse 48% 44% at 50% 50%,
+    rgba(192,132,252,0.11) 0%,
+    rgba(167,139,250,0.05) 45%,
+    transparent 68%
+  );
+  animation: blob-bounce-coaching-b 38s ease-in-out infinite;
+}
+
+.panel-fluid-casino::before {
+  background: radial-gradient(ellipse 58% 52% at 50% 50%,
+    rgba(0,160,55,0.16) 0%,
+    rgba(0,204,68,0.07) 45%,
+    transparent 68%
+  );
+  animation: blob-bounce-casino 30s ease-in-out infinite;
+}
+.panel-fluid-casino::after {
+  background: radial-gradient(ellipse 48% 44% at 50% 50%,
+    rgba(0,255,136,0.09) 0%,
+    rgba(0,180,80,0.04) 45%,
+    transparent 68%
+  );
+  animation: blob-bounce-casino-b 38s ease-in-out infinite;
 }
 
 /* KPI card — frosted glass on top of blobs */
