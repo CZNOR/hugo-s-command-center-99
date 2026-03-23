@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import { Check, Plus, Phone } from "lucide-react";
 import { useTasks, type Task, type TaskBusiness, type TaskPriority } from "@/lib/taskContext";
 
@@ -225,10 +225,10 @@ export default function TaskBoard() {
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
 
       {/* ══ BLOC 1 — Aujourd'hui ══════════════════════════════ */}
-      <div style={{ ...card, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+      <div style={{ ...card, display: "flex", gap: 0 }}>
 
         {/* Left — Formulaire */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 11, paddingRight: 16 }}>
           <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)" }}>
             Nouvelle tâche
           </p>
@@ -305,19 +305,37 @@ export default function TaskBoard() {
           </button>
         </div>
 
+        {/* Separateur vertical */}
+        <div style={{ width: 1, background: "rgba(255,255,255,0.06)", flexShrink: 0 }} />
+
         {/* Right — Aujourd'hui */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8, paddingLeft: 16 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <p style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.7)" }}>Aujourd'hui</p>
             <span style={{ background: "rgba(168,85,247,0.15)", color: "#c084fc", borderRadius: 20, fontSize: 11, fontWeight: 700, padding: "2px 8px" }}>
               {todayTasks.filter(t => !t.done).length} à faire
             </span>
           </div>
-          <div style={{ flex: 1, overflowY: "auto", maxHeight: 290, display: "flex", flexDirection: "column", gap: 4 }}>
-            {todayTasks.length === 0
-              ? <p style={{ fontSize: 12, color: "rgba(255,255,255,0.18)", textAlign: "center", marginTop: 40 }}>Aucune tâche</p>
-              : todayTasks.map(t => <TodayRow key={t.id} task={t} onToggle={toggle} />)
-            }
+          <div style={{ flex: 1, overflowY: "auto", maxHeight: 290, display: "flex", flexDirection: "column", gap: 0 }}>
+            {todayTasks.length === 0 ? (
+              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.18)", textAlign: "center", marginTop: 40 }}>Aucune tâche</p>
+            ) : (() => {
+              // Group by business, keep priority sort within each group
+              const bizOrder: TaskBusiness[] = ["coaching", "casino", "content", "equipe"];
+              const groups = bizOrder
+                .map(biz => ({ biz, items: todayTasks.filter(t => t.business === biz) }))
+                .filter(g => g.items.length > 0);
+              return groups.map((group, gi) => (
+                <Fragment key={group.biz}>
+                  {gi > 0 && (
+                    <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "6px 0" }} />
+                  )}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                    {group.items.map(t => <TodayRow key={t.id} task={t} onToggle={toggle} />)}
+                  </div>
+                </Fragment>
+              ));
+            })()}
           </div>
         </div>
       </div>
