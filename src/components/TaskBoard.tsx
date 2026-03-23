@@ -111,18 +111,22 @@ function TodayRow({ task, onToggle }: { task: Task; onToggle: (id: string) => vo
       {isCall && !task.done && (
         <Phone style={{ width: 11, height: 11, color: "#a855f7", flexShrink: 0 }} />
       )}
+      {task.time && (
+        <span style={{
+          fontSize: 13, fontWeight: 700, flexShrink: 0, fontFamily: "monospace",
+          color: task.done ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.9)",
+          minWidth: 40,
+        }}>
+          {task.time}
+        </span>
+      )}
       <span style={{
         flex: 1, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-        color: task.done ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.82)",
+        color: task.done ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.75)",
         textDecoration: task.done ? "line-through" : "none",
       }}>
         {task.title}
       </span>
-      {task.time && (
-        <span style={{ fontSize: 10, color: "#a855f7", fontWeight: 600, flexShrink: 0, fontFamily: "monospace" }}>
-          {task.time}
-        </span>
-      )}
       <BizPill business={task.business} />
     </div>
   );
