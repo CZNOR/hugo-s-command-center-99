@@ -214,7 +214,7 @@ function KPICard({ label, value, delta, up, accent, icon: Icon }: {
 }) {
   return (
     <div
-      className="p-4 rounded-2xl flex flex-col gap-2"
+      className="kpi-hover p-4 rounded-2xl flex flex-col gap-2"
       style={{ background: "rgba(0,0,0,0.3)", border: `1px solid ${accent}18` }}
     >
       <div className="flex items-center justify-between">
@@ -243,11 +243,10 @@ function CasinoPanel() {
   const c = CASINO_MOCK;
   return (
     <div
-      className="rounded-2xl p-5 flex flex-col gap-4 relative overflow-hidden"
+      className="panel-inner p-5 flex flex-col gap-4 relative"
       style={{
-        background: "rgba(0,8,4,0.7)",
-        border: `1px solid ${CASINO_COLOR}28`,
-        boxShadow: `0 0 60px ${CASINO_GLOW}, inset 0 1px 0 ${CASINO_COLOR}10`,
+        background: "rgba(0,8,4,0.85)",
+        boxShadow: `inset 0 1px 0 ${CASINO_COLOR}10`,
       }}
     >
       {/* Glow orb */}
@@ -343,11 +342,10 @@ function CoachingPanel() {
   const c = COACHING_MOCK;
   return (
     <div
-      className="rounded-2xl p-5 flex flex-col gap-4 relative overflow-hidden"
+      className="panel-inner p-5 flex flex-col gap-4 relative"
       style={{
-        background: "rgba(4,0,12,0.7)",
-        border: `1px solid ${VIOLET_COLOR}28`,
-        boxShadow: `0 0 60px ${VIOLET_GLOW}, inset 0 1px 0 ${VIOLET_COLOR}10`,
+        background: "rgba(4,0,12,0.85)",
+        boxShadow: `inset 0 1px 0 ${VIOLET_COLOR}10`,
       }}
     >
       {/* Glow orb */}
@@ -520,8 +518,12 @@ export default function CommandCenter() {
           Mes business
         </p>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <CoachingPanel />
-          <CasinoPanel />
+          <div className="panel-coaching-wrap">
+            <CoachingPanel />
+          </div>
+          <div className="panel-casino-wrap">
+            <CasinoPanel />
+          </div>
         </div>
       </div>
 

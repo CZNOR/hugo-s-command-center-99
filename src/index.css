@@ -327,3 +327,92 @@ select:focus {
 .page-enter {
   animation: fade-up 0.4s ease forwards;
 }
+
+/* ═══════════════════════════════════════════
+   BUSINESS PANEL — Animated border + hover
+═══════════════════════════════════════════ */
+
+/* Rotating angle CSS custom property */
+@property --ba-coaching {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+@property --ba-casino {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes spin-coaching {
+  to { --ba-coaching: 360deg; }
+}
+@keyframes spin-casino {
+  to { --ba-casino: 360deg; }
+}
+
+/* Wrapper that renders the spinning gradient border */
+.panel-coaching-wrap {
+  --ba-coaching: 0deg;
+  border-radius: 18px;
+  padding: 1.5px;
+  background: conic-gradient(
+    from var(--ba-coaching),
+    #7c3aed 0%,
+    #c084fc 20%,
+    rgba(124,58,237,0.15) 45%,
+    rgba(124,58,237,0.05) 50%,
+    rgba(124,58,237,0.15) 55%,
+    #c084fc 80%,
+    #7c3aed 100%
+  );
+  animation: spin-coaching 5s linear infinite;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+              filter 0.35s ease;
+  will-change: transform;
+}
+.panel-coaching-wrap:hover {
+  transform: scale(1.018);
+  filter: drop-shadow(0 0 32px rgba(168,85,247,0.35));
+}
+
+.panel-casino-wrap {
+  --ba-casino: 0deg;
+  border-radius: 18px;
+  padding: 1.5px;
+  background: conic-gradient(
+    from var(--ba-casino),
+    #00cc44 0%,
+    #00ff88 20%,
+    rgba(0,204,68,0.15) 45%,
+    rgba(0,204,68,0.05) 50%,
+    rgba(0,204,68,0.15) 55%,
+    #00ff88 80%,
+    #00cc44 100%
+  );
+  animation: spin-casino 5s linear infinite;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+              filter 0.35s ease;
+  will-change: transform;
+}
+.panel-casino-wrap:hover {
+  transform: scale(1.018);
+  filter: drop-shadow(0 0 32px rgba(0,255,136,0.3));
+}
+
+/* Inner panel — sits on the dark bg behind the border */
+.panel-inner {
+  border-radius: 17px;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* KPI card hover scale */
+.kpi-hover {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+              background 0.2s ease;
+  cursor: default;
+}
+.kpi-hover:hover {
+  transform: scale(1.07);
+}
