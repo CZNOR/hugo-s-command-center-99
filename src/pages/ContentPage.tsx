@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Calendar, RefreshCw, Plus, X, Sparkles, ChevronDown } from "lucide-react";
 import { useBusiness } from "@/lib/businessContext";
-import { supabase } from "@/integrations/supabase/client";
+const supabase = { functions: { invoke: async (name: string, opts?: { body?: object }) => { const r = await fetch(`https://blrafgywziqparlbbznv.supabase.co/functions/v1/${name}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(opts?.body ?? {}) }); return { data: await r.json(), error: r.ok ? null : new Error(r.statusText) }; } } };
 
 interface ContentItem {
   id: string;
