@@ -271,8 +271,8 @@ function PlatformPanel({
                 {i + 1}
               </span>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.7)" }}>
-                  {post.type}
+                <p className="text-xs font-medium truncate" style={{ color: "rgba(255,255,255,0.7)" }}>
+                  {post.title || post.type}
                 </p>
                 <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.3)" }}>
                   {fmtDate(post.date)}

@@ -10,6 +10,7 @@ export interface SocialPost {
   comments: number;
   date: string;
   type: string;
+  title?: string;
 }
 
 export interface SocialProfile {
@@ -74,6 +75,7 @@ export async function fetchInstagramProfile(): Promise<SocialProfile> {
       comments: p.commentsCount ?? 0,
       date: p.timestamp ?? p.takenAtTimestamp ?? "",
       type: p.type ?? "Image",
+      title: p.caption ? p.caption.slice(0, 80) : undefined,
     }));
 
   const followers = profile?.followersCount ?? 0;
@@ -103,15 +105,34 @@ export async function fetchTikTokProfile(): Promise<SocialProfile> {
   const items = await getDatasetItems(datasetId);
 
   const profileItem = items.find(
-    (i: any) => i.followersCount !== undefined || i.stats?.followerCount !== undefined
+    (i: any) =>
+      i.followersCount !== undefined ||
+      i.stats?.followerCount !== undefined ||
+      i.authorStats?.followerCount !== undefined ||
+      i.authorMeta?.fans !== undefined
   ) as any;
   const videoItems = items.filter((i: any) => i.webVideoUrl ?? i.videoUrl) as any[];
 
+  // Try every possible field name the clockworks scraper uses
+  const firstVideo = videoItems[0] as any;
   const followers =
-    profileItem?.followersCount ?? profileItem?.stats?.followerCount ?? 0;
+    profileItem?.followersCount ??
+    profileItem?.stats?.followerCount ??
+    profileItem?.authorStats?.followerCount ??
+    profileItem?.authorMeta?.fans ??
+    firstVideo?.authorStats?.followerCount ??
+    firstVideo?.authorMeta?.fans ??
+    0;
   const following =
-    profileItem?.followingCount ?? profileItem?.stats?.followingCount ?? 0;
-  const postsCount = profileItem?.videoCount ?? videoItems.length;
+    profileItem?.followingCount ??
+    profileItem?.stats?.followingCount ??
+    firstVideo?.authorStats?.followingCount ??
+    0;
+  const postsCount =
+    profileItem?.videoCount ??
+    profileItem?.authorStats?.videoCount ??
+    firstVideo?.authorStats?.videoCount ??
+    videoItems.length;
 
   const posts: SocialPost[] = videoItems.slice(0, 10).map((v: any) => ({
     id: v.id ?? v.videoId ?? "",
@@ -121,6 +142,7 @@ export async function fetchTikTokProfile(): Promise<SocialProfile> {
     comments: v.commentCount ?? v.stats?.commentCount ?? 0,
     date: v.createTime ? new Date(v.createTime * 1000).toISOString() : "",
     type: "Video",
+    title: (v.text ?? v.desc) ? (v.text ?? v.desc).slice(0, 80) : undefined,
   }));
 
   const avgEngagement =
