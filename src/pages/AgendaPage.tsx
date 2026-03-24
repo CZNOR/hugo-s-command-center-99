@@ -179,6 +179,7 @@ export default function AgendaPage() {
             <ChevronRight className="w-4 h-4" />
           </button>
           <button
+            onClick={() => window.open("https://calendar.google.com/calendar/r/eventnew?authuser=hugo@agencemade.com", "_blank")}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-white ml-2"
             style={{ background: activeBusiness.gradient, boxShadow: `0 4px 12px ${activeBusiness.glow}` }}
           >
