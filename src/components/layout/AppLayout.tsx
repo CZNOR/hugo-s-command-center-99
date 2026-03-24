@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { Plus } from "lucide-react";
 import AppSidebar from "./AppSidebar";
 import StarField from "../StarField";
 import { BusinessProvider } from "@/lib/businessContext";
 import { TaskProvider, useTasks, type TaskBusiness } from "@/lib/taskContext";
+import { initGoogleAuth } from "@/lib/googleCalendar";
 
 const SIDEBAR_W = 220;
 const HEADER_H  = 56;
@@ -171,6 +172,16 @@ function AppHeader({ onOpenSidebar }: { onOpenSidebar: () => void }) {
 // ─── Inner layout ──────────────────────────────────────────────
 function AppLayoutInner() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("code")) {
+      initGoogleAuth().then(authed => {
+        if (authed) navigate("/agenda", { replace: true });
+      });
+    }
+  }, []);
 
   return (
     <div style={{ background: "#07040F", minHeight: "100vh" }}>
