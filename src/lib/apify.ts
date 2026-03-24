@@ -1,8 +1,6 @@
-import { ApifyClient } from "apify-client";
-
-const client = new ApifyClient({
-  token: import.meta.env.VITE_APIFY_TOKEN as string,
-});
+// ── Apify REST client (browser-compatible, no Node.js deps) ────────────────
+const APIFY_TOKEN = import.meta.env.VITE_APIFY_TOKEN as string;
+const BASE = "https://api.apify.com/v2";
 
 export interface SocialPost {
   id: string;
@@ -22,13 +20,48 @@ export interface SocialProfile {
   topPosts: SocialPost[];
 }
 
+// ── Helpers ─────────────────────────────────────────────────────────────────
+
+async function startRun(actorId: string, input: object): Promise<{ runId: string; datasetId: string }> {
+  const slug = actorId.replace("/", "~");
+  const res = await fetch(`${BASE}/acts/${slug}/runs?token=${APIFY_TOKEN}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw new Error(`Apify start run failed: ${res.status} ${await res.text()}`);
+  const { data } = await res.json();
+  return { runId: data.id, datasetId: data.defaultDatasetId };
+}
+
+async function waitForRun(runId: string): Promise<string> {
+  for (let i = 0; i < 60; i++) {
+    await new Promise((r) => setTimeout(r, 4000));
+    const res = await fetch(`${BASE}/actor-runs/${runId}?token=${APIFY_TOKEN}`);
+    if (!res.ok) continue;
+    const { data } = await res.json();
+    if (data.status === "SUCCEEDED") return data.defaultDatasetId;
+    if (data.status === "FAILED" || data.status === "ABORTED" || data.status === "TIMED-OUT")
+      throw new Error(`Apify run ${data.status}`);
+  }
+  throw new Error("Apify run timed out after 4 minutes");
+}
+
+async function getDatasetItems(datasetId: string): Promise<any[]> {
+  const res = await fetch(`${BASE}/datasets/${datasetId}/items?token=${APIFY_TOKEN}&limit=20`);
+  if (!res.ok) throw new Error(`Apify dataset fetch failed: ${res.status}`);
+  return res.json();
+}
+
+// ── Instagram ────────────────────────────────────────────────────────────────
+
 export async function fetchInstagramProfile(): Promise<SocialProfile> {
-  const run = await client.actor("apify/instagram-profile-scraper").call({
+  const { runId } = await startRun("apify/instagram-profile-scraper", {
     usernames: ["hugo.bnls"],
     resultsLimit: 10,
   });
-
-  const { items } = await client.dataset(run.defaultDatasetId).listItems();
+  const datasetId = await waitForRun(runId);
+  const items = await getDatasetItems(datasetId);
   const profile = items[0] as any;
 
   const posts: SocialPost[] = ((profile?.latestPosts ?? profile?.posts) || [])
@@ -46,10 +79,8 @@ export async function fetchInstagramProfile(): Promise<SocialProfile> {
   const followers = profile?.followersCount ?? 0;
   const avgEngagement =
     posts.length > 0 && followers > 0
-      ? posts.reduce(
-          (acc, p) => acc + ((p.likes + p.comments) / followers) * 100,
-          0
-        ) / posts.length
+      ? posts.reduce((acc, p) => acc + ((p.likes + p.comments) / followers) * 100, 0) /
+        posts.length
       : 0;
 
   return {
@@ -61,20 +92,20 @@ export async function fetchInstagramProfile(): Promise<SocialProfile> {
   };
 }
 
+// ── TikTok ───────────────────────────────────────────────────────────────────
+
 export async function fetchTikTokProfile(): Promise<SocialProfile> {
-  const run = await client.actor("clockworks/free-tiktok-scraper").call({
+  const { runId } = await startRun("clockworks/free-tiktok-scraper", {
     profiles: ["hugo.bnls"],
     resultsPerPage: 10,
   });
-
-  const { items } = await client.dataset(run.defaultDatasetId).listItems();
+  const datasetId = await waitForRun(runId);
+  const items = await getDatasetItems(datasetId);
 
   const profileItem = items.find(
     (i: any) => i.followersCount !== undefined || i.stats?.followerCount !== undefined
   ) as any;
-  const videoItems = items.filter(
-    (i: any) => i.webVideoUrl ?? i.videoUrl
-  ) as any[];
+  const videoItems = items.filter((i: any) => i.webVideoUrl ?? i.videoUrl) as any[];
 
   const followers =
     profileItem?.followersCount ?? profileItem?.stats?.followerCount ?? 0;
@@ -88,18 +119,14 @@ export async function fetchTikTokProfile(): Promise<SocialProfile> {
     views: v.playCount ?? v.stats?.playCount ?? 0,
     likes: v.diggCount ?? v.stats?.diggCount ?? 0,
     comments: v.commentCount ?? v.stats?.commentCount ?? 0,
-    date: v.createTime
-      ? new Date(v.createTime * 1000).toISOString()
-      : "",
+    date: v.createTime ? new Date(v.createTime * 1000).toISOString() : "",
     type: "Video",
   }));
 
   const avgEngagement =
     posts.length > 0 && followers > 0
-      ? posts.reduce(
-          (acc, p) => acc + ((p.likes + p.comments) / followers) * 100,
-          0
-        ) / posts.length
+      ? posts.reduce((acc, p) => acc + ((p.likes + p.comments) / followers) * 100, 0) /
+        posts.length
       : 0;
 
   return {
