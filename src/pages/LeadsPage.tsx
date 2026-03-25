@@ -193,9 +193,19 @@ export default function LeadsPage() {
     setError(null);
     try {
       const raw = await fetchAllBookings();
+      const now = Date.now();
       setLeads(
         raw
-          .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
+          .sort((a, b) => {
+            const aTime = new Date(a.startTime).getTime();
+            const bTime = new Date(b.startTime).getTime();
+            const aFuture = aTime > now;
+            const bFuture = bTime > now;
+            // Upcoming first (soonest → latest), then past (most recent → oldest)
+            if (aFuture && bFuture) return aTime - bTime;
+            if (!aFuture && !bFuture) return bTime - aTime;
+            return aFuture ? -1 : 1;
+          })
           .map(toLead)
       );
     } catch (e) {
