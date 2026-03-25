@@ -49,6 +49,24 @@ const STATUS_CONFIG: Record<LeadStatus, { label: string; color: string; bg: stri
   "en attente": { label: "En attente", color: "#6b7280", bg: "rgba(107,114,128,0.12)", icon: AlertCircle },
 };
 
+// ─── Budget → potentiel du lead ──────────────────────────────
+// vert  = "Plus de 1500€"      → grosse opportunité
+// jaune = "Entre 500€ et 1500€"→ moyen
+// orange= "Entre 100€ et 500€" → chaud mais serré
+// rouge = "Moins de 100€" / inconnu → mort
+const BUDGET_POTENTIAL: { match: string; color: string; glow: string; label: string }[] = [
+  { match: "Plus de 1500",        color: "#22c55e", glow: "rgba(34,197,94,0.35)",   label: "Plus de 1500€" },
+  { match: "Entre 500",           color: "#eab308", glow: "rgba(234,179,8,0.35)",   label: "Entre 500€ et 1500€" },
+  { match: "Entre 100",           color: "#f97316", glow: "rgba(249,115,22,0.35)",  label: "Entre 100€ et 500€" },
+  { match: "Moins de 100",        color: "#ef4444", glow: "rgba(239,68,68,0.35)",   label: "Moins de 100€" },
+];
+
+function getBudgetPotential(budget?: string) {
+  if (!budget) return { color: "#6b7280", glow: "rgba(107,114,128,0.2)", label: null };
+  const hit = BUDGET_POTENTIAL.find(b => budget.includes(b.match));
+  return hit ?? { color: "#6b7280", glow: "rgba(107,114,128,0.2)", label: budget };
+}
+
 // ─── Styles ──────────────────────────────────────────────────
 const card: React.CSSProperties = {
   background: "rgba(255,255,255,0.03)",
@@ -69,6 +87,7 @@ function LeadRow({ lead }: { lead: Lead }) {
   const dateLabel  = dt.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
   const timeLabel  = dt.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
   const hasDetails = !!(lead.budget || lead.niveau || lead.formation || lead.phone || lead.email);
+  const potential  = getBudgetPotential(lead.budget);
 
   return (
     <div style={{ border: "1px solid rgba(139,92,246,0.12)", borderRadius: "12px", overflow: "hidden" }}>
@@ -78,8 +97,12 @@ function LeadRow({ lead }: { lead: Lead }) {
         onClick={() => hasDetails && setOpen(!open)}
       >
         <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-          style={{ background: "rgba(139,92,246,0.15)" }}>
-          <User className="w-4 h-4" style={{ color: "#a855f7" }} />
+          style={{
+            background: `${potential.color}20`,
+            border: `1.5px solid ${potential.color}50`,
+            boxShadow: `0 0 10px ${potential.glow}`,
+          }}>
+          <User className="w-4 h-4" style={{ color: potential.color }} />
         </div>
 
         <div className="flex-1 min-w-0">
@@ -95,8 +118,8 @@ function LeadRow({ lead }: { lead: Lead }) {
         </span>
 
         {lead.budget && (
-          <span className="text-[11px] px-2 py-0.5 rounded-full hidden md:inline-flex items-center flex-shrink-0"
-            style={{ background: "rgba(34,197,94,0.08)", color: "#22c55e", border: "1px solid rgba(34,197,94,0.12)" }}>
+          <span className="text-[11px] px-2 py-0.5 rounded-full hidden md:inline-flex items-center flex-shrink-0 font-semibold"
+            style={{ background: `${potential.color}15`, color: potential.color, border: `1px solid ${potential.color}35` }}>
             {lead.budget}
           </span>
         )}
