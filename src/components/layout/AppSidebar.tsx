@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { useBusiness, type BusinessId } from "@/lib/businessContext";
 import { gamificationProfile } from "@/lib/mock-data";
+import AffiliateCopyButton from "@/components/AffiliateCopyButton";
 
 // ─── Types ───────────────────────────────────────────────────
 interface NavItem {
@@ -184,6 +185,13 @@ export default function AppSidebar({ open, onClose }: AppSidebarProps) {
               <NavLink key={item.path} item={item} accentColor={accentColor} activeBg={activeBg} onClick={onClose} />
             ))}
           </div>
+
+          {/* Affiliate link — Casino only */}
+          {!isCoaching && (
+            <div className="pt-2 pb-1">
+              <AffiliateCopyButton className="w-full justify-center" />
+            </div>
+          )}
 
         </div>
 

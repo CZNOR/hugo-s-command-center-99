@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { gamificationProfile } from "@/lib/mock-data";
 import TaskBoard from "@/components/TaskBoard";
+import AffiliateCopyButton from "@/components/AffiliateCopyButton";
 
 // ─── Mock data ────────────────────────────────────────────────
 const CASINO_MOCK = {
@@ -83,9 +84,12 @@ function CasinoPanel() {
             <p className="text-[11px]" style={{ color: CASINO_DIM }}>Coolaff · CPA + RevShare</p>
           </div>
         </div>
-        <Link to="/casino" className="flex items-center gap-1 text-xs" style={{ color: `${CASINO_DIM}99` }}>
-          Voir tout <ArrowRight className="w-3 h-3" />
-        </Link>
+        <div className="flex items-center gap-2">
+          <AffiliateCopyButton />
+          <Link to="/casino" className="flex items-center gap-1 text-xs" style={{ color: `${CASINO_DIM}99` }}>
+            Voir tout <ArrowRight className="w-3 h-3" />
+          </Link>
+        </div>
       </div>
       <div className="h-px relative z-10" style={{ background: `linear-gradient(to right, ${CASINO_COLOR}30, transparent)` }} />
       <div className="grid grid-cols-2 gap-2.5 relative z-10">

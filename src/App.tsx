@@ -22,6 +22,11 @@ import LeadsPage from "@/pages/LeadsPage";
 import AppelsPage from "@/pages/AppelsPage";
 import PaiementsPage from "@/pages/PaiementsPage";
 import EquipePage from "@/pages/EquipePage";
+import CasinoDashboard from "@/pages/CasinoDashboard";
+import CasinoSocialPage from "@/pages/CasinoSocialPage";
+import CasinoDepotsPage from "@/pages/CasinoDepotsPage";
+import CasinoRevSharePage from "@/pages/CasinoRevSharePage";
+import SettingsPage from "@/pages/SettingsPage";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -53,6 +58,13 @@ const App = () => (
             <Route path="/coaching/appels" element={<AppelsPage />} />
             <Route path="/coaching/paiements" element={<PaiementsPage />} />
             <Route path="/coaching/equipe" element={<EquipePage />} />
+            {/* Casino */}
+            <Route path="/casino" element={<CasinoDashboard />} />
+            <Route path="/casino/social" element={<CasinoSocialPage />} />
+            <Route path="/casino/depots" element={<CasinoDepotsPage />} />
+            <Route path="/casino/revshare" element={<CasinoRevSharePage />} />
+            {/* Settings */}
+            <Route path="/settings" element={<SettingsPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
