@@ -23,26 +23,30 @@ interface FunnelStep {
   conversionRate?: string;
 }
 
-// ─── Mock data ───────────────────────────────────────────────
+// ─── Real data ───────────────────────────────────────────────
+// CA total encaissé : 9 clients · 25 483 € (paiements réels août–déc 2025)
+// Bookings Cal.com  : 165 total · 9 signés → taux closing 5,5%
 const kpis: KPICard[] = [
-  { label: "Leads entrants", value: "24", delta: "+8 vs S-1", up: true, icon: Users, path: "/coaching/leads", color: "#a855f7" },
-  { label: "Taux closing", value: "38%", delta: "+5% vs M-1", up: true, icon: Target, path: "/coaching/appels", color: "#22c55e" },
-  { label: "CA du mois", value: "28 000 €", delta: "+12 000 € vs M-1", up: true, icon: DollarSign, path: "/coaching/paiements", color: "#f59e0b" },
+  { label: "Leads entrants", value: "165", delta: "total Cal.com", up: true, icon: Users, path: "/coaching/leads", color: "#a855f7" },
+  { label: "Taux closing", value: "5,5%", delta: "9 / 165 bookings", up: true, icon: Target, path: "/coaching/appels", color: "#22c55e" },
+  { label: "CA total encaissé", value: "25 483 €", delta: "9 clients signés", up: true, icon: DollarSign, path: "/coaching/paiements", color: "#f59e0b" },
   { label: "Meilleure source", value: "Instagram", delta: "42% des clics Beacons", up: true, icon: Zap, path: "/coaching/beacons", color: "#ec4899" },
 ];
 
 const funnelSteps: FunnelStep[] = [
   { label: "Réseaux sociaux", sublabel: "12 400 vues / semaine", icon: "📱", path: "/coaching/social", conversionRate: "1.5%" },
   { label: "Clics Beacons", sublabel: "186 clics / semaine", icon: "🔗", path: "/coaching/beacons", conversionRate: "13%" },
-  { label: "Appels réservés", sublabel: "24 leads ce mois", icon: "📞", path: "/coaching/leads", conversionRate: "38%" },
-  { label: "Clients signés", sublabel: "9 clients · 36 000 €", icon: "✅", path: "/coaching/paiements" },
+  { label: "Appels réservés", sublabel: "165 bookings · Cal.com", icon: "📞", path: "/coaching/leads", conversionRate: "5,5%" },
+  { label: "Clients signés", sublabel: "9 clients · 25 483 €", icon: "✅", path: "/coaching/paiements" },
 ];
 
+// CA mensuel réel — paiements encaissés août–déc 2025
 const trendData = [
-  { week: "S1", leads: 14, ca: 8 },
-  { week: "S2", leads: 18, ca: 12 },
-  { week: "S3", leads: 21, ca: 20 },
-  { week: "S4", leads: 24, ca: 28 },
+  { week: "Août", ca: 7.284 },
+  { week: "Sep",  ca: 8.2   },
+  { week: "Oct",  ca: 2.999 },
+  { week: "Nov",  ca: 3.5   },
+  { week: "Déc",  ca: 3.5   },
 ];
 
 const quickLinks = [
@@ -184,26 +188,16 @@ export default function CoachingDashboard() {
         <div className="lg:col-span-3 p-5" style={cardGlow}>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold" style={{ color: "rgba(255,255,255,0.7)" }}>
-              Évolution 4 semaines
+              CA mensuel · Août–Déc 2025
             </h2>
-            <div className="flex gap-4 text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
-              <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full" style={{ background: "#a855f7", display: "inline-block" }} />
-                Leads
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full" style={{ background: "#22c55e", display: "inline-block" }} />
-                CA (k€)
-              </span>
-            </div>
+            <span className="flex items-center gap-1.5 text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
+              <span className="w-2 h-2 rounded-full" style={{ background: "#22c55e", display: "inline-block" }} />
+              CA encaissé (k€)
+            </span>
           </div>
           <ResponsiveContainer width="100%" height={210}>
             <AreaChart data={trendData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
               <defs>
-                <linearGradient id="gradLeads" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#a855f7" stopOpacity={0.35} />
-                  <stop offset="100%" stopColor="#a855f7" stopOpacity={0} />
-                </linearGradient>
                 <linearGradient id="gradCa" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#22c55e" stopOpacity={0.3} />
                   <stop offset="100%" stopColor="#22c55e" stopOpacity={0} />
@@ -217,17 +211,17 @@ export default function CoachingDashboard() {
                 tickLine={false}
               />
               <Tooltip
+                formatter={(v: number) => [`${v.toLocaleString("fr-FR")} k€`, "CA"]}
                 contentStyle={{
                   background: "rgba(10,5,25,0.95)",
-                  border: "1px solid rgba(139,92,246,0.3)",
+                  border: "1px solid rgba(34,197,94,0.3)",
                   borderRadius: "10px",
                   color: "rgba(255,255,255,0.9)",
                   fontSize: 12,
                 }}
-                cursor={{ stroke: "rgba(139,92,246,0.3)", strokeWidth: 1 }}
+                cursor={{ stroke: "rgba(34,197,94,0.3)", strokeWidth: 1 }}
               />
-              <Area type="monotone" dataKey="leads" stroke="#a855f7" strokeWidth={2} fill="url(#gradLeads)" dot={false} />
-              <Area type="monotone" dataKey="ca" stroke="#22c55e" strokeWidth={2} fill="url(#gradCa)" dot={false} />
+              <Area type="monotone" dataKey="ca" stroke="#22c55e" strokeWidth={2} fill="url(#gradCa)" dot={{ fill: "#22c55e", r: 3 }} />
             </AreaChart>
           </ResponsiveContainer>
         </div>

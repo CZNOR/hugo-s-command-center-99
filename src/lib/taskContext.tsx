@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 
 // ─── Types ───────────────────────────────────────────────────
 export type TaskBusiness = "coaching" | "casino" | "content" | "equipe";
@@ -10,36 +10,21 @@ export interface Task {
   business: TaskBusiness;
   priority: TaskPriority;
   deadline?: string;   // yyyy-mm-dd
-  time?: string;       // HH:MM — pour les calls planifiés
+  time?: string;       // HH:MM
   done: boolean;
+  completedAt?: string; // ISO string, set when marked done
   createdAt: string;   // yyyy-mm-dd
 }
 
-// ─── Seed data (dates relative to today) ─────────────────────
-function buildSeed(): Task[] {
-  const now = new Date();
-  const fmt = (d: Date): string => d.toISOString().split("T")[0];
-  const off = (n: number): string => {
-    const d = new Date(now);
-    d.setDate(now.getDate() + n);
-    return fmt(d);
-  };
-  const today = fmt(now);
+// ─── Persistence ─────────────────────────────────────────────
+const STORAGE_KEY = "hugo_tasks_v1";
 
-  return [
-    { id: "1",  title: "Publier reel TikTok storytelling",       business: "content",  priority: "haute",   deadline: off(0), time: "09:00", done: false, createdAt: today },
-    { id: "2",  title: "Call discovery lead chaud",               business: "coaching", priority: "haute",   deadline: off(0), time: "11:00", done: false, createdAt: today },
-    { id: "3",  title: "Contacter support Coolaff",               business: "casino",   priority: "haute",   deadline: off(0), time: "14:00", done: false, createdAt: today },
-    { id: "4",  title: "Relancer les leads chauds",               business: "coaching", priority: "normale", deadline: off(0),               done: false, createdAt: today },
-    { id: "5",  title: "Saisir clics Beacons semaine",            business: "coaching", priority: "normale", deadline: off(0),               done: true,  createdAt: today },
-    { id: "6",  title: "Call closing prospect qualifié",          business: "coaching", priority: "haute",   deadline: off(1), time: "10:00", done: false, createdAt: today },
-    { id: "7",  title: "Préparer script appel de vente",          business: "coaching", priority: "normale", deadline: off(1),               done: false, createdAt: today },
-    { id: "8",  title: "Vérifier dépôts Coolaff validés",         business: "casino",   priority: "normale", deadline: off(2),               done: false, createdAt: today },
-    { id: "9",  title: "Call suivi client programme 4k",          business: "coaching", priority: "normale", deadline: off(2), time: "15:30", done: false, createdAt: today },
-    { id: "10", title: "Tourner vidéo YouTube produit phare",     business: "content",  priority: "normale", deadline: off(3),               done: false, createdAt: today },
-    { id: "11", title: "Call onboarding nouveau client",          business: "coaching", priority: "haute",   deadline: off(3), time: "11:00", done: false, createdAt: today },
-    { id: "12", title: "Réunion équipe — point hebdo",            business: "equipe",   priority: "basse",   deadline: off(4), time: "09:30", done: false, createdAt: today },
-  ];
+function loadTasks(): Task[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw) as Task[];
+  } catch {}
+  return [];
 }
 
 // ─── Context ─────────────────────────────────────────────────
@@ -47,27 +32,40 @@ interface TaskContextType {
   tasks: Task[];
   toggle: (id: string) => void;
   addTask: (title: string, business: TaskBusiness, priority: TaskPriority, deadline?: string, time?: string) => void;
+  deleteTask: (id: string) => void;
 }
 
 const TaskContext = createContext<TaskContextType | null>(null);
 
 export function TaskProvider({ children }: { children: ReactNode }) {
-  const [tasks, setTasks] = useState<Task[]>(buildSeed);
+  const [tasks, setTasks] = useState<Task[]>(loadTasks);
+
+  // Persist on every change
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+  }, [tasks]);
 
   const toggle = (id: string) =>
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t));
+    setTasks(prev => prev.map(t =>
+      t.id === id
+        ? { ...t, done: !t.done, completedAt: !t.done ? new Date().toISOString() : undefined }
+        : t
+    ));
 
   const addTask = (title: string, business: TaskBusiness, priority: TaskPriority, deadline?: string, time?: string) => {
     if (!title.trim()) return;
     const today = new Date().toISOString().split("T")[0];
     setTasks(prev => [
-      ...prev,
       { id: Date.now().toString(), title: title.trim(), business, priority, deadline, time, done: false, createdAt: today },
+      ...prev,
     ]);
   };
 
+  const deleteTask = (id: string) =>
+    setTasks(prev => prev.filter(t => t.id !== id));
+
   return (
-    <TaskContext.Provider value={{ tasks, toggle, addTask }}>
+    <TaskContext.Provider value={{ tasks, toggle, addTask, deleteTask }}>
       {children}
     </TaskContext.Provider>
   );

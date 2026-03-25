@@ -1,35 +1,36 @@
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight, TrendingUp, Users,
-  Phone, DollarSign, MessageCircle, Target, Zap,
+  Phone, DollarSign, MessageCircle, Target, Zap, RefreshCw,
 } from "lucide-react";
 import { gamificationProfile } from "@/lib/mock-data";
 import TaskBoard from "@/components/TaskBoard";
 import AffiliateCopyButton from "@/components/AffiliateCopyButton";
 
-// ─── Mock data ────────────────────────────────────────────────
-const CASINO_MOCK = {
-  clicsAffiliation: 3_840,
-  clicsDelta: "+12%",
-  inscriptions: 94,
-  inscriptionsDelta: "+7",
-  depots: 31,
-  depotsDelta: "+4",
-  cpaMois: 31 * 80,
-  cpaDelta: "+320€",
-  revshare: 1_240,
-  caTotal: 8_960,
-};
+// ─── Supabase helper ─────────────────────────────────────────
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+async function sbFetch<T = any>(path: string): Promise<T> {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+  });
+  const text = await res.text();
+  return text ? JSON.parse(text) : [];
+}
 
-const COACHING_MOCK = {
+// ─── Real coaching data ───────────────────────────────────────
+// 9 clients · 25 483 € CA total encaissé (août–déc 2025)
+// 165 bookings Cal.com · taux closing 5,5%
+const COACHING = {
   dmSemaine: 47,
   dmDelta: "+11 vs S-1",
-  appelsReserves: 8,
-  appelsDelta: "+2 vs S-1",
-  tauxClosing: 38,
-  closingDelta: "+5% vs M-1",
-  caMois: 16_000,
-  caDelta: "+4 000€ vs M-1",
+  bookings: 165,
+  bookingsDelta: "total Cal.com",
+  tauxClosing: 5.5,
+  closingDelta: "9 / 165 appels",
+  caTotal: 25_483,
+  caDelta: "9 clients signés",
 };
 
 // ─── Colors ──────────────────────────────────────────────────
@@ -61,7 +62,7 @@ function KPICard({ label, value, delta, up, accent, icon: Icon }: {
             className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full ml-auto"
             style={{ background: up ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)", color: up ? "#4ade80" : "#f87171" }}
           >
-            {up ? "↑" : "↓"} {delta}
+            {up ? "↑" : ""} {delta}
           </span>
         )}
       </div>
@@ -71,9 +72,38 @@ function KPICard({ label, value, delta, up, accent, icon: Icon }: {
   );
 }
 
-// ─── Casino panel ─────────────────────────────────────────────
+// ─── Casino panel (live Supabase) ─────────────────────────────
+interface CasinoStats {
+  commission: number; registrations: number; ctr: number;
+  qftd: number; impressions: number; depots: number; revshare: number;
+}
+const CASINO_DEFAULTS: CasinoStats = {
+  commission: 0, registrations: 0, ctr: 0,
+  qftd: 0, impressions: 0, depots: 0, revshare: 0,
+};
+
 function CasinoPanel() {
-  const c = CASINO_MOCK;
+  const [stats, setStats] = useState<CasinoStats>(CASINO_DEFAULTS);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    try {
+      const rows = await sbFetch<any[]>(
+        "casino_stats?brand=eq.corgibet&order=updated_at.desc&limit=1"
+      );
+      if (rows?.[0]) setStats(rows[0]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const s = stats;
+  const cpa = s.depots * 80;
+  const caTotal = s.commission + cpa + s.revshare;
+  const fmt = (n: number) => n.toLocaleString("fr-FR", { maximumFractionDigits: 2 }) + " €";
+
   return (
     <div className="panel-inner p-5 flex flex-col gap-4 relative" style={{ background: "rgba(0,5,2,0.95)" }}>
       <div className="flex items-center justify-between relative z-10">
@@ -85,6 +115,7 @@ function CasinoPanel() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {loading && <RefreshCw className="w-3.5 h-3.5 animate-spin" style={{ color: CASINO_DIM }} />}
           <AffiliateCopyButton />
           <Link to="/casino" className="flex items-center gap-1 text-xs" style={{ color: `${CASINO_DIM}99` }}>
             Voir tout <ArrowRight className="w-3 h-3" />
@@ -93,15 +124,15 @@ function CasinoPanel() {
       </div>
       <div className="h-px relative z-10" style={{ background: `linear-gradient(to right, ${CASINO_COLOR}30, transparent)` }} />
       <div className="grid grid-cols-2 gap-2.5 relative z-10">
-        <KPICard label="Clics affiliation / semaine" value={c.clicsAffiliation.toLocaleString("fr-FR")} delta={c.clicsDelta} up accent={CASINO_COLOR} icon={Zap} />
-        <KPICard label="Inscriptions générées"       value={String(c.inscriptions)}                      delta={c.inscriptionsDelta} up accent={CASINO_COLOR} icon={Users} />
-        <KPICard label="Dépôts validés (CPA)"        value={String(c.depots)}                            delta={c.depotsDelta} up accent={CASINO_COLOR} icon={Target} />
-        <KPICard label="CPA encaissé ce mois"        value={`${c.cpaMois.toLocaleString("fr-FR")} €`}   delta={c.cpaDelta} up accent={CASINO_COLOR} icon={DollarSign} />
-        <KPICard label="RevShare estimé ce mois"     value={`${c.revshare.toLocaleString("fr-FR")} €`}  accent={CASINO_COLOR} icon={TrendingUp} />
-        <KPICard label="CA affiliation total"        value={`${c.caTotal.toLocaleString("fr-FR")} €`}   accent={CASINO_COLOR} icon={DollarSign} />
+        <KPICard label="Commission ce mois"     value={fmt(s.commission)}     accent={CASINO_COLOR} icon={DollarSign} />
+        <KPICard label="Inscriptions générées"  value={String(s.registrations)} accent={CASINO_COLOR} icon={Users} />
+        <KPICard label="Dépôts validés (CPA)"   value={String(s.depots)}      accent={CASINO_COLOR} icon={Target} />
+        <KPICard label="CPA encaissé"           value={fmt(cpa)}              accent={CASINO_COLOR} icon={DollarSign} />
+        <KPICard label="RevShare estimé"        value={fmt(s.revshare)}       accent={CASINO_COLOR} icon={TrendingUp} />
+        <KPICard label="CA affiliation total"   value={fmt(caTotal)}          accent={CASINO_COLOR} icon={Zap} />
       </div>
       <p className="text-[10px] text-center relative z-10" style={{ color: "rgba(255,255,255,0.2)" }}>
-        CPA calculé à 80 € / dépôt · {c.depots} dépôts validés
+        CPA calculé à 80 € / dépôt · données Supabase live
       </p>
     </div>
   );
@@ -109,7 +140,7 @@ function CasinoPanel() {
 
 // ─── Coaching panel ───────────────────────────────────────────
 function CoachingPanel() {
-  const c = COACHING_MOCK;
+  const c = COACHING;
   return (
     <div className="panel-inner p-5 flex flex-col gap-4 relative" style={{ background: "rgba(3,0,10,0.95)" }}>
       <div className="flex items-center justify-between relative z-10">
@@ -117,7 +148,7 @@ function CoachingPanel() {
           <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-xl" style={{ background: `${VIOLET_COLOR}18`, boxShadow: `0 0 16px ${VIOLET_GLOW}` }}>🎓</div>
           <div>
             <p className="text-base font-bold" style={{ color: "rgba(255,255,255,0.9)" }}>Coaching High-Ticket</p>
-            <p className="text-[11px]" style={{ color: VIOLET_DIM + "bb" }}>Programme 4 000 € · saisie manuelle</p>
+            <p className="text-[11px]" style={{ color: VIOLET_DIM + "bb" }}>9 clients · 25 483 € encaissés</p>
           </div>
         </div>
         <Link to="/coaching" className="flex items-center gap-1 text-xs" style={{ color: `${VIOLET_COLOR}99` }}>
@@ -126,10 +157,10 @@ function CoachingPanel() {
       </div>
       <div className="h-px relative z-10" style={{ background: `linear-gradient(to right, ${VIOLET_COLOR}30, transparent)` }} />
       <div className="grid grid-cols-2 gap-2.5 relative z-10">
-        <KPICard label="DMs reçus cette semaine" value={String(c.dmSemaine)}                       delta={c.dmDelta}      up accent={VIOLET_COLOR} icon={MessageCircle} />
-        <KPICard label="Appels réservés"          value={String(c.appelsReserves)}                 delta={c.appelsDelta}  up accent={VIOLET_COLOR} icon={Phone} />
-        <KPICard label="Taux de closing"          value={`${c.tauxClosing}%`}                      delta={c.closingDelta} up accent={VIOLET_COLOR} icon={Target} />
-        <KPICard label="CA encaissé ce mois"      value={`${c.caMois.toLocaleString("fr-FR")} €`} delta={c.caDelta}      up accent={VIOLET_COLOR} icon={DollarSign} />
+        <KPICard label="DMs reçus cette semaine" value={String(c.dmSemaine)}                              delta={c.dmDelta}       up accent={VIOLET_COLOR} icon={MessageCircle} />
+        <KPICard label="Bookings Cal.com"         value={String(c.bookings)}                              delta={c.bookingsDelta} up accent={VIOLET_COLOR} icon={Phone} />
+        <KPICard label="Taux de closing"          value={`${c.tauxClosing}%`}                             delta={c.closingDelta}  up accent={VIOLET_COLOR} icon={Target} />
+        <KPICard label="CA total encaissé"        value={c.caTotal.toLocaleString("fr-FR") + " €"}       delta={c.caDelta}       up accent={VIOLET_COLOR} icon={DollarSign} />
       </div>
       <div className="grid grid-cols-3 gap-2 relative z-10">
         {[

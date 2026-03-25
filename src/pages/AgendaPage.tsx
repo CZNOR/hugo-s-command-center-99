@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Plus, Calendar, Link } from "lucide-react";
 import { useBusiness } from "@/lib/businessContext";
+import { useTasks } from "@/lib/taskContext";
 import {
   initGoogleAuth,
   listCalendarEvents,
@@ -63,6 +64,7 @@ function toISOWeekRange(days: Date[]): { min: string; max: string } {
 
 export default function AgendaPage() {
   const { activeBusiness } = useBusiness();
+  const { tasks } = useTasks();
   const [currentDate, setCurrentDate] = useState(new Date());
   const weekDays = getWeekDays(currentDate);
 
@@ -246,6 +248,11 @@ export default function AgendaPage() {
               {weekDays.map((date, di) => {
                 const dayStr   = date.toISOString().split("T")[0];
                 const dayEvs   = timedEvents.filter(ev => eventDate(ev) === dayStr && eventHour(ev) === hour);
+                const dayTaskEvs = tasks.filter(t => {
+                  if (!t.deadline || !t.time) return false;
+                  const dayStr2 = date.toISOString().split("T")[0];
+                  return t.deadline === dayStr2 && parseInt(t.time.split(":")[0]) === hour;
+                });
 
                 return (
                   <div
@@ -268,6 +275,30 @@ export default function AgendaPage() {
                         <span className="truncate">{ev.summary}</span>
                       </div>
                     ))}
+                    {dayTaskEvs.map(t => {
+                      const bizColors: Record<string, string> = {
+                        coaching: "#7c3aed", casino: "#00cc44", content: "#f97316", equipe: "#3b82f6",
+                      };
+                      const color = bizColors[t.business] ?? "#a855f7";
+                      return (
+                        <div
+                          key={t.id}
+                          title={`${t.time} · ${t.title}`}
+                          className="absolute inset-x-1 rounded-lg px-2 py-1 text-[11px] font-medium z-10 overflow-hidden"
+                          style={{
+                            top: dayEvs.length > 0 ? "50%" : "0",
+                            background: t.done ? "rgba(255,255,255,0.04)" : `${color}20`,
+                            borderLeft: `2px solid ${t.done ? "rgba(255,255,255,0.15)" : color}`,
+                            color: t.done ? "rgba(255,255,255,0.25)" : `${color}ee`,
+                            textDecoration: t.done ? "line-through" : "none",
+                            opacity: t.done ? 0.4 : 1,
+                          }}
+                        >
+                          <span className="opacity-70 mr-1">{t.time}</span>
+                          <span className="truncate">{t.title}</span>
+                        </div>
+                      );
+                    })}
                     {/* Hover add hint */}
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                       <Plus className="w-3 h-3 text-white/20" />

@@ -1,5 +1,5 @@
 import { useState, Fragment } from "react";
-import { Check, Plus, Phone } from "lucide-react";
+import { Check, Plus, Phone, Trash2 } from "lucide-react";
 import { useTasks, type Task, type TaskBusiness, type TaskPriority } from "@/lib/taskContext";
 import { createCalendarEvent, isAuthenticated } from "@/lib/googleCalendar";
 
@@ -142,12 +142,17 @@ function WeekPill({ task, onToggle }: { task: Task; onToggle: (id: string) => vo
 
 // ─── Main TaskBoard ───────────────────────────────────────────
 export default function TaskBoard() {
-  const { tasks, toggle, addTask } = useTasks();
-  const [title,    setTitle]    = useState("");
-  const [business, setBusiness] = useState<TaskBusiness>("coaching");
-  const [priority, setPriority] = useState<TaskPriority>("normale");
-  const [deadline, setDeadline] = useState("");
-  const [time,     setTime]     = useState("");
+  const { tasks, toggle, addTask, deleteTask } = useTasks();
+  const [title,       setTitle]      = useState("");
+  const [business,    setBusiness]   = useState<TaskBusiness>("coaching");
+  const [priority,    setPriority]   = useState<TaskPriority>("normale");
+  const [deadline,    setDeadline]   = useState("");
+  const [time,        setTime]       = useState("");
+  const [showHistory, setShowHistory] = useState(false);
+
+  const doneTasks = tasks
+    .filter(t => t.done)
+    .sort((a, b) => (b.completedAt ?? "").localeCompare(a.completedAt ?? ""));
 
   const handleAdd = () => {
     if (!title.trim()) return;
@@ -301,32 +306,94 @@ export default function TaskBoard() {
           </button>
         </div>
 
-        {/* RIGHT — Aujourd'hui */}
+        {/* RIGHT — Aujourd'hui / Historique */}
         <div style={{ ...card, display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <p style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.8)" }}>Aujourd'hui</p>
-            <span style={{ background: "rgba(168,85,247,0.18)", color: "#c084fc", borderRadius: 20, fontSize: 12, fontWeight: 700, padding: "3px 11px" }}>
-              {todayTasks.filter(t => !t.done).length} à faire
-            </span>
+            <div style={{ display: "flex", gap: 6 }}>
+              <button
+                onClick={() => setShowHistory(false)}
+                style={{
+                  fontSize: 13, fontWeight: 700, padding: "3px 10px", borderRadius: 20, cursor: "pointer",
+                  background: !showHistory ? "rgba(168,85,247,0.18)" : "transparent",
+                  color: !showHistory ? "#c084fc" : "rgba(255,255,255,0.35)",
+                  border: !showHistory ? "1px solid rgba(168,85,247,0.3)" : "1px solid transparent",
+                }}
+              >Aujourd'hui</button>
+              <button
+                onClick={() => setShowHistory(true)}
+                style={{
+                  fontSize: 13, fontWeight: 700, padding: "3px 10px", borderRadius: 20, cursor: "pointer",
+                  background: showHistory ? "rgba(255,255,255,0.08)" : "transparent",
+                  color: showHistory ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.3)",
+                  border: showHistory ? "1px solid rgba(255,255,255,0.12)" : "1px solid transparent",
+                }}
+              >Historique</button>
+            </div>
+            {!showHistory && (
+              <span style={{ background: "rgba(168,85,247,0.18)", color: "#c084fc", borderRadius: 20, fontSize: 12, fontWeight: 700, padding: "3px 11px" }}>
+                {todayTasks.filter(t => !t.done).length} à faire
+              </span>
+            )}
+            {showHistory && (
+              <span style={{ background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.35)", borderRadius: 20, fontSize: 12, fontWeight: 700, padding: "3px 11px" }}>
+                {doneTasks.length} terminées
+              </span>
+            )}
           </div>
 
           <div style={{ flex: 1, overflowY: "auto", maxHeight: 320, display: "flex", flexDirection: "column", gap: 0 }}>
-            {todayTasks.length === 0 ? (
-              <p style={{ fontSize: 13, color: "rgba(255,255,255,0.18)", textAlign: "center", marginTop: 40 }}>Aucune tâche</p>
-            ) : (() => {
-              const bizOrder: TaskBusiness[] = ["coaching", "casino", "content", "equipe"];
-              const groups = bizOrder
-                .map(biz => ({ biz, items: todayTasks.filter(t => t.business === biz) }))
-                .filter(g => g.items.length > 0);
-              return groups.map((group, gi) => (
-                <Fragment key={group.biz}>
-                  {gi > 0 && <div style={{ height: 1, background: "rgba(255,255,255,0.07)", margin: "8px 0" }} />}
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    {group.items.map(t => <TodayRow key={t.id} task={t} onToggle={toggle} />)}
-                  </div>
-                </Fragment>
-              ));
-            })()}
+            {!showHistory ? (
+              todayTasks.length === 0 ? (
+                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.18)", textAlign: "center", marginTop: 40 }}>Aucune tâche pour aujourd'hui</p>
+              ) : (() => {
+                const bizOrder: TaskBusiness[] = ["coaching", "casino", "content", "equipe"];
+                const groups = bizOrder
+                  .map(biz => ({ biz, items: todayTasks.filter(t => t.business === biz) }))
+                  .filter(g => g.items.length > 0);
+                return groups.map((group, gi) => (
+                  <Fragment key={group.biz}>
+                    {gi > 0 && <div style={{ height: 1, background: "rgba(255,255,255,0.07)", margin: "8px 0" }} />}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      {group.items.map(t => <TodayRow key={t.id} task={t} onToggle={toggle} />)}
+                    </div>
+                  </Fragment>
+                ));
+              })()
+            ) : (
+              doneTasks.length === 0 ? (
+                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.18)", textAlign: "center", marginTop: 40 }}>Aucune tâche terminée</p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                  {doneTasks.map(t => (
+                    <div key={t.id} style={{
+                      display: "flex", alignItems: "center", gap: 8,
+                      padding: "8px 12px", borderRadius: 10,
+                      background: "rgba(255,255,255,0.02)",
+                      opacity: 0.45,
+                    }}>
+                      <Check style={{ width: 14, height: 14, color: "#22c55e", flexShrink: 0 }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", textDecoration: "line-through", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {t.title}
+                        </p>
+                        {t.completedAt && (
+                          <p style={{ fontSize: 10, color: "rgba(255,255,255,0.2)", marginTop: 1 }}>
+                            {new Date(t.completedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                          </p>
+                        )}
+                      </div>
+                      <BizPill business={t.business} />
+                      <button onClick={() => deleteTask(t.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 2, flexShrink: 0, opacity: 0.5 }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = "1"}
+                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = "0.5"}
+                      >
+                        <Trash2 style={{ width: 13, height: 13, color: "#ef4444" }} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )
+            )}
           </div>
         </div>
       </div>
