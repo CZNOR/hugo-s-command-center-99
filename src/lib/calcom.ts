@@ -34,7 +34,7 @@ export interface CalStats {
 
 // ── Fetch all bookings (paginated) ───────────────────────────────────────────
 
-async function fetchAllBookings(): Promise<CalBooking[]> {
+export async function fetchAllBookings(): Promise<CalBooking[]> {
   const res = await fetch(
     `${BASE}/bookings?apiKey=${CALCOM_KEY}&limit=100`,
     { headers: { "Content-Type": "application/json" } }
