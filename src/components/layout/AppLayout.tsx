@@ -81,25 +81,11 @@ function AppHeader({ onOpenSidebar }: { onOpenSidebar: () => void }) {
           justifyContent: "center",
         }}
       >
-        <svg viewBox="0 0 160 52" style={{ height: 32, width: "auto", userSelect: "none" }} aria-label="CZN">
-          <defs>
-            <filter id="czn-bubble" x="-20%" y="-20%" width="140%" height="140%">
-              <feMorphology operator="dilate" radius="3" in="SourceGraphic" result="thick" />
-              <feGaussianBlur in="thick" stdDeviation="3" result="blur" />
-              <feComposite in="SourceGraphic" in2="blur" operator="over" />
-            </filter>
-          </defs>
-          <text
-            x="80" y="40"
-            textAnchor="middle"
-            fontFamily="'Arial Black', 'Arial', sans-serif"
-            fontWeight="900"
-            fontSize="46"
-            fill="#3ddc52"
-            filter="url(#czn-bubble)"
-            letterSpacing="4"
-          >CZN</text>
-        </svg>
+        <img
+          src="/czn-logo.png"
+          alt="CZN"
+          style={{ height: 36, width: "auto", userSelect: "none", mixBlendMode: "screen" }}
+        />
       </div>
 
       {/* Zone 3 — Casino */}
