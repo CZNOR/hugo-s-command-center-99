@@ -39,8 +39,8 @@ export default function RippleCanvas() {
 
     const getColor = (strong: boolean): [number, number, number, number] => {
       const isCasino = bizRef.current === "casino";
-      if (isCasino) return strong ? [0, 204, 68, 0.15] : [0, 204, 68, 0.08];
-      return strong ? [139, 92, 246, 0.12] : [139, 92, 246, 0.04];
+      if (isCasino) return strong ? [0, 204, 68, 0.45] : [0, 204, 68, 0.2];
+      return strong ? [139, 92, 246, 0.45] : [139, 92, 246, 0.18];
     };
 
     const addRipple = (x: number, y: number, strong: boolean) => {
@@ -77,6 +77,13 @@ export default function RippleCanvas() {
 
         ctx.beginPath();
         ctx.arc(rp.x, rp.y, radius, 0, Math.PI * 2);
+        // Filled circle with low opacity for smooth water feel
+        const gradient = ctx.createRadialGradient(rp.x, rp.y, radius * 0.4, rp.x, rp.y, radius);
+        gradient.addColorStop(0, `rgba(${rp.r},${rp.g},${rp.b},0)`);
+        gradient.addColorStop(0.7, `rgba(${rp.r},${rp.g},${rp.b},${alpha * 0.4})`);
+        gradient.addColorStop(1, `rgba(${rp.r},${rp.g},${rp.b},0)`);
+        ctx.fillStyle = gradient;
+        ctx.fill();
         ctx.strokeStyle = `rgba(${rp.r},${rp.g},${rp.b},${alpha})`;
         ctx.lineWidth   = 1.5;
         ctx.stroke();
@@ -103,7 +110,7 @@ export default function RippleCanvas() {
       style={{
         position: "fixed",
         inset: 0,
-        zIndex: 0,
+        zIndex: 9999,
         pointerEvents: "none",
         width: "100%",
         height: "100%",
