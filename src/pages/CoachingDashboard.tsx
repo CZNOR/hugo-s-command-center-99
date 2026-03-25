@@ -1,8 +1,48 @@
 import { Link } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
 import { Users, DollarSign, Target, Zap, ArrowRight, TrendingUp } from "lucide-react";
 import {
   AreaChart, Area, ResponsiveContainer, Tooltip, XAxis, CartesianGrid,
 } from "recharts";
+
+// ─── Count-up hook ───────────────────────────────────────────
+function useCountUp(target: number, duration = 1200, decimals = 0): string {
+  const [val, setVal] = useState(0);
+  const rafRef = useRef<number>(0);
+  useEffect(() => {
+    const start = performance.now();
+    const tick = (now: number) => {
+      const p = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setVal(eased * target);
+      if (p < 1) rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [target, duration]);
+  return val.toLocaleString("fr-FR", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+
+// ─── Animated KPI value ──────────────────────────────────────
+function AnimatedValue({ value }: { value: string }) {
+  // Parse numeric values — skip strings like "Instagram"
+  const numeric = parseFloat(value.replace(/\s/g, "").replace(",", ".").replace(/[^0-9.]/g, ""));
+  const isNumeric = !isNaN(numeric) && isFinite(numeric);
+  const isPercent = value.includes("%");
+  const isEuro    = value.includes("€");
+  const decimals  = value.includes(",") || isPercent ? 1 : 0;
+  const displayed = useCountUp(isNumeric ? numeric : 0, 1400, decimals);
+
+  if (!isNumeric) return <>{value}</>;
+
+  const formatted = isEuro
+    ? `${displayed} €`
+    : isPercent
+    ? `${displayed}%`
+    : displayed;
+
+  return <>{formatted}</>;
+}
 
 // ─── Types ───────────────────────────────────────────────────
 interface KPICard {
@@ -115,7 +155,7 @@ export default function CoachingDashboard() {
               </span>
             </div>
             <p className="text-2xl font-bold mb-1" style={{ color: "rgba(255,255,255,0.9)" }}>
-              {kpi.value}
+              <AnimatedValue value={kpi.value} />
             </p>
             <p className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.55)" }}>
               {kpi.label}

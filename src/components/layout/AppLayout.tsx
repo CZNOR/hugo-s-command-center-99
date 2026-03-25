@@ -3,7 +3,8 @@ import { Outlet, useNavigate } from "react-router-dom";
 import { Plus } from "lucide-react";
 import AppSidebar from "./AppSidebar";
 import StarField from "../StarField";
-import { BusinessProvider } from "@/lib/businessContext";
+import RippleCanvas from "../RippleCanvas";
+import { BusinessProvider, useBusiness } from "@/lib/businessContext";
 import { TaskProvider, useTasks, type TaskBusiness } from "@/lib/taskContext";
 import { initGoogleAuth } from "@/lib/googleCalendar";
 
@@ -15,10 +16,10 @@ function AppHeader({ onOpenSidebar }: { onOpenSidebar: () => void }) {
   const { tasks } = useTasks();
   const navigate  = useNavigate();
 
-  const pending = (biz: TaskBusiness) => tasks.filter(t => t.business === biz && !t.done).length;
+  const pending = (biz: TaskBusiness) => tasks.filter(t => t.business === biz && t.status !== "done").length;
   const coachingPending = pending("coaching");
   const casinoPending   = pending("casino");
-  const totalPending    = tasks.filter(t => !t.done).length;
+  const totalPending    = tasks.filter(t => t.status !== "done").length;
 
   const handleAddTask = () => navigate("/");
 
@@ -169,6 +170,12 @@ function AppHeader({ onOpenSidebar }: { onOpenSidebar: () => void }) {
 function AppLayoutInner() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
+  const { activeBusiness } = useBusiness();
+
+  // Sync data-biz attr on body for CSS card hover theming
+  useEffect(() => {
+    document.body.setAttribute("data-biz", activeBusiness.id);
+  }, [activeBusiness.id]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -182,6 +189,7 @@ function AppLayoutInner() {
   return (
     <div style={{ background: "#07040F", minHeight: "100vh" }}>
       <StarField />
+      <RippleCanvas />
 
       {/* Ambient glow */}
       <div style={{

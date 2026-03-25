@@ -409,6 +409,20 @@ select:focus {
 }
 
 
+/* ─── Premium card upgrade — sitewide ─── */
+.premium-card {
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
+}
+.premium-card:hover {
+  transform: scale(1.005);
+}
+/* coaching accent */
+:root .premium-card:hover  { border-color: rgba(139,92,246,0.3) !important; box-shadow: 0 0 24px rgba(139,92,246,0.12); }
+/* casino accent overrides via body attribute */
+[data-biz="casino"] .premium-card:hover { border-color: rgba(0,204,68,0.3) !important; box-shadow: 0 0 24px rgba(0,204,68,0.12); }
+
 /* KPI card — frosted glass on top of blobs */
 .kpi-hover {
   backdrop-filter: blur(10px) saturate(140%);
