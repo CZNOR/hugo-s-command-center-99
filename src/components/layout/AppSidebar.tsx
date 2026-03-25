@@ -1,17 +1,20 @@
+import { useState } from "react";
 import { useLocation, Link } from "react-router-dom";
 import {
   Calendar, CheckSquare, LayoutDashboard, TrendingUp,
-  Phone, Mic, DollarSign, Edit2, Percent, Users, Settings, Flame,
+  Phone, Mic, DollarSign, Edit2, Users, Settings, Flame, Link2, Check,
 } from "lucide-react";
 import { useBusiness, type BusinessId } from "@/lib/businessContext";
 import { gamificationProfile } from "@/lib/mock-data";
-import AffiliateCopyButton from "@/components/AffiliateCopyButton";
+
+const AFFILIATE_URL = "https://track.coolaffs.com/visit/?bta=37391&brand=corgibet";
 
 // ─── Types ───────────────────────────────────────────────────
 interface NavItem {
   path: string;
   label: string;
   icon: React.ElementType;
+  affiliate?: true; // special: copy affiliate link instead of navigate
 }
 
 // ─── Navigation config ────────────────────────────────────────
@@ -31,11 +34,10 @@ const COACHING_ITEMS: NavItem[] = [
 ];
 
 const CASINO_ITEMS: NavItem[] = [
-  { path: "/casino",          label: "Dashboard Casino", icon: LayoutDashboard },
-  { path: "/casino/social",   label: "Réseaux sociaux",  icon: TrendingUp      },
-  { path: "/casino/depots",   label: "Dépôts & CPA",     icon: DollarSign      },
-  { path: "/casino/revshare", label: "RevShare",         icon: Percent         },
-  { path: "/content",         label: "Contenu",          icon: Edit2           },
+  { path: "/casino",        label: "Dashboard Casino", icon: LayoutDashboard },
+  { path: "/casino/social", label: "Réseaux sociaux",  icon: TrendingUp      },
+  { path: "__affiliate__",  label: "Lien affiliation", icon: Link2, affiliate: true },
+  { path: "/content",       label: "Contenu",          icon: Edit2           },
 ];
 
 const BOTTOM_ITEMS: NavItem[] = [
@@ -48,6 +50,48 @@ const COACHING_ACCENT   = "#7c3aed";
 const COACHING_ACTIVE_BG = "rgba(139,92,246,0.15)";
 const CASINO_ACCENT     = "#00cc44";
 const CASINO_ACTIVE_BG  = "rgba(0,204,68,0.15)";
+
+// ─── Affiliate nav item ───────────────────────────────────────
+function AffiliateNavItem({ accentColor }: { accentColor: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try { await navigator.clipboard.writeText(AFFILIATE_URL); }
+    catch {
+      const el = document.createElement("textarea");
+      el.value = AFFILIATE_URL;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <button
+      onClick={handleCopy}
+      className="w-full flex items-center gap-3 py-2 rounded-lg text-sm transition-all duration-150"
+      style={{
+        color: copied ? accentColor : "rgba(255,255,255,0.4)",
+        borderLeft: copied ? `2px solid ${accentColor}` : "2px solid transparent",
+        paddingLeft: 10,
+        background: copied ? `${accentColor}12` : "transparent",
+        cursor: "pointer",
+        textAlign: "left",
+      }}
+      onMouseEnter={e => { if (!copied) (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)"; }}
+      onMouseLeave={e => { if (!copied) (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+    >
+      {copied
+        ? <Check style={{ width: 16, height: 16, flexShrink: 0, color: accentColor }} />
+        : <Link2 style={{ width: 16, height: 16, flexShrink: 0, color: "rgba(255,255,255,0.4)" }} />
+      }
+      <span className="font-medium">{copied ? "Lien copié !" : "Lien affiliation"}</span>
+    </button>
+  );
+}
 
 // ─── Nav link ─────────────────────────────────────────────────
 function NavLink({
@@ -181,17 +225,12 @@ export default function AppSidebar({ open, onClose }: AppSidebarProps) {
 
           {/* CONTEXTUAL MENU */}
           <div className="space-y-0.5">
-            {contextItems.map(item => (
-              <NavLink key={item.path} item={item} accentColor={accentColor} activeBg={activeBg} onClick={onClose} />
-            ))}
+            {contextItems.map(item =>
+              item.affiliate
+                ? <AffiliateNavItem key={item.path} accentColor={accentColor} />
+                : <NavLink key={item.path} item={item} accentColor={accentColor} activeBg={activeBg} onClick={onClose} />
+            )}
           </div>
-
-          {/* Affiliate link — Casino only */}
-          {!isCoaching && (
-            <div className="pt-2 pb-1">
-              <AffiliateCopyButton className="w-full justify-center" />
-            </div>
-          )}
 
         </div>
 
