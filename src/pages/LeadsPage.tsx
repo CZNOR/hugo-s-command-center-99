@@ -185,7 +185,7 @@ export default function LeadsPage() {
   const [leads,   setLeads]   = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState<string | null>(null);
-  const [filter,  setFilter]  = useState<LeadStatus | "tous">("tous");
+  const [filter,  setFilter]  = useState<LeadStatus | "tous">("confirmé");
   const [search,  setSearch]  = useState("");
 
   const load = async () => {
