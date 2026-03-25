@@ -3,26 +3,34 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from "
 // ─── Types ───────────────────────────────────────────────────
 export type TaskBusiness = "coaching" | "casino" | "content" | "equipe";
 export type TaskPriority = "haute" | "normale" | "basse";
+export type TaskStatus = "todo" | "progress" | "done";
 
 export interface Task {
   id: string;
   title: string;
   business: TaskBusiness;
   priority: TaskPriority;
-  deadline?: string;   // yyyy-mm-dd
-  time?: string;       // HH:MM
-  done: boolean;
-  completedAt?: string; // ISO string, set when marked done
-  createdAt: string;   // yyyy-mm-dd
+  status: TaskStatus;
+  deadline?: string;    // yyyy-mm-dd
+  time?: string;        // HH:MM
+  completedAt?: string; // ISO string when done
+  createdAt: string;    // yyyy-mm-dd
 }
 
 // ─── Persistence ─────────────────────────────────────────────
-const STORAGE_KEY = "hugo_tasks_v1";
+const STORAGE_KEY = "hugo_tasks_v2";
 
 function loadTasks(): Task[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as Task[];
+    if (raw) {
+      const parsed = JSON.parse(raw) as any[];
+      // Migrate old format (done: boolean → status)
+      return parsed.map(t => ({
+        ...t,
+        status: t.status ?? (t.done ? "done" : "todo"),
+      })) as Task[];
+    }
   } catch {}
   return [];
 }
@@ -30,7 +38,8 @@ function loadTasks(): Task[] {
 // ─── Context ─────────────────────────────────────────────────
 interface TaskContextType {
   tasks: Task[];
-  toggle: (id: string) => void;
+  setStatus: (id: string, status: TaskStatus) => void;
+  toggle: (id: string) => void; // shortcut: todo/progress → done, done → todo
   addTask: (title: string, business: TaskBusiness, priority: TaskPriority, deadline?: string, time?: string) => void;
   deleteTask: (id: string) => void;
 }
@@ -40,23 +49,29 @@ const TaskContext = createContext<TaskContextType | null>(null);
 export function TaskProvider({ children }: { children: ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>(loadTasks);
 
-  // Persist on every change
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
   }, [tasks]);
 
-  const toggle = (id: string) =>
+  const setStatus = (id: string, status: TaskStatus) =>
     setTasks(prev => prev.map(t =>
       t.id === id
-        ? { ...t, done: !t.done, completedAt: !t.done ? new Date().toISOString() : undefined }
+        ? { ...t, status, completedAt: status === "done" ? new Date().toISOString() : undefined }
         : t
     ));
+
+  const toggle = (id: string) =>
+    setTasks(prev => prev.map(t => {
+      if (t.id !== id) return t;
+      const newStatus: TaskStatus = t.status === "done" ? "todo" : "done";
+      return { ...t, status: newStatus, completedAt: newStatus === "done" ? new Date().toISOString() : undefined };
+    }));
 
   const addTask = (title: string, business: TaskBusiness, priority: TaskPriority, deadline?: string, time?: string) => {
     if (!title.trim()) return;
     const today = new Date().toISOString().split("T")[0];
     setTasks(prev => [
-      { id: Date.now().toString(), title: title.trim(), business, priority, deadline, time, done: false, createdAt: today },
+      { id: Date.now().toString(), title: title.trim(), business, priority, status: "todo", deadline, time, createdAt: today },
       ...prev,
     ]);
   };
@@ -65,7 +80,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     setTasks(prev => prev.filter(t => t.id !== id));
 
   return (
-    <TaskContext.Provider value={{ tasks, toggle, addTask, deleteTask }}>
+    <TaskContext.Provider value={{ tasks, setStatus, toggle, addTask, deleteTask }}>
       {children}
     </TaskContext.Provider>
   );

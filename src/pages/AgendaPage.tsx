@@ -287,11 +287,11 @@ export default function AgendaPage() {
                           className="absolute inset-x-1 rounded-lg px-2 py-1 text-[11px] font-medium z-10 overflow-hidden"
                           style={{
                             top: dayEvs.length > 0 ? "50%" : "0",
-                            background: t.done ? "rgba(255,255,255,0.04)" : `${color}20`,
-                            borderLeft: `2px solid ${t.done ? "rgba(255,255,255,0.15)" : color}`,
-                            color: t.done ? "rgba(255,255,255,0.25)" : `${color}ee`,
-                            textDecoration: t.done ? "line-through" : "none",
-                            opacity: t.done ? 0.4 : 1,
+                            background: t.status === "done" ? "rgba(255,255,255,0.04)" : `${color}20`,
+                            borderLeft: `2px solid ${t.status === "done" ? "rgba(255,255,255,0.15)" : color}`,
+                            color: t.status === "done" ? "rgba(255,255,255,0.25)" : `${color}ee`,
+                            textDecoration: t.status === "done" ? "line-through" : "none",
+                            opacity: t.status === "done" ? 0.4 : 1,
                           }}
                         >
                           <span className="opacity-70 mr-1">{t.time}</span>

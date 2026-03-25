@@ -82,24 +82,25 @@ function BizPill({ business }: { business: TaskBusiness }) {
 // ─── Today task row ───────────────────────────────────────────
 function TodayRow({ task, onToggle }: { task: Task; onToggle: (id: string) => void }) {
   const prio   = PRIO[task.priority];
+  const isDone = task.status === "done";
   const isCall = !!task.time;
   return (
     <div style={{
       display: "flex", alignItems: "center", gap: 11,
       padding: "10px 14px", borderRadius: 12,
       borderLeft: `2px solid ${prio.border}`,
-      background: task.done ? "transparent" : "rgba(255,255,255,0.03)",
-      opacity: task.done ? 0.4 : 1,
+      background: isDone ? "transparent" : "rgba(255,255,255,0.03)",
+      opacity: isDone ? 0.4 : 1,
       transition: "all 0.15s ease",
     }}>
-      <RoundCheck checked={task.done} onToggle={() => onToggle(task.id)} />
-      {isCall && !task.done && (
+      <RoundCheck checked={isDone} onToggle={() => onToggle(task.id)} />
+      {isCall && !isDone && (
         <Phone style={{ width: 13, height: 13, color: "#a855f7", flexShrink: 0 }} />
       )}
       {task.time && (
         <span style={{
           fontSize: 14, fontWeight: 700, flexShrink: 0, fontFamily: "monospace",
-          color: task.done ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.92)",
+          color: isDone ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.92)",
           minWidth: 46,
         }}>
           {task.time}
@@ -107,8 +108,8 @@ function TodayRow({ task, onToggle }: { task: Task; onToggle: (id: string) => vo
       )}
       <span style={{
         flex: 1, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-        color: task.done ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.8)",
-        textDecoration: task.done ? "line-through" : "none",
+        color: isDone ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.8)",
+        textDecoration: isDone ? "line-through" : "none",
       }}>
         {task.title}
       </span>
@@ -120,16 +121,17 @@ function TodayRow({ task, onToggle }: { task: Task; onToggle: (id: string) => vo
 // ─── Week task pill ───────────────────────────────────────────
 function WeekPill({ task, onToggle }: { task: Task; onToggle: (id: string) => void }) {
   const { color } = BIZ[task.business];
+  const isDone = task.status === "done";
   return (
     <button onClick={() => onToggle(task.id)} title={task.title} style={{
       width: "100%", textAlign: "left",
-      background: task.done ? "rgba(255,255,255,0.03)" : `${color}1a`,
-      borderLeft: `2px solid ${task.done ? "rgba(255,255,255,0.08)" : color}`,
+      background: isDone ? "rgba(255,255,255,0.03)" : `${color}1a`,
+      borderLeft: `2px solid ${isDone ? "rgba(255,255,255,0.08)" : color}`,
       borderRadius: 6,
       padding: "4px 8px",
       fontSize: 12,
-      color: task.done ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.85)",
-      textDecoration: task.done ? "line-through" : "none",
+      color: isDone ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.85)",
+      textDecoration: isDone ? "line-through" : "none",
       overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
       cursor: "pointer", transition: "all 0.15s ease",
       display: "flex", alignItems: "center", gap: 5,
@@ -151,7 +153,7 @@ export default function TaskBoard() {
   const [showHistory, setShowHistory] = useState(false);
 
   const doneTasks = tasks
-    .filter(t => t.done)
+    .filter(t => t.status === "done")
     .sort((a, b) => (b.completedAt ?? "").localeCompare(a.completedAt ?? ""));
 
   const handleAdd = () => {
@@ -191,7 +193,8 @@ export default function TaskBoard() {
   const todayTasks = tasks
     .filter(t => !t.deadline || t.deadline === today)
     .sort((a, b) => {
-      if (a.done !== b.done) return a.done ? 1 : -1;
+      const aDone = a.status === "done", bDone = b.status === "done";
+      if (aDone !== bDone) return aDone ? 1 : -1;
       const po: Record<TaskPriority, number> = { haute: 0, normale: 1, basse: 2 };
       if (po[a.priority] !== po[b.priority]) return po[a.priority] - po[b.priority];
       return (b.time ? 1 : 0) - (a.time ? 1 : 0);
@@ -331,7 +334,7 @@ export default function TaskBoard() {
             </div>
             {!showHistory && (
               <span style={{ background: "rgba(168,85,247,0.18)", color: "#c084fc", borderRadius: 20, fontSize: 12, fontWeight: 700, padding: "3px 11px" }}>
-                {todayTasks.filter(t => !t.done).length} à faire
+                {todayTasks.filter(t => t.status !== "done").length} à faire
               </span>
             )}
             {showHistory && (
