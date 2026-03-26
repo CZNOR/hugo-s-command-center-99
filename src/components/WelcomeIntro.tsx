@@ -228,19 +228,19 @@ export default function WelcomeIntro({ onDone }: Props) {
         transform: logo && !exiting ? "translateY(0) scale(1)" : "translateY(24px) scale(0.9)",
         transition: "opacity 0.4s ease 0.05s, transform 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.05s",
       }}>
-        <p style={{
-          fontSize: 68, fontWeight: 900,
-          letterSpacing: "0.04em",
-          color: "#fff",
-          textShadow:
-            "0 0 30px rgba(0,255,136,0.5), " +
-            "0 0 60px rgba(168,85,247,0.4), " +
-            "0 0 100px rgba(255,255,255,0.1)",
-          fontFamily: "Poppins, sans-serif",
-          lineHeight: 1,
-        }}>
-          C2N
-        </p>
+        <img
+          src="/czn-logo.png"
+          alt="CZN"
+          style={{
+            height: 80,
+            width: "auto",
+            userSelect: "none",
+            mixBlendMode: "screen",
+            filter:
+              "drop-shadow(0 0 20px rgba(0,255,136,0.6)) " +
+              "drop-shadow(0 0 40px rgba(168,85,247,0.5))",
+          }}
+        />
         <p style={{
           color: "rgba(255,255,255,0.45)",
           fontSize: 12,
