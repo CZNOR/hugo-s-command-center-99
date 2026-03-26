@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, X, Check, Clock, Trash2, Phone } from "lucide-react";
+import { Plus, X, Check, Clock, Trash2, Phone, Pencil } from "lucide-react";
 import { useTasks, type Task, type TaskBusiness, type TaskPriority, type TaskStatus } from "@/lib/taskContext";
 import { useBusiness } from "@/lib/businessContext";
 
@@ -128,22 +128,133 @@ function AddModal({ onClose, defaultStatus }: { onClose: () => void; defaultStat
   );
 }
 
+// ─── Edit Task Modal ──────────────────────────────────────────
+function EditModal({ task, onClose }: { task: Task; onClose: () => void }) {
+  const { editTask } = useTasks();
+  const [title,    setTitle]    = useState(task.title);
+  const [business, setBusiness] = useState<TaskBusiness>(task.business);
+  const [priority, setPriority] = useState<TaskPriority>(task.priority);
+  const [deadline, setDeadline] = useState(task.deadline ?? "");
+  const [time,     setTime]     = useState(task.time ?? "");
+
+  const handleSave = () => {
+    if (!title.trim()) return;
+    editTask(task.id, {
+      title: title.trim(),
+      business,
+      priority,
+      deadline: deadline || undefined,
+      time: time || undefined,
+    });
+    onClose();
+  };
+
+  const inputCss: React.CSSProperties = {
+    width: "100%", boxSizing: "border-box",
+    background: "rgba(255,255,255,0.06)",
+    border: "1px solid rgba(255,255,255,0.1)",
+    borderRadius: 10, padding: "10px 14px",
+    fontSize: 14, color: "rgba(255,255,255,0.9)", outline: "none",
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)" }}>
+      <div className="w-full max-w-md mx-4 rounded-2xl p-6 space-y-4"
+        style={{ background: "#0d0d18", border: "1px solid rgba(168,85,247,0.25)", boxShadow: "0 0 40px rgba(168,85,247,0.1)" }}>
+
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-bold" style={{ color: "rgba(255,255,255,0.9)" }}>Modifier la tâche</h2>
+          <button onClick={onClose} style={{ color: "rgba(255,255,255,0.4)", background: "none", border: "none", cursor: "pointer" }}>
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <input value={title} onChange={e => setTitle(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && handleSave()}
+          placeholder="Ce que tu dois faire…" style={inputCss} autoFocus />
+
+        <div>
+          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginBottom: 8 }}>Business</p>
+          <div className="flex flex-wrap gap-2">
+            {(Object.keys(BIZ_LABELS) as TaskBusiness[]).map(b => (
+              <button key={b} onClick={() => setBusiness(b)} style={{
+                borderRadius: 20, fontSize: 12, fontWeight: 600, padding: "4px 12px", cursor: "pointer",
+                background: business === b ? `${BIZ_COLORS[b]}22` : "rgba(255,255,255,0.04)",
+                color: business === b ? BIZ_COLORS[b] : "rgba(255,255,255,0.35)",
+                border: business === b ? `1px solid ${BIZ_COLORS[b]}55` : "1px solid rgba(255,255,255,0.08)",
+              }}>{BIZ_LABELS[b]}</button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginBottom: 8 }}>Priorité</p>
+          <div className="flex gap-2">
+            {(["haute", "normale", "basse"] as TaskPriority[]).map(p => {
+              const pColors: Record<TaskPriority, string> = { haute: "#ef4444", normale: "rgba(255,255,255,0.6)", basse: "rgba(255,255,255,0.3)" };
+              return (
+                <button key={p} onClick={() => setPriority(p)} style={{
+                  borderRadius: 20, fontSize: 12, fontWeight: 600, padding: "4px 12px",
+                  cursor: "pointer", textTransform: "capitalize",
+                  background: priority === p ? `${pColors[p]}18` : "rgba(255,255,255,0.04)",
+                  color: priority === p ? pColors[p] : "rgba(255,255,255,0.3)",
+                  border: priority === p ? `1px solid ${pColors[p]}50` : "1px solid rgba(255,255,255,0.08)",
+                }}>{p}</button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginBottom: 8 }}>Date</p>
+            <input type="date" value={deadline} onChange={e => setDeadline(e.target.value)}
+              style={{ ...inputCss, colorScheme: "dark" }} />
+          </div>
+          <div>
+            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginBottom: 8 }}>Heure</p>
+            <input type="time" value={time} onChange={e => setTime(e.target.value)}
+              style={{ ...inputCss, colorScheme: "dark" }} />
+          </div>
+        </div>
+
+        <button onClick={handleSave} disabled={!title.trim()} style={{
+          width: "100%", padding: "11px 0", borderRadius: 12, border: "none",
+          background: title.trim() ? "linear-gradient(135deg, #7c3aed, #a855f7)" : "rgba(255,255,255,0.06)",
+          color: title.trim() ? "#fff" : "rgba(255,255,255,0.3)",
+          fontSize: 14, fontWeight: 700, cursor: title.trim() ? "pointer" : "not-allowed",
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+        }}>
+          <Check className="w-4 h-4" /> Enregistrer
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Task card ────────────────────────────────────────────────
-function TaskCard({ task }: { task: Task }) {
+function TaskCard({ task, onEdit }: { task: Task; onEdit: () => void }) {
   const { setStatus, deleteTask } = useTasks();
   const isDone = task.status === "done";
   const color  = BIZ_COLORS[task.business];
 
   return (
-    <div style={{
-      background: isDone ? "rgba(255,255,255,0.015)" : "rgba(255,255,255,0.04)",
-      border: "1px solid rgba(255,255,255,0.07)",
-      borderLeft: `3px solid ${isDone ? "rgba(255,255,255,0.08)" : color}`,
-      borderRadius: 12, padding: "12px 14px",
-      opacity: isDone ? 0.45 : 1, transition: "all 0.15s ease",
-    }}>
+    <div
+      onClick={onEdit}
+      style={{
+        background: isDone ? "rgba(255,255,255,0.015)" : "rgba(255,255,255,0.04)",
+        border: "1px solid rgba(255,255,255,0.07)",
+        borderLeft: `3px solid ${isDone ? "rgba(255,255,255,0.08)" : color}`,
+        borderRadius: 12, padding: "12px 14px",
+        opacity: isDone ? 0.45 : 1, transition: "all 0.15s ease",
+        cursor: "pointer",
+      }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.14)"; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.07)"; }}
+    >
       <div className="flex items-start gap-2 mb-2">
-        <button onClick={() => setStatus(task.id, isDone ? "todo" : "done")} style={{
+        <button onClick={e => { e.stopPropagation(); setStatus(task.id, isDone ? "todo" : "done"); }} style={{
           width: 18, height: 18, borderRadius: "50%", flexShrink: 0, marginTop: 1,
           border: isDone ? "none" : "1.5px solid rgba(255,255,255,0.22)",
           background: isDone ? "#22c55e" : "transparent",
@@ -156,7 +267,8 @@ function TaskCard({ task }: { task: Task }) {
           color: isDone ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.85)",
           textDecoration: isDone ? "line-through" : "none",
         }}>{task.title}</p>
-        <button onClick={() => deleteTask(task.id)} style={{
+        <Pencil style={{ width: 11, height: 11, color: "rgba(255,255,255,0.2)", flexShrink: 0, marginTop: 2 }} />
+        <button onClick={e => { e.stopPropagation(); deleteTask(task.id); }} style={{
           background: "none", border: "none", cursor: "pointer", padding: 2, opacity: 0.3, flexShrink: 0,
         }}
           onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = "1"}
@@ -194,7 +306,7 @@ function TaskCard({ task }: { task: Task }) {
       </div>
 
       {!isDone && (
-        <div className="flex gap-1.5 mt-2.5 flex-wrap">
+        <div className="flex gap-1.5 mt-2.5 flex-wrap" onClick={e => e.stopPropagation()}>
           {task.status !== "todo" && (
             <button onClick={() => setStatus(task.id, "todo")} style={{
               fontSize: 10, padding: "2px 8px", borderRadius: 6, cursor: "pointer",
@@ -225,6 +337,7 @@ export default function TasksPage() {
   const { activeBusiness } = useBusiness();
   const [showModal,   setShowModal]   = useState(false);
   const [modalStatus, setModalStatus] = useState<TaskStatus>("todo");
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [filter,      setFilter]      = useState<"all" | "today" | "week" | "late">("all");
 
   const today   = new Date().toISOString().split("T")[0];
@@ -293,7 +406,7 @@ export default function TasksPage() {
               <div className="flex flex-col gap-2" style={{ minHeight: 60 }}>
                 {colTasks.length === 0
                   ? <p className="text-center text-xs py-6" style={{ color: "rgba(255,255,255,0.18)" }}>Aucune tâche</p>
-                  : colTasks.map(t => <TaskCard key={t.id} task={t} />)
+                  : colTasks.map(t => <TaskCard key={t.id} task={t} onEdit={() => setEditingTask(t)} />)
                 }
               </div>
 
@@ -314,7 +427,8 @@ export default function TasksPage() {
         })}
       </div>
 
-      {showModal && <AddModal onClose={() => setShowModal(false)} defaultStatus={modalStatus} />}
+      {showModal    && <AddModal onClose={() => setShowModal(false)} defaultStatus={modalStatus} />}
+      {editingTask  && <EditModal task={editingTask} onClose={() => setEditingTask(null)} />}
     </div>
   );
 }

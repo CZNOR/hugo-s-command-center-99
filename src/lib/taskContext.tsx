@@ -41,6 +41,7 @@ interface TaskContextType {
   setStatus: (id: string, status: TaskStatus) => void;
   toggle: (id: string) => void; // shortcut: todo/progress → done, done → todo
   addTask: (title: string, business: TaskBusiness, priority: TaskPriority, deadline?: string, time?: string) => void;
+  editTask: (id: string, updates: Partial<Pick<Task, "title" | "business" | "priority" | "deadline" | "time">>) => void;
   deleteTask: (id: string) => void;
 }
 
@@ -76,11 +77,14 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     ]);
   };
 
+  const editTask = (id: string, updates: Partial<Pick<Task, "title" | "business" | "priority" | "deadline" | "time">>) =>
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+
   const deleteTask = (id: string) =>
     setTasks(prev => prev.filter(t => t.id !== id));
 
   return (
-    <TaskContext.Provider value={{ tasks, setStatus, toggle, addTask, deleteTask }}>
+    <TaskContext.Provider value={{ tasks, setStatus, toggle, addTask, editTask, deleteTask }}>
       {children}
     </TaskContext.Provider>
   );
