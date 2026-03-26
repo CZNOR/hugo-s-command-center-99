@@ -184,7 +184,12 @@ function AppLayoutInner() {
   const { activeBusiness } = useBusiness();
   const parallaxRef = useRef<HTMLDivElement>(null);
   const [showOverlay, setShowOverlay] = useState(false);
-  const [showIntro, setShowIntro] = useState(true);
+  // Only show intro once per browser session (not on every page refresh)
+  const [showIntro, setShowIntro] = useState(() => {
+    if (sessionStorage.getItem("intro_seen")) return false;
+    sessionStorage.setItem("intro_seen", "1");
+    return true;
+  });
   const isFirstMount = useRef(true);
 
   // Sync data-biz attr on body for CSS card hover theming

@@ -190,15 +190,21 @@ export default function TaskBoard() {
   const weekDays = getWeekDays();
   const todayIdx = weekDays.findIndex(d => fmtDay(d) === today);
 
-  const todayTasks = tasks
-    .filter(t => !t.deadline || t.deadline === today)
+  // Show ALL active tasks (not only today) so nothing disappears when a deadline is set
+  const activeTasks = tasks
+    .filter(t => t.status !== "done")
     .sort((a, b) => {
-      const aDone = a.status === "done", bDone = b.status === "done";
-      if (aDone !== bDone) return aDone ? 1 : -1;
       const po: Record<TaskPriority, number> = { haute: 0, normale: 1, basse: 2 };
       if (po[a.priority] !== po[b.priority]) return po[a.priority] - po[b.priority];
+      // tasks due today or past-due first
+      const aLate = !!a.deadline && a.deadline <= today;
+      const bLate = !!b.deadline && b.deadline <= today;
+      if (aLate !== bLate) return aLate ? -1 : 1;
       return (b.time ? 1 : 0) - (a.time ? 1 : 0);
     });
+
+  // Keep a separate "today + no deadline" view for the done/history tab logic
+  const todayTasks = activeTasks;
 
   const card: React.CSSProperties = {
     background: "rgba(255,255,255,0.025)",
@@ -321,7 +327,7 @@ export default function TaskBoard() {
                   color: !showHistory ? "#c084fc" : "rgba(255,255,255,0.35)",
                   border: !showHistory ? "1px solid rgba(168,85,247,0.3)" : "1px solid transparent",
                 }}
-              >Aujourd'hui</button>
+              >Actives</button>
               <button
                 onClick={() => setShowHistory(true)}
                 style={{
@@ -334,7 +340,7 @@ export default function TaskBoard() {
             </div>
             {!showHistory && (
               <span style={{ background: "rgba(168,85,247,0.18)", color: "#c084fc", borderRadius: 20, fontSize: 12, fontWeight: 700, padding: "3px 11px" }}>
-                {todayTasks.filter(t => t.status !== "done").length} à faire
+                {todayTasks.length} à faire
               </span>
             )}
             {showHistory && (
@@ -347,7 +353,7 @@ export default function TaskBoard() {
           <div style={{ flex: 1, overflowY: "auto", maxHeight: 320, display: "flex", flexDirection: "column", gap: 0 }}>
             {!showHistory ? (
               todayTasks.length === 0 ? (
-                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.18)", textAlign: "center", marginTop: 40 }}>Aucune tâche pour aujourd'hui</p>
+                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.18)", textAlign: "center", marginTop: 40 }}>Aucune tâche active</p>
               ) : (() => {
                 const bizOrder: TaskBusiness[] = ["coaching", "casino", "content", "equipe"];
                 const groups = bizOrder
