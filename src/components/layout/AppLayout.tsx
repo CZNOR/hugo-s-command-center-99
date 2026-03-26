@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { Plus } from "lucide-react";
 import AppSidebar from "./AppSidebar";
 import StarField from "../StarField";
 import RippleCanvas from "../RippleCanvas";
+import PageTransition from "../PageTransition";
 import { BusinessProvider, useBusiness } from "@/lib/businessContext";
 import { TaskProvider, useTasks, type TaskBusiness } from "@/lib/taskContext";
 import { initGoogleAuth } from "@/lib/googleCalendar";
@@ -171,11 +172,31 @@ function AppLayoutInner() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
   const { activeBusiness } = useBusiness();
+  const parallaxRef = useRef<HTMLDivElement>(null);
 
   // Sync data-biz attr on body for CSS card hover theming
   useEffect(() => {
     document.body.setAttribute("data-biz", activeBusiness.id);
   }, [activeBusiness.id]);
+
+  // Business mode transition effect
+  useEffect(() => {
+    document.body.classList.add("biz-transition");
+    const t = setTimeout(() => document.body.classList.remove("biz-transition"), 800);
+    return () => clearTimeout(t);
+  }, [activeBusiness.id]);
+
+  // Mouse parallax
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!parallaxRef.current) return;
+      const x = ((e.clientX / window.innerWidth) - 0.5) * 40;
+      const y = ((e.clientY / window.innerHeight) - 0.5) * 40;
+      parallaxRef.current.style.transform = `translate(${x}px, ${y}px)`;
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -186,10 +207,32 @@ function AppLayoutInner() {
     }
   }, []);
 
+  const isCoaching = activeBusiness.id === "coaching";
+  const bgAnimation = isCoaching
+    ? "bg-coaching 8s ease-in-out infinite"
+    : activeBusiness.id === "casino"
+    ? "bg-casino 8s ease-in-out infinite"
+    : undefined;
+
   return (
-    <div style={{ background: "#07040F", minHeight: "100vh" }}>
+    <div style={{ background: "#07040F", minHeight: "100vh", animation: bgAnimation }}>
       <StarField />
       <RippleCanvas />
+
+      {/* Mouse parallax glow overlay */}
+      <div
+        ref={parallaxRef}
+        style={{
+          position: "fixed",
+          inset: "-20px",
+          pointerEvents: "none",
+          zIndex: 0,
+          background: isCoaching
+            ? "radial-gradient(ellipse 40% 40% at 50% 50%, rgba(168,85,247,0.06) 0%, transparent 70%)"
+            : "radial-gradient(ellipse 40% 40% at 50% 50%, rgba(0,204,68,0.05) 0%, transparent 70%)",
+          transition: "transform 0.3s ease-out",
+        }}
+      />
 
       {/* Ambient glow */}
       <div style={{
@@ -217,7 +260,9 @@ function AppLayoutInner() {
         }}
       >
         <div className="p-4 lg:p-6">
-          <Outlet />
+          <PageTransition>
+            <Outlet />
+          </PageTransition>
         </div>
       </main>
     </div>

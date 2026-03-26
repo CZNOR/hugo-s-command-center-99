@@ -232,12 +232,12 @@ export default function TaskBoard() {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
 
         {/* LEFT — Formulaire */}
-        <div style={{ ...card, display: "flex", flexDirection: "column", gap: 14 }}>
+        <div className="glass-card" style={{ ...card, display: "flex", flexDirection: "column", gap: 14 }}>
           <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(255,255,255,0.35)" }}>
             Nouvelle tâche
           </p>
 
-          <input value={title} onChange={e => setTitle(e.target.value)}
+          <input className="task-input" value={title} onChange={e => setTitle(e.target.value)}
             onKeyDown={e => e.key === "Enter" && handleAdd()}
             placeholder="Ce que tu dois faire..." style={inputCss} {...focusBorder} />
 
@@ -310,7 +310,7 @@ export default function TaskBoard() {
         </div>
 
         {/* RIGHT — Aujourd'hui / Historique */}
-        <div style={{ ...card, display: "flex", flexDirection: "column", gap: 10 }}>
+        <div className="glass-card" style={{ ...card, display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ display: "flex", gap: 6 }}>
               <button
@@ -357,7 +357,11 @@ export default function TaskBoard() {
                   <Fragment key={group.biz}>
                     {gi > 0 && <div style={{ height: 1, background: "rgba(255,255,255,0.07)", margin: "8px 0" }} />}
                     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                      {group.items.map(t => <TodayRow key={t.id} task={t} onToggle={toggle} />)}
+                      {group.items.map((t, idx) => (
+                        <div key={t.id} className="task-slide-in" style={{ animationDelay: `${(gi * 10 + idx) * 0.05}s` }}>
+                          <TodayRow task={t} onToggle={toggle} />
+                        </div>
+                      ))}
                     </div>
                   </Fragment>
                 ));
