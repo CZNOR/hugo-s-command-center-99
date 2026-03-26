@@ -7,6 +7,7 @@ import RippleCanvas from "../RippleCanvas";
 import PageTransition from "../PageTransition";
 import FloatingObject3D from "../FloatingObject3D";
 import BizTransitionOverlay from "../BizTransitionOverlay";
+import WelcomeIntro from "../WelcomeIntro";
 import { BusinessProvider, useBusiness } from "@/lib/businessContext";
 import { TaskProvider, useTasks, type TaskBusiness } from "@/lib/taskContext";
 import { initGoogleAuth } from "@/lib/googleCalendar";
@@ -176,6 +177,7 @@ function AppLayoutInner() {
   const { activeBusiness } = useBusiness();
   const parallaxRef = useRef<HTMLDivElement>(null);
   const [showOverlay, setShowOverlay] = useState(false);
+  const [showIntro, setShowIntro] = useState(true);
   const isFirstMount = useRef(true);
 
   // Sync data-biz attr on body for CSS card hover theming
@@ -222,6 +224,7 @@ function AppLayoutInner() {
 
   return (
     <div style={{ background: "#07040F", minHeight: "100vh", animation: bgAnimation }}>
+      {showIntro && <WelcomeIntro onDone={() => setShowIntro(false)} />}
       {showOverlay && (
         <BizTransitionOverlay
           mode={activeBusiness.id as "coaching" | "casino"}
