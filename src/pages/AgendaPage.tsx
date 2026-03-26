@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight, Plus, Calendar, Link } from "lucide-react";
 import { useBusiness } from "@/lib/businessContext";
 import { useTasks } from "@/lib/taskContext";
@@ -13,6 +13,7 @@ import {
 
 const HOURS    = Array.from({ length: 15 }, (_, i) => i + 7); // 7h → 21h
 const DAYS_FR  = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+const DAYS_FULL = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 const MONTH_FR = ["Jan","Fév","Mar","Avr","Mai","Juin","Juil","Août","Sep","Oct","Nov","Déc"];
 
 function getWeekDays(baseDate: Date) {
@@ -34,20 +35,23 @@ function isToday(date: Date) {
     date.getFullYear()  === t.getFullYear();
 }
 
-/** Extract the hour (0–23) from a GCalEvent start. Returns null for all-day events. */
-function eventHour(ev: GCalEvent): number | null {
-  if (ev.start.dateTime) return new Date(ev.start.dateTime).getHours();
-  return null; // all-day
+function isSameDay(a: Date, b: Date) {
+  return a.getDate() === b.getDate() &&
+    a.getMonth()     === b.getMonth() &&
+    a.getFullYear()  === b.getFullYear();
 }
 
-/** Extract the date string "yyyy-mm-dd" from a GCalEvent start. */
+function eventHour(ev: GCalEvent): number | null {
+  if (ev.start.dateTime) return new Date(ev.start.dateTime).getHours();
+  return null;
+}
+
 function eventDate(ev: GCalEvent): string {
   if (ev.start.dateTime) return ev.start.dateTime.split("T")[0];
   if (ev.start.date)     return ev.start.date;
   return "";
 }
 
-/** Format a GCalEvent start time as "HH:MM". Returns "" for all-day. */
 function eventTime(ev: GCalEvent): string {
   if (!ev.start.dateTime) return "";
   const d = new Date(ev.start.dateTime);
@@ -55,31 +59,31 @@ function eventTime(ev: GCalEvent): string {
 }
 
 function toISOWeekRange(days: Date[]): { min: string; max: string } {
-  const first = new Date(days[0]);
-  first.setHours(0, 0, 0, 0);
-  const last = new Date(days[6]);
-  last.setHours(23, 59, 59, 999);
+  const first = new Date(days[0]); first.setHours(0, 0, 0, 0);
+  const last  = new Date(days[6]); last.setHours(23, 59, 59, 999);
   return { min: first.toISOString(), max: last.toISOString() };
 }
+
+const BIZ_COLORS: Record<string, string> = {
+  coaching: "#7c3aed", casino: "#00cc44", content: "#f97316", equipe: "#3b82f6",
+};
 
 export default function AgendaPage() {
   const { activeBusiness } = useBusiness();
   const { tasks } = useTasks();
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate,   setCurrentDate]   = useState(new Date());
+  const [selectedDay,   setSelectedDay]   = useState(new Date()); // mobile day view
+  const [connected,     setConnected]     = useState(false);
+  const [gcalEvents,    setGcalEvents]    = useState<GCalEvent[]>([]);
+  const [loadingGcal,   setLoadingGcal]   = useState(false);
+  const dayStripRef = useRef<HTMLDivElement>(null);
+
   const weekDays = getWeekDays(currentDate);
 
-  const [connected, setConnected]   = useState(false);
-  const [gcalEvents, setGcalEvents] = useState<GCalEvent[]>([]);
-  const [loadingGcal, setLoadingGcal] = useState(false);
-
-  // ── Init: handle OAuth callback & check auth state ──────────────────────────
   useEffect(() => {
-    initGoogleAuth().then(authed => {
-      setConnected(authed);
-    });
+    initGoogleAuth().then(authed => setConnected(authed));
   }, []);
 
-  // ── Fetch events whenever week or auth state changes ────────────────────────
   useEffect(() => {
     if (!connected) { setGcalEvents([]); return; }
     const { min, max } = toISOWeekRange(weekDays);
@@ -91,258 +95,371 @@ export default function AgendaPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connected, currentDate]);
 
-  const prevWeek = () => {
-    const d = new Date(currentDate);
-    d.setDate(d.getDate() - 7);
-    setCurrentDate(d);
-  };
-  const nextWeek = () => {
-    const d = new Date(currentDate);
-    d.setDate(d.getDate() + 7);
-    setCurrentDate(d);
-  };
+  // Scroll selected day into view in the strip
+  useEffect(() => {
+    if (!dayStripRef.current) return;
+    const idx = weekDays.findIndex(d => isSameDay(d, selectedDay));
+    if (idx < 0) return;
+    const child = dayStripRef.current.children[idx] as HTMLElement;
+    child?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+  }, [selectedDay]);
 
-  const handleConnect = async () => {
-    const url = await getAuthUrl();
-    window.location.href = url;
-  };
+  const prevWeek = () => { const d = new Date(currentDate); d.setDate(d.getDate() - 7); setCurrentDate(d); };
+  const nextWeek = () => { const d = new Date(currentDate); d.setDate(d.getDate() + 7); setCurrentDate(d); };
 
-  const handleDisconnect = () => {
-    clearTokens();
-    setConnected(false);
-    setGcalEvents([]);
-  };
+  const prevDay = () => { const d = new Date(selectedDay); d.setDate(d.getDate() - 1); setSelectedDay(d); setCurrentDate(d); };
+  const nextDay = () => { const d = new Date(selectedDay); d.setDate(d.getDate() + 1); setSelectedDay(d); setCurrentDate(d); };
+  const goToday = () => { setCurrentDate(new Date()); setSelectedDay(new Date()); };
+
+  const handleConnect    = async () => { const url = await getAuthUrl(); window.location.href = url; };
+  const handleDisconnect = () => { clearTokens(); setConnected(false); setGcalEvents([]); };
 
   const monthLabel = `${MONTH_FR[weekDays[0].getMonth()]} ${weekDays[0].getFullYear()}`;
+  const allDayEvents = gcalEvents.filter(ev => !ev.start.dateTime);
+  const timedEvents  = gcalEvents.filter(ev => !!ev.start.dateTime);
 
-  // Split events into timed vs all-day for display
-  const allDayEvents  = gcalEvents.filter(ev => !ev.start.dateTime);
-  const timedEvents   = gcalEvents.filter(ev => !!ev.start.dateTime);
+  // ── Shared: events for a given day+hour ──
+  const getEventsForSlot = (date: Date, hour: number) => {
+    const dayStr = date.toISOString().split("T")[0];
+    const gcal   = timedEvents.filter(ev => eventDate(ev) === dayStr && eventHour(ev) === hour);
+    const taskEvs = tasks.filter(t => {
+      if (!t.deadline || !t.time) return false;
+      return t.deadline === dayStr && parseInt(t.time.split(":")[0]) === hour;
+    });
+    return { gcal, taskEvs };
+  };
 
   return (
-    <div className="space-y-4 max-w-full">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Calendar className="w-5 h-5" style={{ color: activeBusiness.accent }} />
+    <div style={{ maxWidth: "100%", overflow: "hidden" }}>
+
+      {/* ── HEADER ─────────────────────────────────────────── */}
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <Calendar className="w-5 h-5 flex-shrink-0" style={{ color: activeBusiness.accent }} />
           <h1 className="text-lg font-semibold text-white/90">Planning</h1>
-          <span
-            className="text-xs px-2.5 py-1 rounded-lg font-medium"
-            style={{ background: `${activeBusiness.accent}20`, color: activeBusiness.accent }}
-          >
+          <span className="text-xs px-2.5 py-1 rounded-lg font-medium flex-shrink-0"
+            style={{ background: `${activeBusiness.accent}20`, color: activeBusiness.accent }}>
             {monthLabel}
           </span>
-          {loadingGcal && (
-            <span className="text-xs text-white/30 animate-pulse">Syncing…</span>
-          )}
+          {loadingGcal && <span className="text-xs text-white/30 animate-pulse">Sync…</span>}
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Google Calendar connect / disconnect */}
+        <div className="flex items-center gap-1.5">
           {connected ? (
-            <button
-              onClick={handleDisconnect}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-white/50 hover:text-white/80 border border-white/10 hover:border-white/20 transition-colors"
-            >
-              <Link className="w-3 h-3" />
-              Google Cal ✓
+            <button onClick={handleDisconnect}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-white/50 border border-white/10">
+              <Link className="w-3 h-3" /> Google Cal ✓
             </button>
           ) : (
-            <button
-              onClick={handleConnect}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
-              style={{
-                background: "#4285F420",
-                color: "#4285F4",
-                border: "1px solid #4285F440",
-              }}
-            >
-              <Link className="w-3 h-3" />
-              Connecter Google Calendar
+            <button onClick={handleConnect}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold"
+              style={{ background: "#4285F420", color: "#4285F4", border: "1px solid #4285F440" }}>
+              <Link className="w-3 h-3" /> Google Cal
             </button>
           )}
 
-          <button
-            onClick={prevWeek}
-            className="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setCurrentDate(new Date())}
-            className="text-xs px-3 py-1.5 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors"
-          >
-            Aujourd'hui
-          </button>
-          <button
-            onClick={nextWeek}
-            className="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
+          {/* Desktop week nav */}
+          <div className="hidden md:flex items-center gap-1">
+            <button onClick={prevWeek} className="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/10">
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button onClick={goToday} className="text-xs px-3 py-1.5 rounded-lg text-white/60 hover:text-white hover:bg-white/10">
+              Aujourd'hui
+            </button>
+            <button onClick={nextWeek} className="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/10">
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+
           <button
             onClick={() => window.open("https://calendar.google.com/calendar/r/eventnew?authuser=hugo@agencemade.com", "_blank")}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-white ml-2"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-white"
             style={{ background: activeBusiness.gradient, boxShadow: `0 4px 12px ${activeBusiness.glow}` }}
           >
             <Plus className="w-3.5 h-3.5" />
-            Événement
+            <span className="hidden sm:inline">Événement</span>
+            <span className="sm:hidden">+</span>
           </button>
         </div>
       </div>
 
-      {/* Calendar grid */}
-      <div className="overflow-x-auto -mx-1 px-1">
-      <div
-        className="rounded-2xl overflow-hidden"
-        style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", minWidth: 560 }}
-      >
-        {/* Day headers */}
-        <div className="grid border-b" style={{ gridTemplateColumns: "52px repeat(7, 1fr)", borderColor: "rgba(255,255,255,0.07)" }}>
-          <div className="py-3" />
-          {weekDays.map((date, i) => (
-            <div key={i} className="py-3 text-center">
-              <div className="text-[11px] text-white/40 font-medium uppercase tracking-wide">{DAYS_FR[i]}</div>
-              <div
-                className="text-sm font-bold mt-0.5 w-7 h-7 rounded-full flex items-center justify-center mx-auto transition-colors"
-                style={isToday(date) ? { background: activeBusiness.accent, color: "#fff" } : { color: "rgba(255,255,255,0.7)" }}
-              >
-                {date.getDate()}
-              </div>
-              {/* All-day events for this day */}
-              {allDayEvents
-                .filter(ev => eventDate(ev) === date.toISOString().split("T")[0])
-                .map(ev => (
-                  <div
-                    key={ev.id}
-                    title={ev.summary}
-                    className="mx-1 mt-1 rounded px-1.5 py-0.5 text-[10px] font-medium truncate"
-                    style={{
-                      background: "#4285F420",
-                      borderLeft: "2px solid #4285F4",
-                      color: "#7aabff",
-                    }}
-                  >
-                    {ev.summary}
-                  </div>
-                ))}
-            </div>
-          ))}
+      {/* ══ MOBILE VIEW ════════════════════════════════════════ */}
+      <div className="md:hidden">
+
+        {/* Day picker strip */}
+        <div style={{
+          display: "flex", alignItems: "center", gap: 8, marginBottom: 16,
+        }}>
+          <button onClick={prevDay} style={{
+            width: 32, height: 32, borderRadius: "50%", flexShrink: 0,
+            background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            color: "rgba(255,255,255,0.6)", cursor: "pointer",
+          }}>
+            <ChevronLeft style={{ width: 16, height: 16 }} />
+          </button>
+
+          <div ref={dayStripRef} style={{
+            flex: 1, display: "flex", gap: 6, overflowX: "auto",
+            scrollbarWidth: "none", padding: "2px 0",
+          }}>
+            {weekDays.map((day, i) => {
+              const selected = isSameDay(day, selectedDay);
+              const today    = isToday(day);
+              return (
+                <button key={i} onClick={() => setSelectedDay(new Date(day))} style={{
+                  flexShrink: 0, width: 44, display: "flex", flexDirection: "column",
+                  alignItems: "center", justifyContent: "center", gap: 4,
+                  padding: "8px 0", borderRadius: 12, cursor: "pointer",
+                  background: selected
+                    ? activeBusiness.accent
+                    : today
+                    ? `${activeBusiness.accent}20`
+                    : "rgba(255,255,255,0.04)",
+                  border: selected ? "none"
+                    : today ? `1px solid ${activeBusiness.accent}50`
+                    : "1px solid rgba(255,255,255,0.08)",
+                  transition: "all 0.15s ease",
+                }}>
+                  <span style={{
+                    fontSize: 10, fontWeight: 700, letterSpacing: "0.05em",
+                    textTransform: "uppercase",
+                    color: selected ? "#fff" : today ? activeBusiness.accent : "rgba(255,255,255,0.4)",
+                  }}>{DAYS_FR[i]}</span>
+                  <span style={{
+                    fontSize: 16, fontWeight: 800, lineHeight: 1,
+                    color: selected ? "#fff" : today ? activeBusiness.accent : "rgba(255,255,255,0.75)",
+                  }}>{day.getDate()}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <button onClick={nextDay} style={{
+            width: 32, height: 32, borderRadius: "50%", flexShrink: 0,
+            background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            color: "rgba(255,255,255,0.6)", cursor: "pointer",
+          }}>
+            <ChevronRight style={{ width: 16, height: 16 }} />
+          </button>
         </div>
 
-        {/* Time slots */}
-        <div className="overflow-y-auto" style={{ maxHeight: "calc(100vh - 310px)" }}>
-          {HOURS.map((hour) => (
-            <div
-              key={hour}
-              className="grid"
-              style={{
-                gridTemplateColumns: "52px repeat(7, 1fr)",
-                borderBottom: "1px solid rgba(255,255,255,0.04)",
-              }}
-            >
-              {/* Hour label */}
-              <div className="py-3 pr-2 text-right text-[11px] text-white/25 font-mono select-none">
-                {hour}:00
-              </div>
-              {/* Day cells */}
-              {weekDays.map((date, di) => {
-                const dayStr   = date.toISOString().split("T")[0];
-                const dayEvs   = timedEvents.filter(ev => eventDate(ev) === dayStr && eventHour(ev) === hour);
-                const dayTaskEvs = tasks.filter(t => {
-                  if (!t.deadline || !t.time) return false;
-                  const dayStr2 = date.toISOString().split("T")[0];
-                  return t.deadline === dayStr2 && parseInt(t.time.split(":")[0]) === hour;
-                });
-
-                return (
-                  <div
-                    key={di}
-                    className="h-12 relative border-l group cursor-pointer hover:bg-white/[0.02] transition-colors"
-                    style={{ borderColor: "rgba(255,255,255,0.05)" }}
-                  >
-                    {dayEvs.map(ev => (
-                      <div
-                        key={ev.id}
-                        title={`${eventTime(ev)} · ${ev.summary}`}
-                        className="absolute inset-x-1 top-0 rounded-lg px-2 py-1 text-[11px] font-medium z-10 overflow-hidden"
-                        style={{
-                          background:  "#4285F420",
-                          borderLeft:  "2px solid #4285F4",
-                          color:       "#7aabff",
-                        }}
-                      >
-                        <span className="opacity-70 mr-1">{eventTime(ev)}</span>
-                        <span className="truncate">{ev.summary}</span>
-                      </div>
-                    ))}
-                    {dayTaskEvs.map(t => {
-                      const bizColors: Record<string, string> = {
-                        coaching: "#7c3aed", casino: "#00cc44", content: "#f97316", equipe: "#3b82f6",
-                      };
-                      const color = bizColors[t.business] ?? "#a855f7";
-                      return (
-                        <div
-                          key={t.id}
-                          title={`${t.time} · ${t.title}`}
-                          className="absolute inset-x-1 rounded-lg px-2 py-1 text-[11px] font-medium z-10 overflow-hidden"
-                          style={{
-                            top: dayEvs.length > 0 ? "50%" : "0",
-                            background: t.status === "done" ? "rgba(255,255,255,0.04)" : `${color}20`,
-                            borderLeft: `2px solid ${t.status === "done" ? "rgba(255,255,255,0.15)" : color}`,
-                            color: t.status === "done" ? "rgba(255,255,255,0.25)" : `${color}ee`,
-                            textDecoration: t.status === "done" ? "line-through" : "none",
-                            opacity: t.status === "done" ? 0.4 : 1,
-                          }}
-                        >
-                          <span className="opacity-70 mr-1">{t.time}</span>
-                          <span className="truncate">{t.title}</span>
-                        </div>
-                      );
-                    })}
-                    {/* Hover add hint */}
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Plus className="w-3 h-3 text-white/20" />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-      </div>
-      </div>
-
-      {/* Empty / connect state */}
-      {!connected && (
-        <div className="text-center py-8">
-          <Calendar className="w-10 h-10 mx-auto mb-3 text-white/15" />
-          <p className="text-white/30 text-sm">Aucun agenda connecté</p>
-          <p className="text-white/20 text-xs mt-1">
-            Connecte Google Calendar pour voir tes événements ici
+        {/* Day label */}
+        <div style={{ marginBottom: 12, display: "flex", alignItems: "baseline", gap: 8 }}>
+          <p style={{ fontSize: 18, fontWeight: 700, color: "#fff" }}>
+            {DAYS_FULL[(selectedDay.getDay() + 6) % 7]}
           </p>
-          <button
-            onClick={handleConnect}
-            className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
-            style={{
-              background: "#4285F420",
-              color: "#4285F4",
-              border: "1px solid #4285F440",
-            }}
-          >
-            <Link className="w-4 h-4" />
-            Connecter Google Calendar
-          </button>
+          <p style={{ fontSize: 14, color: "rgba(255,255,255,0.4)" }}>
+            {selectedDay.getDate()} {MONTH_FR[selectedDay.getMonth()]}
+          </p>
+          {isToday(selectedDay) && (
+            <span style={{
+              fontSize: 11, fontWeight: 700, color: activeBusiness.accent,
+              background: `${activeBusiness.accent}18`,
+              borderRadius: 20, padding: "2px 8px",
+            }}>Aujourd'hui</span>
+          )}
         </div>
-      )}
 
-      {connected && gcalEvents.length === 0 && !loadingGcal && (
-        <div className="text-center py-8">
-          <Calendar className="w-10 h-10 mx-auto mb-3 text-white/15" />
-          <p className="text-white/30 text-sm">Aucun événement cette semaine</p>
-          <p className="text-white/20 text-xs mt-1">Clique sur une cellule ou sur "+ Événement" pour commencer</p>
+        {/* All-day events for selected day */}
+        {(() => {
+          const dayStr = selectedDay.toISOString().split("T")[0];
+          const evs = allDayEvents.filter(ev => eventDate(ev) === dayStr);
+          if (evs.length === 0) return null;
+          return (
+            <div style={{ marginBottom: 12, display: "flex", flexDirection: "column", gap: 4 }}>
+              {evs.map(ev => (
+                <div key={ev.id} style={{
+                  padding: "7px 12px", borderRadius: 8,
+                  background: "#4285F420", borderLeft: "3px solid #4285F4",
+                  fontSize: 13, color: "#7aabff", fontWeight: 600,
+                }}>{ev.summary}</div>
+              ))}
+            </div>
+          );
+        })()}
+
+        {/* Time slots — single day */}
+        <div style={{
+          borderRadius: 16, overflow: "hidden",
+          background: "rgba(255,255,255,0.025)",
+          border: "1px solid rgba(255,255,255,0.07)",
+        }}>
+          {HOURS.map((hour, hi) => {
+            const { gcal, taskEvs } = getEventsForSlot(selectedDay, hour);
+            const hasContent = gcal.length > 0 || taskEvs.length > 0;
+            return (
+              <div key={hour} style={{
+                display: "flex", alignItems: "flex-start",
+                borderBottom: hi < HOURS.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none",
+                background: hasContent ? "rgba(255,255,255,0.02)" : "transparent",
+                minHeight: hasContent ? "auto" : 48,
+              }}>
+                {/* Hour label */}
+                <div style={{
+                  width: 48, flexShrink: 0, padding: "14px 8px 0 12px",
+                  fontSize: 12, color: "rgba(255,255,255,0.25)", fontFamily: "monospace",
+                  textAlign: "right",
+                }}>
+                  {hour}:00
+                </div>
+                {/* Events */}
+                <div style={{
+                  flex: 1, padding: hasContent ? "6px 12px 6px 10px" : "0 12px",
+                  display: "flex", flexDirection: "column", gap: 4,
+                  borderLeft: "1px solid rgba(255,255,255,0.04)",
+                }}>
+                  {gcal.map(ev => (
+                    <div key={ev.id} style={{
+                      padding: "7px 10px", borderRadius: 8,
+                      background: "#4285F420", borderLeft: "3px solid #4285F4",
+                      fontSize: 13, color: "#7aabff", fontWeight: 600,
+                    }}>
+                      <span style={{ opacity: 0.6, marginRight: 6, fontSize: 12 }}>{eventTime(ev)}</span>
+                      {ev.summary}
+                    </div>
+                  ))}
+                  {taskEvs.map(t => {
+                    const color = BIZ_COLORS[t.business] ?? "#a855f7";
+                    return (
+                      <div key={t.id} style={{
+                        padding: "7px 10px", borderRadius: 8,
+                        background: t.status === "done" ? "rgba(255,255,255,0.04)" : `${color}20`,
+                        borderLeft: `3px solid ${t.status === "done" ? "rgba(255,255,255,0.12)" : color}`,
+                        fontSize: 13, fontWeight: 600,
+                        color: t.status === "done" ? "rgba(255,255,255,0.25)" : `${color}ee`,
+                        textDecoration: t.status === "done" ? "line-through" : "none",
+                        opacity: t.status === "done" ? 0.5 : 1,
+                      }}>
+                        <span style={{ opacity: 0.6, marginRight: 6, fontSize: 12 }}>{t.time}</span>
+                        {t.title}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
         </div>
-      )}
+
+        {/* Connect prompt */}
+        {!connected && (
+          <div style={{ textAlign: "center", padding: "24px 0" }}>
+            <p style={{ fontSize: 14, color: "rgba(255,255,255,0.3)" }}>Aucun agenda connecté</p>
+            <button onClick={handleConnect} style={{
+              marginTop: 12,
+              display: "inline-flex", alignItems: "center", gap: 8,
+              padding: "10px 20px", borderRadius: 12,
+              background: "#4285F420", color: "#4285F4",
+              border: "1px solid #4285F440", fontSize: 14, fontWeight: 600, cursor: "pointer",
+            }}>
+              <Link style={{ width: 16, height: 16 }} /> Connecter Google Calendar
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* ══ DESKTOP VIEW ═══════════════════════════════════════ */}
+      <div className="hidden md:block">
+        <div className="rounded-2xl overflow-hidden" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
+          {/* Day headers */}
+          <div className="grid border-b" style={{ gridTemplateColumns: "52px repeat(7, 1fr)", borderColor: "rgba(255,255,255,0.07)" }}>
+            <div className="py-3" />
+            {weekDays.map((date, i) => (
+              <div key={i} className="py-3 text-center">
+                <div className="text-[11px] text-white/40 font-medium uppercase tracking-wide">{DAYS_FR[i]}</div>
+                <div
+                  className="text-sm font-bold mt-0.5 w-7 h-7 rounded-full flex items-center justify-center mx-auto transition-colors"
+                  style={isToday(date) ? { background: activeBusiness.accent, color: "#fff" } : { color: "rgba(255,255,255,0.7)" }}
+                >
+                  {date.getDate()}
+                </div>
+                {allDayEvents
+                  .filter(ev => eventDate(ev) === date.toISOString().split("T")[0])
+                  .map(ev => (
+                    <div key={ev.id} title={ev.summary}
+                      className="mx-1 mt-1 rounded px-1.5 py-0.5 text-[10px] font-medium truncate"
+                      style={{ background: "#4285F420", borderLeft: "2px solid #4285F4", color: "#7aabff" }}>
+                      {ev.summary}
+                    </div>
+                  ))}
+              </div>
+            ))}
+          </div>
+
+          {/* Time slots */}
+          <div className="overflow-y-auto" style={{ maxHeight: "calc(100vh - 310px)" }}>
+            {HOURS.map((hour) => (
+              <div key={hour} className="grid"
+                style={{ gridTemplateColumns: "52px repeat(7, 1fr)", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                <div className="py-3 pr-2 text-right text-[11px] text-white/25 font-mono select-none">
+                  {hour}:00
+                </div>
+                {weekDays.map((date, di) => {
+                  const { gcal, taskEvs } = getEventsForSlot(date, hour);
+                  return (
+                    <div key={di} className="h-12 relative border-l group cursor-pointer hover:bg-white/[0.02] transition-colors"
+                      style={{ borderColor: "rgba(255,255,255,0.05)" }}>
+                      {gcal.map(ev => (
+                        <div key={ev.id} title={`${eventTime(ev)} · ${ev.summary}`}
+                          className="absolute inset-x-1 top-0 rounded-lg px-2 py-1 text-[11px] font-medium z-10 overflow-hidden"
+                          style={{ background: "#4285F420", borderLeft: "2px solid #4285F4", color: "#7aabff" }}>
+                          <span className="opacity-70 mr-1">{eventTime(ev)}</span>
+                          <span className="truncate">{ev.summary}</span>
+                        </div>
+                      ))}
+                      {taskEvs.map(t => {
+                        const color = BIZ_COLORS[t.business] ?? "#a855f7";
+                        return (
+                          <div key={t.id} title={`${t.time} · ${t.title}`}
+                            className="absolute inset-x-1 rounded-lg px-2 py-1 text-[11px] font-medium z-10 overflow-hidden"
+                            style={{
+                              top: gcal.length > 0 ? "50%" : "0",
+                              background: t.status === "done" ? "rgba(255,255,255,0.04)" : `${color}20`,
+                              borderLeft: `2px solid ${t.status === "done" ? "rgba(255,255,255,0.15)" : color}`,
+                              color: t.status === "done" ? "rgba(255,255,255,0.25)" : `${color}ee`,
+                              textDecoration: t.status === "done" ? "line-through" : "none",
+                              opacity: t.status === "done" ? 0.4 : 1,
+                            }}>
+                            <span className="opacity-70 mr-1">{t.time}</span>
+                            <span className="truncate">{t.title}</span>
+                          </div>
+                        );
+                      })}
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Plus className="w-3 h-3 text-white/20" />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {!connected && (
+          <div className="text-center py-8">
+            <Calendar className="w-10 h-10 mx-auto mb-3 text-white/15" />
+            <p className="text-white/30 text-sm">Aucun agenda connecté</p>
+            <p className="text-white/20 text-xs mt-1">Connecte Google Calendar pour voir tes événements ici</p>
+            <button onClick={handleConnect}
+              className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold"
+              style={{ background: "#4285F420", color: "#4285F4", border: "1px solid #4285F440" }}>
+              <Link className="w-4 h-4" /> Connecter Google Calendar
+            </button>
+          </div>
+        )}
+
+        {connected && gcalEvents.length === 0 && !loadingGcal && (
+          <div className="text-center py-8">
+            <Calendar className="w-10 h-10 mx-auto mb-3 text-white/15" />
+            <p className="text-white/30 text-sm">Aucun événement cette semaine</p>
+            <p className="text-white/20 text-xs mt-1">Clique sur une cellule ou sur "+ Événement" pour commencer</p>
+          </div>
+        )}
+      </div>
+
     </div>
   );
 }
