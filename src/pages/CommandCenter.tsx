@@ -9,6 +9,7 @@ import TaskBoard from "@/components/TaskBoard";
 import AffiliateCopyButton from "@/components/AffiliateCopyButton";
 import HomeParticles from "@/components/HomeParticles";
 import { useBusiness } from "@/lib/businessContext";
+import { useTasks } from "@/lib/taskContext";
 
 // ─── Supabase helper ─────────────────────────────────────────
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
@@ -180,40 +181,107 @@ function CoachingPanel() {
   );
 }
 
+// ─── Day Progress Bar ─────────────────────────────────────────
+function DayProgress() {
+  const { tasks } = useTasks();
+  const { activeBusiness } = useBusiness();
+  const accent = activeBusiness.id === "casino" ? "#00cc44" : "#a855f7";
+  const accentDim = activeBusiness.id === "casino" ? "rgba(0,204,68,0.15)" : "rgba(168,85,247,0.15)";
+  const accentBorder = activeBusiness.id === "casino" ? "rgba(0,204,68,0.25)" : "rgba(168,85,247,0.25)";
+
+  const today = new Date().toISOString().split("T")[0];
+  const todayTasks = tasks.filter(t => !t.deadline || t.deadline === today);
+  const total = todayTasks.length;
+  const done  = todayTasks.filter(t => t.status === "done").length;
+  const pct   = total === 0 ? 0 : Math.round((done / total) * 100);
+
+  // Status label
+  const status = total === 0
+    ? "Aucune tâche pour aujourd'hui"
+    : done === total
+    ? "🎉 Journée complète !"
+    : pct >= 75
+    ? "Presque fini, tiens bon !"
+    : pct >= 50
+    ? "La moitié est faite 💪"
+    : pct > 0
+    ? "C'est parti !"
+    : "La journée commence…";
+
+  return (
+    <div
+      className="animate-fade-up"
+      style={{
+        padding: "14px 20px",
+        borderRadius: 16,
+        background: accentDim,
+        border: `1px solid ${accentBorder}`,
+        display: "flex",
+        flexDirection: "column",
+        gap: 10,
+        minWidth: 260,
+        flex: "1 1 260px",
+        maxWidth: 420,
+        animationDelay: "0.18s",
+      }}
+    >
+      {/* Top row */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.5)", letterSpacing: "0.05em" }}>
+          JOURNÉE
+        </span>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+          <span style={{ fontSize: 22, fontWeight: 800, color: "#fff", lineHeight: 1 }}>{pct}</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: accent }}>%</span>
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      <div style={{
+        height: 6, borderRadius: 99,
+        background: "rgba(255,255,255,0.08)",
+        overflow: "hidden",
+      }}>
+        <div style={{
+          height: "100%",
+          width: `${pct}%`,
+          borderRadius: 99,
+          background: `linear-gradient(90deg, ${accent}99, ${accent})`,
+          boxShadow: `0 0 10px ${accent}66`,
+          transition: "width 0.8s cubic-bezier(0.4,0,0.2,1)",
+        }} />
+      </div>
+
+      {/* Bottom row */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>{status}</span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: accent }}>
+          {done}/{total} tâche{total !== 1 ? "s" : ""}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 // ─── Greeting ─────────────────────────────────────────────────
 function Greeting() {
   const hour    = new Date().getHours();
   const salut   = hour < 12 ? "Bonjour" : hour < 18 ? "Bon après-midi" : "Bonsoir";
   const now     = new Date();
   const dateStr = now.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
-  const g       = gamificationProfile;
-  const { activeBusiness } = useBusiness();
-  const accent  = activeBusiness.id === "casino" ? "#00cc44" : "#a855f7";
-  const accentBg = activeBusiness.id === "casino" ? "rgba(0,204,68,0.1)" : "rgba(168,85,247,0.1)";
-  const accentBorder = activeBusiness.id === "casino" ? "rgba(0,204,68,0.2)" : "rgba(168,85,247,0.2)";
 
   return (
-    <div className="flex items-center justify-between flex-wrap gap-4 animate-fade-up" style={{ animationDelay: "0s" }}>
+    <div className="flex items-start justify-between flex-wrap gap-4 animate-fade-up" style={{ animationDelay: "0s" }}>
       <div>
-        <p className="text-xs font-semibold uppercase tracking-widest animate-fade-up" style={{ color: "rgba(255,255,255,0.3)", animationDelay: "0.05s" }}>
+        <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "rgba(255,255,255,0.3)" }}>
           {salut} · <span style={{ color: "rgba(255,255,255,0.45)" }}>{dateStr.charAt(0).toUpperCase() + dateStr.slice(1)}</span>
         </p>
-        <h1 className="text-3xl font-bold mt-1 animate-fade-up" style={{ animationDelay: "0.1s" }}>
+        <h1 className="text-3xl font-bold mt-1">
           <span className="czn-title">Command Center</span>{" "}
           <span style={{ fontSize: "1.5rem" }}>⚡</span>
         </h1>
       </div>
-      <div className="flex items-center gap-3 animate-fade-up" style={{ animationDelay: "0.18s" }}>
-        <div className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm czn-badge" style={{ background: accentBg, border: `1px solid ${accentBorder}` }}>
-          <span>🔥</span>
-          <span style={{ color: "#f97316", fontWeight: 700 }}>{g.current_streak}j</span>
-          <span className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>streak</span>
-        </div>
-        <div className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm czn-badge" style={{ background: accentBg, border: `1px solid ${accentBorder}` }}>
-          <span className="text-xs font-bold px-1.5 py-0.5 rounded-md" style={{ background: `${accent}25`, color: accent }}>Lv.{g.level}</span>
-          <span className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>{g.level_title}</span>
-        </div>
-      </div>
+      <DayProgress />
     </div>
   );
 }
