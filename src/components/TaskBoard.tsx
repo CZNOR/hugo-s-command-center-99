@@ -140,38 +140,38 @@ function WeekPill({ task, onToggle }: { task: Task; onToggle: (id: string) => vo
 function MobileRow({ task, onToggle }: { task: Task; onToggle: (id: string) => void }) {
   const isDone = task.status === "done";
   const { color } = BIZ[task.business];
-  const prio = PRIO[task.priority];
+  const isHigh = task.priority === "haute";
 
   return (
     <div style={{
-      display: "flex", alignItems: "center", gap: 12,
-      padding: "12px 14px",
-      borderLeft: `3px solid ${isDone ? "rgba(255,255,255,0.05)" : prio.border}`,
-      background: isDone ? "transparent" : "rgba(255,255,255,0.025)",
-      borderRadius: "0 10px 10px 0",
-      opacity: isDone ? 0.4 : 1,
-      minHeight: 52,
+      display: "flex", alignItems: "center", gap: 14,
+      padding: "14px 16px",
+      borderLeft: `3px solid ${isDone ? "rgba(255,255,255,0.05)" : isHigh ? "#ef4444" : "rgba(255,255,255,0.12)"}`,
+      background: isDone ? "transparent" : "rgba(255,255,255,0.04)",
+      borderRadius: "0 12px 12px 0",
+      opacity: isDone ? 0.35 : 1,
+      minHeight: 56,
       transition: "all 0.15s ease",
     }}>
-      <RoundCheck checked={isDone} onToggle={() => onToggle(task.id)} size={22} />
+      <RoundCheck checked={isDone} onToggle={() => onToggle(task.id)} size={24} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{
-          fontSize: 14, fontWeight: 600, lineHeight: 1.3,
-          color: isDone ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.88)",
+          fontSize: 15, fontWeight: 600, lineHeight: 1.3,
+          color: isDone ? "rgba(255,255,255,0.35)" : "#fff",
           textDecoration: isDone ? "line-through" : "none",
           overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
         }}>{task.title}</p>
         {(task.deadline || task.time) && (
-          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 2 }}>
+          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", marginTop: 3 }}>
             {task.time && `${task.time}`}{task.time && task.deadline && " · "}
             {task.deadline && new Date(task.deadline + "T12:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
           </p>
         )}
       </div>
       <div style={{
-        width: 8, height: 8, borderRadius: "50%",
+        width: 9, height: 9, borderRadius: "50%",
         background: color, flexShrink: 0,
-        boxShadow: `0 0 6px ${color}`,
+        boxShadow: `0 0 8px ${color}`,
       }} />
     </div>
   );
@@ -213,7 +213,6 @@ function AddTaskSheet({ open, onClose }: { open: boolean; onClose: () => void })
     onClose();
   };
 
-  // Prevent body scroll when open
   useEffect(() => {
     if (open) document.body.style.overflow = "hidden";
     else document.body.style.overflow = "";
@@ -222,40 +221,50 @@ function AddTaskSheet({ open, onClose }: { open: boolean; onClose: () => void })
 
   if (!open) return null;
 
+  const inputStyle: React.CSSProperties = {
+    width: "100%", boxSizing: "border-box",
+    background: "rgba(255,255,255,0.07)",
+    border: "1px solid rgba(255,255,255,0.14)",
+    borderRadius: 12, padding: "12px 14px",
+    fontSize: 15, color: "#fff",
+    colorScheme: "dark", outline: "none",
+  };
+
   return (
     <>
       {/* Backdrop */}
-      <div
-        onClick={onClose}
-        style={{
-          position: "fixed", inset: 0, zIndex: 300,
-          background: "rgba(0,0,0,0.65)", backdropFilter: "blur(6px)",
-        }}
-      />
-      {/* Sheet */}
+      <div onClick={onClose} style={{
+        position: "fixed", inset: 0, zIndex: 300,
+        background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)",
+      }} />
+
+      {/* Sheet — max 78vh so it doesn't cover the whole screen */}
       <div style={{
         position: "fixed", left: 0, right: 0, bottom: 0,
         zIndex: 301,
-        background: "#0c0c1a",
-        borderTop: "1px solid rgba(255,255,255,0.1)",
-        borderRadius: "20px 20px 0 0",
-        padding: "16px 20px 40px",
-        display: "flex", flexDirection: "column", gap: 14,
-        boxShadow: "0 -20px 60px rgba(0,0,0,0.6)",
+        maxHeight: "78vh",
+        overflowY: "auto",
+        background: "linear-gradient(180deg, #131325 0%, #0e0e1e 100%)",
+        border: "1px solid rgba(255,255,255,0.1)",
+        borderBottom: "none",
+        borderRadius: "22px 22px 0 0",
+        padding: "12px 20px 44px",
+        display: "flex", flexDirection: "column", gap: 16,
+        boxShadow: "0 -30px 80px rgba(0,0,0,0.7)",
       }}>
         {/* Drag handle */}
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: "rgba(255,255,255,0.18)", margin: "0 auto" }} />
+        <div style={{ width: 40, height: 4, borderRadius: 2, background: "rgba(255,255,255,0.2)", margin: "0 auto 2px" }} />
 
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <p style={{ fontSize: 16, fontWeight: 700, color: "rgba(255,255,255,0.9)" }}>Nouvelle tâche</p>
+          <p style={{ fontSize: 17, fontWeight: 700, color: "#fff", letterSpacing: "-0.01em" }}>Nouvelle tâche</p>
           <button onClick={onClose} style={{
-            width: 32, height: 32, borderRadius: "50%",
-            background: "rgba(255,255,255,0.08)", border: "none",
+            width: 34, height: 34, borderRadius: "50%",
+            background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.1)",
             display: "flex", alignItems: "center", justifyContent: "center",
-            cursor: "pointer", color: "rgba(255,255,255,0.5)",
+            cursor: "pointer",
           }}>
-            <X style={{ width: 16, height: 16 }} />
+            <X style={{ width: 16, height: 16, color: "rgba(255,255,255,0.7)" }} />
           </button>
         </div>
 
@@ -267,76 +276,76 @@ function AddTaskSheet({ open, onClose }: { open: boolean; onClose: () => void })
           onKeyDown={e => e.key === "Enter" && handleAdd()}
           placeholder="Ce que tu dois faire..."
           style={{
-            width: "100%", boxSizing: "border-box",
-            background: "rgba(255,255,255,0.06)",
-            border: "1px solid rgba(255,255,255,0.12)",
-            borderRadius: 12, padding: "13px 16px",
-            fontSize: 15, color: "rgba(255,255,255,0.9)",
-            outline: "none",
+            ...inputStyle,
+            fontSize: 16,
+            padding: "14px 16px",
+            border: title ? "1px solid rgba(168,85,247,0.5)" : "1px solid rgba(255,255,255,0.14)",
           }}
         />
 
-        {/* Business */}
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {(Object.keys(BIZ) as TaskBusiness[]).map(b => (
-            <button key={b} onClick={() => setBusiness(b)} style={{
-              borderRadius: 20, fontSize: 13, fontWeight: 600, padding: "7px 14px",
-              background: business === b ? `${BIZ[b].color}22` : "rgba(255,255,255,0.04)",
-              color: business === b ? BIZ[b].color : "rgba(255,255,255,0.35)",
-              border: business === b ? `1px solid ${BIZ[b].color}55` : "1px solid rgba(255,255,255,0.08)",
-              cursor: "pointer",
-            }}>
-              {BIZ[b].label}
-            </button>
-          ))}
+        {/* Labels */}
+        <div>
+          <p style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.4)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>Business</p>
+          <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
+            {(Object.keys(BIZ) as TaskBusiness[]).map(b => (
+              <button key={b} onClick={() => setBusiness(b)} style={{
+                borderRadius: 20, fontSize: 13, fontWeight: 600, padding: "7px 15px",
+                background: business === b ? `${BIZ[b].color}28` : "rgba(255,255,255,0.05)",
+                color: business === b ? BIZ[b].color : "rgba(255,255,255,0.5)",
+                border: business === b ? `1.5px solid ${BIZ[b].color}70` : "1.5px solid rgba(255,255,255,0.1)",
+                cursor: "pointer", transition: "all 0.15s ease",
+              }}>
+                {BIZ[b].label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Priority */}
-        <div style={{ display: "flex", gap: 6 }}>
-          {(Object.keys(PRIO) as TaskPriority[]).map(p => (
-            <button key={p} onClick={() => setPriority(p)} style={{
-              flex: 1, borderRadius: 10, fontSize: 13, fontWeight: 600, padding: "9px 0",
-              background: priority === p ? `${PRIO[p].color}18` : "rgba(255,255,255,0.04)",
-              color: priority === p ? PRIO[p].color : "rgba(255,255,255,0.3)",
-              border: priority === p ? `1px solid ${PRIO[p].border}` : "1px solid rgba(255,255,255,0.08)",
-              cursor: "pointer",
-            }}>
-              {PRIO[p].label}
-            </button>
-          ))}
+        <div>
+          <p style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.4)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>Priorité</p>
+          <div style={{ display: "flex", gap: 8 }}>
+            {(Object.keys(PRIO) as TaskPriority[]).map(p => (
+              <button key={p} onClick={() => setPriority(p)} style={{
+                flex: 1, borderRadius: 11, fontSize: 14, fontWeight: 600, padding: "10px 0",
+                background: priority === p
+                  ? p === "haute" ? "rgba(239,68,68,0.2)" : p === "normale" ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.06)"
+                  : "rgba(255,255,255,0.04)",
+                color: priority === p
+                  ? p === "haute" ? "#f87171" : p === "normale" ? "#fff" : "rgba(255,255,255,0.55)"
+                  : "rgba(255,255,255,0.35)",
+                border: priority === p
+                  ? p === "haute" ? "1.5px solid rgba(239,68,68,0.5)" : "1.5px solid rgba(255,255,255,0.2)"
+                  : "1.5px solid rgba(255,255,255,0.08)",
+                cursor: "pointer", transition: "all 0.15s ease",
+              }}>
+                {PRIO[p].label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Date + Time */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          <input type="date" value={deadline} onChange={e => setDeadline(e.target.value)}
-            style={{
-              background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.09)",
-              borderRadius: 10, padding: "11px 12px",
-              fontSize: 14, color: "rgba(255,255,255,0.85)",
-              colorScheme: "dark", outline: "none", width: "100%", boxSizing: "border-box",
-            }} />
-          <input type="time" value={time} onChange={e => setTime(e.target.value)}
-            style={{
-              background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.09)",
-              borderRadius: 10, padding: "11px 12px",
-              fontSize: 14, color: "rgba(255,255,255,0.85)",
-              colorScheme: "dark", outline: "none", width: "100%", boxSizing: "border-box",
-            }} />
+        <div>
+          <p style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.4)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>Date & heure (optionnel)</p>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} style={inputStyle} />
+            <input type="time" value={time} onChange={e => setTime(e.target.value)} style={inputStyle} />
+          </div>
         </div>
 
         {/* Submit */}
         <button onClick={handleAdd} style={{
           background: title.trim()
             ? "linear-gradient(135deg, #7c3aed, #a855f7)"
-            : "rgba(124,58,237,0.25)",
-          color: "#fff", borderRadius: 12, padding: "15px 0",
-          fontSize: 15, fontWeight: 700, width: "100%",
+            : "rgba(124,58,237,0.2)",
+          color: title.trim() ? "#fff" : "rgba(255,255,255,0.3)",
+          borderRadius: 14, padding: "16px 0",
+          fontSize: 16, fontWeight: 700, width: "100%",
           cursor: title.trim() ? "pointer" : "default",
           display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-          transition: "background 0.15s ease",
-          border: "none",
+          transition: "all 0.2s ease", border: "none",
+          boxShadow: title.trim() ? "0 4px 24px rgba(124,58,237,0.4)" : "none",
         }}>
-          <Plus style={{ width: 17, height: 17 }} /> Ajouter la tâche
+          <Plus style={{ width: 18, height: 18 }} /> Ajouter la tâche
         </button>
       </div>
     </>
@@ -430,13 +439,13 @@ export default function TaskBoard() {
       <div className="md:hidden" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
 
         {/* Header row */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: 4 }}>
-          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: 2 }}>
+          <p style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.05em", color: "rgba(255,255,255,0.6)" }}>
             Tâches actives
           </p>
           <span style={{
-            background: "rgba(168,85,247,0.18)", color: "#c084fc",
-            borderRadius: 20, fontSize: 12, fontWeight: 700, padding: "3px 11px",
+            background: "rgba(168,85,247,0.2)", color: "#d8b4fe",
+            borderRadius: 20, fontSize: 13, fontWeight: 700, padding: "4px 12px",
           }}>
             {activeTasks.length} à faire
           </span>
@@ -457,15 +466,20 @@ export default function TaskBoard() {
                   {/* Group header */}
                   <div style={{
                     display: "flex", alignItems: "center", gap: 8,
-                    padding: "0 0 6px 0",
-                    borderBottom: `1px solid ${BIZ[biz].color}22`,
-                    marginBottom: 4,
+                    padding: "6px 4px",
+                    borderBottom: `1px solid ${BIZ[biz].color}30`,
+                    marginBottom: 6,
                   }}>
-                    <div style={{ width: 7, height: 7, borderRadius: "50%", background: BIZ[biz].color, boxShadow: `0 0 6px ${BIZ[biz].color}` }} />
-                    <span style={{ fontSize: 11, fontWeight: 700, color: BIZ[biz].color, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: BIZ[biz].color, boxShadow: `0 0 8px ${BIZ[biz].color}` }} />
+                    <span style={{ fontSize: 12, fontWeight: 700, color: BIZ[biz].color, textTransform: "uppercase", letterSpacing: "0.08em" }}>
                       {BIZ[biz].label}
                     </span>
-                    <span style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", marginLeft: 2 }}>{items.length}</span>
+                    <span style={{
+                      fontSize: 11, fontWeight: 600,
+                      color: "rgba(255,255,255,0.35)",
+                      background: "rgba(255,255,255,0.06)",
+                      borderRadius: 20, padding: "1px 7px",
+                    }}>{items.length}</span>
                   </div>
                   {/* Tasks */}
                   <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -514,16 +528,17 @@ export default function TaskBoard() {
         <button
           onClick={() => setSheetOpen(true)}
           style={{
-            marginTop: 8,
+            marginTop: 12,
             background: "linear-gradient(135deg, #7c3aed, #a855f7)",
-            color: "#fff", borderRadius: 12, padding: "14px 0",
-            fontSize: 15, fontWeight: 700, width: "100%", cursor: "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            color: "#fff", borderRadius: 14, padding: "16px 0",
+            fontSize: 16, fontWeight: 700, width: "100%", cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 9,
             border: "none",
-            boxShadow: "0 4px 20px rgba(124,58,237,0.35)",
+            boxShadow: "0 6px 28px rgba(124,58,237,0.45)",
+            letterSpacing: "0.01em",
           }}
         >
-          <Plus style={{ width: 18, height: 18 }} /> Nouvelle tâche
+          <Plus style={{ width: 20, height: 20 }} /> Nouvelle tâche
         </button>
 
         <AddTaskSheet open={sheetOpen} onClose={() => setSheetOpen(false)} />
