@@ -352,7 +352,7 @@ export default function PaiementsPage() {
     <div className="space-y-6 max-w-5xl mx-auto">
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold" style={{ color: "rgba(255,255,255,0.9)" }}>Paiements</h1>
           <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.45)" }}>
@@ -371,9 +371,10 @@ export default function PaiementsPage() {
               <BarChart2 className="w-3.5 h-3.5" /> Monthly
             </button>
           </div>
-          <button onClick={() => setShowModal(true)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
+          <button onClick={() => setShowModal(true)} className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all"
             style={{ background: "linear-gradient(135deg, #7c3aed, #a855f7)", color: "white", boxShadow: "0 0 20px rgba(139,92,246,0.35)" }}>
-            <Plus className="w-4 h-4" /> Nouveau client
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">Nouveau client</span>
           </button>
         </div>
       </div>
