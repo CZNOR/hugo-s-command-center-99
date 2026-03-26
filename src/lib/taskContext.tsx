@@ -17,7 +17,6 @@ export interface Task {
   createdAt: string;
 }
 
-// ─── Local metadata (business/priority/time not in Notion) ────
 type TaskMeta = {
   business: TaskBusiness;
   priority: TaskPriority;
@@ -25,16 +24,60 @@ type TaskMeta = {
   completedAt?: string;
 };
 
-const META_KEY = "hugo_tasks_meta_v2";
+// ─── Supabase direct (même pattern que useSocialStats) ────────
+const SB_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const SB_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
-function loadMeta(): Record<string, TaskMeta> {
-  try { return JSON.parse(localStorage.getItem(META_KEY) ?? "{}"); } catch { return {}; }
+async function sbFetch<T = any>(path: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
+    ...options,
+    headers: {
+      apikey: SB_KEY,
+      Authorization: `Bearer ${SB_KEY}`,
+      "Content-Type": "application/json",
+      ...(options?.headers ?? {}),
+    },
+  });
+  const text = await res.text();
+  return text ? JSON.parse(text) : ([] as unknown as T);
 }
 
-function saveMeta(meta: Record<string, TaskMeta>) {
-  localStorage.setItem(META_KEY, JSON.stringify(meta));
+async function loadMeta(): Promise<Record<string, TaskMeta>> {
+  const rows = await sbFetch<any[]>("task_meta?select=*").catch(() => []);
+  const meta: Record<string, TaskMeta> = {};
+  for (const row of rows ?? []) {
+    meta[row.notion_id] = {
+      business:    row.business,
+      priority:    row.priority,
+      time:        row.time        ?? undefined,
+      completedAt: row.completed_at ?? undefined,
+    };
+  }
+  return meta;
 }
 
+function saveMeta(task: Task) {
+  if (task.id.startsWith("temp_")) return;
+  sbFetch("task_meta", {
+    method: "POST",
+    headers: { Prefer: "resolution=merge-duplicates" },
+    body: JSON.stringify({
+      notion_id:    task.id,
+      business:     task.business,
+      priority:     task.priority,
+      time:         task.time        ?? null,
+      completed_at: task.completedAt ?? null,
+      updated_at:   new Date().toISOString(),
+    }),
+  }).catch(() => {});
+}
+
+function deleteMeta(id: string) {
+  if (id.startsWith("temp_")) return;
+  sbFetch(`task_meta?notion_id=eq.${encodeURIComponent(id)}`, { method: "DELETE" }).catch(() => {});
+}
+
+// ─── Merge Notion + Supabase meta ─────────────────────────────
 function mergeTask(
   n: { id: string; title: string; status: TaskStatus; deadline?: string; createdAt: string },
   meta: Record<string, TaskMeta>
@@ -66,52 +109,48 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch from Notion on mount
   useEffect(() => {
-    const meta = loadMeta();
-    fetch("/api/notion-tasks")
-      .then(r => r.json())
-      .then(data => {
-        const notionTasks = (data.tasks ?? []) as Array<{
-          id: string; title: string; status: TaskStatus; deadline?: string; createdAt: string;
-        }>;
-        setTasks(notionTasks.map(t => mergeTask(t, meta)));
-      })
-      .catch(() => { /* API unavailable — start with empty list */ })
-      .finally(() => setLoading(false));
-  }, []);
-
-  const updateMeta = useCallback((id: string, updates: Partial<TaskMeta>) => {
-    const meta = loadMeta();
-    meta[id] = { business: "coaching", priority: "normale", ...meta[id], ...updates };
-    saveMeta(meta);
+    Promise.all([
+      fetch("/api/notion-tasks").then(r => r.json()).catch(() => ({ tasks: [] })),
+      loadMeta(),
+    ]).then(([notionData, meta]) => {
+      const notionTasks = (notionData.tasks ?? []) as Array<{
+        id: string; title: string; status: TaskStatus; deadline?: string; createdAt: string;
+      }>;
+      setTasks(notionTasks.map(t => mergeTask(t, meta)));
+    }).finally(() => setLoading(false));
   }, []);
 
   const setStatus = useCallback((id: string, status: TaskStatus) => {
     const completedAt = status === "done" ? new Date().toISOString() : undefined;
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, status, completedAt } : t));
-    updateMeta(id, { completedAt });
+    setTasks(prev => {
+      const updated = prev.map(t => t.id === id ? { ...t, status, completedAt } : t);
+      const task = updated.find(t => t.id === id);
+      if (task) saveMeta(task);
+      return updated;
+    });
     fetch("/api/notion-tasks", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, status }),
     }).catch(() => {});
-  }, [updateMeta]);
+  }, []);
 
   const toggle = useCallback((id: string) => {
     setTasks(prev => prev.map(t => {
       if (t.id !== id) return t;
       const newStatus: TaskStatus = t.status === "done" ? "todo" : "done";
       const completedAt = newStatus === "done" ? new Date().toISOString() : undefined;
-      updateMeta(id, { completedAt });
+      const updated = { ...t, status: newStatus, completedAt };
+      saveMeta(updated);
       fetch("/api/notion-tasks", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, status: newStatus }),
       }).catch(() => {});
-      return { ...t, status: newStatus, completedAt };
+      return updated;
     }));
-  }, [updateMeta]);
+  }, []);
 
   const addTask = useCallback((
     title: string,
@@ -126,7 +165,6 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     const tempId = `temp_${Date.now()}`;
     const newTask: Task = { id: tempId, title: title.trim(), business, priority, status, deadline, time, createdAt: today };
     setTasks(prev => [newTask, ...prev]);
-    updateMeta(tempId, { business, priority, time });
 
     fetch("/api/notion-tasks", {
       method: "POST",
@@ -137,31 +175,22 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       .then(created => {
         const realId = created.id;
         if (!realId) return;
-        updateMeta(realId, { business, priority, time });
-        const meta = loadMeta();
-        delete meta[tempId];
-        saveMeta(meta);
         setTasks(prev => prev.map(t => t.id === tempId ? { ...t, id: realId } : t));
+        saveMeta({ ...newTask, id: realId });
       })
       .catch(() => {});
-  }, [updateMeta]);
+  }, []);
 
   const editTask = useCallback((
     id: string,
     updates: Partial<Pick<Task, "title" | "business" | "priority" | "deadline" | "time">>,
   ) => {
     setTasks(prev => {
-      const task = prev.find(t => t.id === id);
-      if (task) {
-        updateMeta(id, {
-          business: updates.business ?? task.business,
-          priority: updates.priority ?? task.priority,
-          time:     updates.time !== undefined ? updates.time : task.time,
-        });
-      }
-      return prev.map(t => t.id === id ? { ...t, ...updates } : t);
+      const updated = prev.map(t => t.id === id ? { ...t, ...updates } : t);
+      const task = updated.find(t => t.id === id);
+      if (task) saveMeta(task);
+      return updated;
     });
-
     const notionUpdates: Record<string, unknown> = {};
     if (updates.title    !== undefined) notionUpdates.title    = updates.title;
     if (updates.deadline !== undefined) notionUpdates.deadline = updates.deadline;
@@ -172,7 +201,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ id, ...notionUpdates }),
       }).catch(() => {});
     }
-  }, [updateMeta]);
+  }, []);
 
   const deleteTask = useCallback((id: string) => {
     setTasks(prev => prev.filter(t => t.id !== id));
@@ -182,6 +211,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),
       }).catch(() => {});
+      deleteMeta(id);
     }
   }, []);
 
