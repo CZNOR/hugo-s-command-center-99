@@ -327,7 +327,7 @@ function TaskCard({ task, onEdit }: { task: Task; onEdit: () => void }) {
 
 // ─── Main page ────────────────────────────────────────────────
 export default function TasksPage() {
-  const { tasks } = useTasks();
+  const { tasks, loading } = useTasks();
   const { activeBusiness } = useBusiness();
   const [showModal,   setShowModal]   = useState(false);
   const [modalStatus, setModalStatus] = useState<TaskStatus>("todo");
@@ -351,6 +351,17 @@ export default function TasksPage() {
 
   const active = tasks.filter(t => t.status !== "done").length;
   const done   = tasks.filter(t => t.status === "done").length;
+
+  if (loading) {
+    return (
+      <div className="p-4 lg:p-6 min-h-screen max-w-6xl flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-white/10 border-t-purple-500 rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-white/40 text-sm">Chargement depuis Notion…</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 lg:p-6 min-h-screen max-w-6xl">

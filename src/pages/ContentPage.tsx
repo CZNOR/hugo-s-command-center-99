@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Calendar, RefreshCw, Plus, X, Sparkles, ChevronDown, LayoutGrid, CalendarDays, Target } from "lucide-react";
 import { useBusiness } from "@/lib/businessContext";
-const supabase = { functions: { invoke: async (name: string, opts?: { body?: object }) => { const r = await fetch(`https://blrafgywziqparlbbznv.supabase.co/functions/v1/${name}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(opts?.body ?? {}) }); return { data: await r.json(), error: r.ok ? null : new Error(r.statusText) }; } } };
 
 interface ContentItem {
   id: string;
@@ -49,7 +48,7 @@ const STATUT_COLORS: Record<string, string> = {
 
 const FORMATS = ["Storytelling", "Double cam", "Valeur rapide", "Valeur travaillée", "YouTube", "Live", "Carrousel", "Story", "Reel"];
 const STATUTS = ["Idée", "Script", "À tourner", "Tourné", "Monté", "Publié"];
-const BUSINESSES = ["Made Solution", "Hugo Coaching", "Personal Brand"];
+const BUSINESSES = ["Coaching", "Affiliation", "Ecom"];
 
 // ─── Create Entry Modal (glass style) ───────────────────────
 function CreateEntryModal({ onClose, onCreated, onLocalCreate }: {
@@ -74,15 +73,17 @@ function CreateEntryModal({ onClose, onCreated, onLocalCreate }: {
     setSaving(true);
     setError(null);
     try {
-      const { data, error } = await supabase.functions.invoke("notion-content", {
-        body: { action: "create", ...form },
+      const r = await fetch("/api/notion-content", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "create", ...form }),
       });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      const data = await r.json();
+      if (!r.ok || data?.error) throw new Error(data?.error ?? r.statusText);
       onCreated();
       onClose();
     } catch (err: any) {
-      // Fallback: create locally if Notion sync fails
+      // Fallback: add locally if API unavailable
       onLocalCreate({
         id: Date.now().toString(),
         sujet: form.sujet,
@@ -320,8 +321,10 @@ export default function ContentPage() {
     setLoading(true);
     setError(null);
     try {
-      const { data, error } = await supabase.functions.invoke("notion-content");
-      if (error) throw error;
+      const r = await fetch("/api/notion-content");
+      if (!r.ok) throw new Error(r.statusText);
+      const data = await r.json();
+      if (data?.error) throw new Error(data.error);
       setItems(data?.items || []);
     } catch (err: any) {
       setError(err.message || "Erreur de connexion Notion");
@@ -338,9 +341,12 @@ export default function ContentPage() {
   const handleStatusChange = async (id: string, statut: string) => {
     setItems(prev => prev.map(i => i.id === id ? { ...i, statut } : i));
     try {
-      await supabase.functions.invoke("notion-content", {
-        body: { action: "update", id, statut },
+      const r = await fetch("/api/notion-content", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "update", id, statut }),
       });
+      if (!r.ok) throw new Error();
     } catch {
       fetchContent();
     }
