@@ -117,10 +117,10 @@ function CasinoPanel() {
             <p className="text-[11px]" style={{ color: CASINO_DIM }}>Coolaff · CPA + RevShare</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           {loading && <RefreshCw className="w-3.5 h-3.5 animate-spin" style={{ color: CASINO_DIM }} />}
-          <AffiliateCopyButton />
-          <Link to="/casino" className="flex items-center gap-1 text-xs" style={{ color: `${CASINO_DIM}99` }}>
+          <div className="hidden sm:block"><AffiliateCopyButton /></div>
+          <Link to="/casino" className="flex items-center gap-1 text-xs flex-shrink-0" style={{ color: `${CASINO_DIM}99` }}>
             Voir tout <ArrowRight className="w-3 h-3" />
           </Link>
         </div>

@@ -46,20 +46,23 @@ function MobileBottomNav({ onOpenSidebar }: { onOpenSidebar: () => void }) {
             key={item.path}
             to={item.path}
             style={{
-              flex: 1,
+              flex: 1, position: "relative",
               display: "flex", flexDirection: "column",
               alignItems: "center", justifyContent: "center", gap: 3,
               color: active ? "#a855f7" : "rgba(255,255,255,0.3)",
               textDecoration: "none",
               transition: "color 0.15s ease",
+              background: active ? "rgba(168,85,247,0.06)" : "transparent",
             }}
           >
             <item.icon style={{ width: 20, height: 20 }} />
             <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.03em" }}>{item.label}</span>
             {active && (
               <div style={{
-                position: "absolute", bottom: 0, width: 28, height: 2,
-                background: "#a855f7", borderRadius: "2px 2px 0 0",
+                position: "absolute", top: 0, left: "50%",
+                transform: "translateX(-50%)",
+                width: 28, height: 2,
+                background: "#a855f7", borderRadius: "0 0 2px 2px",
                 boxShadow: "0 0 8px #a855f7",
               }} />
             )}
@@ -239,7 +242,7 @@ function AppHeader({ onOpenSidebar }: { onOpenSidebar: () => void }) {
           }}
         >
           <Plus style={{ width: 12, height: 12 }} />
-          Tâche
+          <span className="hidden sm:inline">Tâche</span>
         </button>
       </div>
     </header>

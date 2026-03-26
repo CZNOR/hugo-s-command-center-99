@@ -59,6 +59,12 @@
 /* ─── Global Reset ─── */
 * {
   border-color: hsl(var(--border));
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+
+html {
+  overflow-x: hidden;
 }
 
 body {
@@ -67,7 +73,16 @@ body {
   font-family: 'Poppins', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
 }
+
+button, a {
+  touch-action: manipulation;
+}
+
+/* Smooth scrolling */
+html { scroll-behavior: smooth; }
 
 /* ─── Glassmorphism utility classes ─── */
 @layer components {

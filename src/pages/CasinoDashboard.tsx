@@ -227,38 +227,40 @@ export default function CasinoDashboard() {
     <div className="p-4 md:p-6 space-y-6 max-w-5xl">
 
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: ACCENT }}>
-            Casino Affiliation · <span style={{ color: "#fff" }}>Corgibet</span>
+          <h1 className="text-xl font-bold leading-tight" style={{ color: ACCENT }}>
+            Casino Affiliation{" "}
+            <span style={{ color: "rgba(255,255,255,0.6)", fontWeight: 400 }}>·</span>{" "}
+            <span style={{ color: "#fff" }}>Corgibet</span>
           </h1>
-          <div className="flex items-center gap-3 mt-1">
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
             <p className="text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>
-              {loading ? "Chargement…" : lastUpdate ? `Mis à jour le ${lastUpdate}` : "Aucune donnée enregistrée"}
+              {loading ? "Chargement…" : lastUpdate ? `Mis à jour le ${lastUpdate}` : "Aucune donnée"}
             </p>
             {isStale && !loading && (
               <span className="flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full"
                 style={{ background: "rgba(245,158,11,0.15)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.3)" }}>
                 <AlertTriangle className="w-3 h-3" />
-                Données &gt; 7 jours
+                &gt; 7 jours
               </span>
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <AffiliateCopyButton />
+        <div className="flex items-center gap-2">
+          <AffiliateCopyButton compact />
           <button
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all"
             style={{
               background: "rgba(0,255,68,0.1)",
               border: "1px solid rgba(0,255,68,0.3)",
-              color: ACCENT,
-              cursor: "pointer",
+              color: ACCENT, cursor: "pointer",
             }}
           >
             <Edit3 className="w-3.5 h-3.5" />
-            Mettre à jour
+            <span className="hidden sm:inline">Mettre à jour</span>
+            <span className="sm:hidden">Modifier</span>
           </button>
         </div>
       </div>
