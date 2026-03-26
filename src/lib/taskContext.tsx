@@ -3,182 +3,169 @@ import { createContext, useContext, useState, useEffect, useCallback, type React
 // ─── Types ────────────────────────────────────────────────────
 export type TaskBusiness = "coaching" | "casino" | "content" | "equipe";
 export type TaskPriority = "haute" | "normale" | "basse";
-export type TaskStatus = "todo" | "progress" | "done";
+export type TaskStatus   = "todo" | "progress" | "done";
 
 export interface Task {
-  id: string;
-  title: string;
-  business: TaskBusiness;
-  priority: TaskPriority;
-  status: TaskStatus;
-  deadline?: string;
-  time?: string;
+  id:          string;
+  title:       string;
+  business:    TaskBusiness;
+  priority:    TaskPriority;
+  status:      TaskStatus;
+  deadline?:   string;   // yyyy-mm-dd
+  time?:       string;   // HH:MM
   completedAt?: string;
-  createdAt: string;
+  createdAt:   string;   // yyyy-mm-dd
 }
 
-type TaskMeta = {
-  business: TaskBusiness;
-  priority: TaskPriority;
-  time?: string;
-  completedAt?: string;
-};
-
-// ─── Supabase direct (même pattern que useSocialStats) ────────
+// ─── Supabase ─────────────────────────────────────────────────
 const SB_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const SB_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+const SNAPSHOT_ID = "__tasks_v2__";
 
-async function sbFetch<T = any>(path: string, options?: RequestInit): Promise<T> {
+async function sbFetch<T = any>(path: string, opts?: RequestInit): Promise<T> {
   const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
-    ...options,
+    ...opts,
     headers: {
       apikey: SB_KEY,
       Authorization: `Bearer ${SB_KEY}`,
       "Content-Type": "application/json",
-      ...(options?.headers ?? {}),
+      ...(opts?.headers ?? {}),
     },
   });
   const text = await res.text();
   return text ? JSON.parse(text) : ([] as unknown as T);
 }
 
-async function loadMeta(): Promise<Record<string, TaskMeta>> {
-  const rows = await sbFetch<any[]>("task_meta?select=*").catch(() => []);
-  const meta: Record<string, TaskMeta> = {};
-  for (const row of rows ?? []) {
-    meta[row.notion_id] = {
-      business:    row.business,
-      priority:    row.priority,
-      time:        row.time        ?? undefined,
-      completedAt: row.completed_at ?? undefined,
-    };
-  }
-  return meta;
+async function loadTasks(): Promise<Task[] | null> {
+  try {
+    const rows = await sbFetch<any[]>(
+      `task_meta?notion_id=eq.${SNAPSHOT_ID}&limit=1`
+    );
+    if (rows?.[0]?.completed_at) {
+      return JSON.parse(rows[0].completed_at) as Task[];
+    }
+  } catch {}
+  return null;
 }
 
-function saveMeta(task: Task) {
-  if (task.id.startsWith("temp_")) return;
-  sbFetch("task_meta", {
+async function saveTasks(tasks: Task[]): Promise<void> {
+  await sbFetch("task_meta", {
     method: "POST",
     headers: { Prefer: "resolution=merge-duplicates" },
     body: JSON.stringify({
-      notion_id:    task.id,
-      business:     task.business,
-      priority:     task.priority,
-      time:         task.time        ?? null,
-      completed_at: task.completedAt ?? null,
+      notion_id:    SNAPSHOT_ID,
+      business:     "__snapshot__",
+      priority:     "normale",
+      time:         null,
+      completed_at: JSON.stringify(tasks),
       updated_at:   new Date().toISOString(),
     }),
   }).catch(() => {});
 }
 
-function deleteMeta(id: string) {
-  if (id.startsWith("temp_")) return;
-  sbFetch(`task_meta?notion_id=eq.${encodeURIComponent(id)}`, { method: "DELETE" }).catch(() => {});
-}
-
-// ─── Merge Notion + Supabase meta ─────────────────────────────
-function mergeTask(
-  n: { id: string; title: string; status: TaskStatus; deadline?: string; createdAt: string },
-  meta: Record<string, TaskMeta>
-): Task {
-  const m = meta[n.id];
-  return {
-    ...n,
-    business:    m?.business    ?? "coaching",
-    priority:    m?.priority    ?? "normale",
-    time:        m?.time,
-    completedAt: m?.completedAt,
-  };
-}
+// ─── Seed : tes 22 tâches actuelles ──────────────────────────
+const TODAY = "2026-03-26";
+const SEED_TASKS: Task[] = [
+  { id: "t1",  title: "HELIGHT",                          business: "coaching", priority: "normale", status: "todo", createdAt: TODAY },
+  { id: "t2",  title: "PACKAGING INES",                   business: "equipe",   priority: "haute",   status: "todo", deadline: "2026-03-30", createdAt: TODAY },
+  { id: "t3",  title: "BRANDING DLIVE",                   business: "coaching", priority: "normale", status: "todo", deadline: "2026-03-26", createdAt: TODAY },
+  { id: "t4",  title: "AFFI VPN",                         business: "casino",   priority: "normale", status: "todo", deadline: "2026-03-29", createdAt: TODAY },
+  { id: "t5",  title: "LANDING PAGE CASINO",              business: "coaching", priority: "normale", status: "todo", deadline: "2026-03-29", createdAt: TODAY },
+  { id: "t6",  title: "REPONDRE MANAGER",                 business: "equipe",   priority: "haute",   status: "todo", deadline: "2026-03-30", createdAt: TODAY },
+  { id: "t7",  title: "TELEGRAM CASINO",                  business: "equipe",   priority: "haute",   status: "todo", deadline: "2026-03-31", createdAt: TODAY },
+  { id: "t8",  title: "LIVE",                             business: "equipe",   priority: "haute",   status: "todo", createdAt: TODAY },
+  { id: "t9",  title: "REELS DESSAI",                     business: "equipe",   priority: "haute",   status: "todo", createdAt: TODAY },
+  { id: "t10", title: "FINR APP",                         business: "equipe",   priority: "haute",   status: "todo", createdAt: TODAY },
+  { id: "t11", title: "REPONDRE YOPSY",                   business: "equipe",   priority: "haute",   status: "todo", createdAt: TODAY },
+  { id: "t12", title: "THYLO EN ATT REPONSE",             business: "equipe",   priority: "haute",   status: "todo", createdAt: TODAY },
+  { id: "t13", title: "QUESTIONNAIRE SAV",                business: "equipe",   priority: "haute",   status: "todo", deadline: "2026-03-28", createdAt: TODAY },
+  { id: "t14", title: "REC 5 VALUE + 2 STORYTELLING",     business: "coaching", priority: "haute",   status: "todo", deadline: "2026-03-31", time: "11:00", createdAt: TODAY },
+  { id: "t15", title: "DRIVE + GUIB",                     business: "coaching", priority: "haute",   status: "todo", deadline: "2026-03-30", createdAt: TODAY },
+  { id: "t16", title: "STORY",                            business: "coaching", priority: "haute",   status: "todo", deadline: "2026-03-31", createdAt: TODAY },
+  { id: "t17", title: "PLANNING LIVE ECOM",               business: "coaching", priority: "haute",   status: "todo", deadline: "2026-03-31", createdAt: TODAY },
+  { id: "t18", title: "PLANNING LIVE CASINO",             business: "casino",   priority: "haute",   status: "todo", deadline: "2026-03-31", createdAt: TODAY },
+  { id: "t19", title: "OVERLAY CASINO",                   business: "casino",   priority: "haute",   status: "todo", deadline: "2026-03-31", createdAt: TODAY },
+  { id: "t20", title: "SOCIETE MAXIME",                   business: "coaching", priority: "haute",   status: "todo", deadline: "2026-03-31", createdAt: TODAY },
+  { id: "t21", title: "Delphine call dimanche 10h FR",    business: "coaching", priority: "normale", status: "todo", deadline: "2026-03-30", time: "10:00", createdAt: TODAY },
+  { id: "t22", title: "SENEK CHANGER PHOTO + 3 MINIA",    business: "equipe",   priority: "haute",   status: "todo", deadline: "2026-03-30", createdAt: TODAY },
+];
 
 // ─── Context ──────────────────────────────────────────────────
 interface TaskContextType {
-  tasks: Task[];
-  loading: boolean;
-  setStatus: (id: string, status: TaskStatus) => void;
-  toggle: (id: string) => void;
-  addTask: (title: string, business: TaskBusiness, priority: TaskPriority, deadline?: string, time?: string, status?: TaskStatus) => void;
-  editTask: (id: string, updates: Partial<Pick<Task, "title" | "business" | "priority" | "deadline" | "time">>) => void;
+  tasks:      Task[];
+  loading:    boolean;
+  setStatus:  (id: string, status: TaskStatus) => void;
+  toggle:     (id: string) => void;
+  addTask:    (title: string, business: TaskBusiness, priority: TaskPriority, deadline?: string, time?: string, status?: TaskStatus) => void;
+  editTask:   (id: string, updates: Partial<Pick<Task, "title" | "business" | "priority" | "deadline" | "time">>) => void;
   deleteTask: (id: string) => void;
 }
 
 const TaskContext = createContext<TaskContextType | null>(null);
 
 export function TaskProvider({ children }: { children: ReactNode }) {
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks,   setTasks]   = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // ── Load from Supabase on mount ──────────────────────────
   useEffect(() => {
-    Promise.all([
-      fetch("/api/notion-tasks").then(r => r.json()).catch(() => ({ tasks: [] })),
-      loadMeta(),
-    ]).then(([notionData, meta]) => {
-      const notionTasks = (notionData.tasks ?? []) as Array<{
-        id: string; title: string; status: TaskStatus; deadline?: string; createdAt: string;
-      }>;
-      setTasks(notionTasks.map(t => mergeTask(t, meta)));
+    loadTasks().then(remote => {
+      if (remote && remote.length > 0) {
+        setTasks(remote);
+      } else {
+        // First time: seed with the 22 tasks + save to Supabase
+        setTasks(SEED_TASKS);
+        saveTasks(SEED_TASKS);
+      }
     }).finally(() => setLoading(false));
   }, []);
 
+  // ── Helpers ──────────────────────────────────────────────
+  const persist = useCallback((updated: Task[]) => {
+    setTasks(updated);
+    saveTasks(updated);
+  }, []);
+
   const setStatus = useCallback((id: string, status: TaskStatus) => {
-    const completedAt = status === "done" ? new Date().toISOString() : undefined;
     setTasks(prev => {
-      const updated = prev.map(t => t.id === id ? { ...t, status, completedAt } : t);
-      const task = updated.find(t => t.id === id);
-      if (task) saveMeta(task);
-      return updated;
+      const next = prev.map(t =>
+        t.id === id
+          ? { ...t, status, completedAt: status === "done" ? new Date().toISOString() : undefined }
+          : t
+      );
+      saveTasks(next);
+      return next;
     });
-    fetch("/api/notion-tasks", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, status }),
-    }).catch(() => {});
   }, []);
 
   const toggle = useCallback((id: string) => {
-    setTasks(prev => prev.map(t => {
-      if (t.id !== id) return t;
-      const newStatus: TaskStatus = t.status === "done" ? "todo" : "done";
-      const completedAt = newStatus === "done" ? new Date().toISOString() : undefined;
-      const updated = { ...t, status: newStatus, completedAt };
-      saveMeta(updated);
-      fetch("/api/notion-tasks", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, status: newStatus }),
-      }).catch(() => {});
-      return updated;
-    }));
+    setTasks(prev => {
+      const next = prev.map(t => {
+        if (t.id !== id) return t;
+        const s: TaskStatus = t.status === "done" ? "todo" : "done";
+        return { ...t, status: s, completedAt: s === "done" ? new Date().toISOString() : undefined };
+      });
+      saveTasks(next);
+      return next;
+    });
   }, []);
 
   const addTask = useCallback((
-    title: string,
-    business: TaskBusiness,
-    priority: TaskPriority,
-    deadline?: string,
-    time?: string,
-    status: TaskStatus = "todo",
+    title: string, business: TaskBusiness, priority: TaskPriority,
+    deadline?: string, time?: string, status: TaskStatus = "todo",
   ) => {
     if (!title.trim()) return;
-    const today = new Date().toISOString().split("T")[0];
-    const tempId = `temp_${Date.now()}`;
-    const newTask: Task = { id: tempId, title: title.trim(), business, priority, status, deadline, time, createdAt: today };
-    setTasks(prev => [newTask, ...prev]);
-
-    fetch("/api/notion-tasks", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: title.trim(), status, deadline }),
-    })
-      .then(r => r.json())
-      .then(created => {
-        const realId = created.id;
-        if (!realId) return;
-        setTasks(prev => prev.map(t => t.id === tempId ? { ...t, id: realId } : t));
-        saveMeta({ ...newTask, id: realId });
-      })
-      .catch(() => {});
+    const newTask: Task = {
+      id:        `t_${Date.now()}`,
+      title:     title.trim(),
+      business, priority, status, deadline, time,
+      createdAt: new Date().toISOString().split("T")[0],
+    };
+    setTasks(prev => {
+      const next = [newTask, ...prev];
+      saveTasks(next);
+      return next;
+    });
   }, []);
 
   const editTask = useCallback((
@@ -186,33 +173,18 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     updates: Partial<Pick<Task, "title" | "business" | "priority" | "deadline" | "time">>,
   ) => {
     setTasks(prev => {
-      const updated = prev.map(t => t.id === id ? { ...t, ...updates } : t);
-      const task = updated.find(t => t.id === id);
-      if (task) saveMeta(task);
-      return updated;
+      const next = prev.map(t => t.id === id ? { ...t, ...updates } : t);
+      saveTasks(next);
+      return next;
     });
-    const notionUpdates: Record<string, unknown> = {};
-    if (updates.title    !== undefined) notionUpdates.title    = updates.title;
-    if (updates.deadline !== undefined) notionUpdates.deadline = updates.deadline;
-    if (Object.keys(notionUpdates).length > 0) {
-      fetch("/api/notion-tasks", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, ...notionUpdates }),
-      }).catch(() => {});
-    }
   }, []);
 
   const deleteTask = useCallback((id: string) => {
-    setTasks(prev => prev.filter(t => t.id !== id));
-    if (!id.startsWith("temp_")) {
-      fetch("/api/notion-tasks", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
-      }).catch(() => {});
-      deleteMeta(id);
-    }
+    setTasks(prev => {
+      const next = prev.filter(t => t.id !== id);
+      saveTasks(next);
+      return next;
+    });
   }, []);
 
   return (
