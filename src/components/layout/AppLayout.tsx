@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { Outlet, useNavigate } from "react-router-dom";
-import { Plus } from "lucide-react";
+import { Outlet, useNavigate, useLocation, Link } from "react-router-dom";
+import { Plus, LayoutDashboard, CheckSquare, Calendar, Menu } from "lucide-react";
 import AppSidebar from "./AppSidebar";
 import StarField from "../StarField";
 import RippleCanvas from "../RippleCanvas";
@@ -14,6 +14,75 @@ import { initGoogleAuth } from "@/lib/googleCalendar";
 
 const SIDEBAR_W = 220;
 const HEADER_H  = 56;
+
+// ─── Mobile bottom nav ────────────────────────────────────────
+function MobileBottomNav({ onOpenSidebar }: { onOpenSidebar: () => void }) {
+  const location = useLocation();
+
+  const items = [
+    { path: "/",       label: "Home",   icon: LayoutDashboard },
+    { path: "/tasks",  label: "Tâches", icon: CheckSquare     },
+    { path: "/agenda", label: "Agenda", icon: Calendar        },
+  ];
+
+  return (
+    <nav
+      className="lg:hidden"
+      style={{
+        position: "fixed", bottom: 0, left: 0, right: 0,
+        height: 60, zIndex: 100,
+        background: "rgba(8,8,15,0.97)",
+        borderTop: "1px solid rgba(255,255,255,0.07)",
+        backdropFilter: "blur(12px)",
+        display: "flex", alignItems: "stretch",
+      }}
+    >
+      {items.map(item => {
+        const active = item.path === "/"
+          ? location.pathname === "/"
+          : location.pathname.startsWith(item.path);
+        return (
+          <Link
+            key={item.path}
+            to={item.path}
+            style={{
+              flex: 1,
+              display: "flex", flexDirection: "column",
+              alignItems: "center", justifyContent: "center", gap: 3,
+              color: active ? "#a855f7" : "rgba(255,255,255,0.3)",
+              textDecoration: "none",
+              transition: "color 0.15s ease",
+            }}
+          >
+            <item.icon style={{ width: 20, height: 20 }} />
+            <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.03em" }}>{item.label}</span>
+            {active && (
+              <div style={{
+                position: "absolute", bottom: 0, width: 28, height: 2,
+                background: "#a855f7", borderRadius: "2px 2px 0 0",
+                boxShadow: "0 0 8px #a855f7",
+              }} />
+            )}
+          </Link>
+        );
+      })}
+      <button
+        onClick={onOpenSidebar}
+        style={{
+          flex: 1,
+          display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center", gap: 3,
+          color: "rgba(255,255,255,0.3)",
+          background: "none", border: "none", cursor: "pointer",
+          transition: "color 0.15s ease",
+        }}
+      >
+        <Menu style={{ width: 20, height: 20 }} />
+        <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.03em" }}>Menu</span>
+      </button>
+    </nav>
+  );
+}
 
 // ─── Header (inside TaskProvider + BusinessProvider) ──────────
 function AppHeader({ onOpenSidebar }: { onOpenSidebar: () => void }) {
@@ -277,9 +346,12 @@ function AppLayoutInner() {
       {/* Fixed sidebar — starts below header */}
       <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
+      {/* Mobile bottom nav */}
+      <MobileBottomNav onOpenSidebar={() => setSidebarOpen(true)} />
+
       {/* Main content — offset header + sidebar */}
       <main
-        className="lg:ml-[220px]"
+        className="lg:ml-[220px] pb-16 lg:pb-0"
         style={{
           paddingTop: HEADER_H,
           minHeight: "100vh",

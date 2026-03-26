@@ -107,6 +107,7 @@ export default function FloatingObject3D({ mode }: Props) {
   return (
     <div
       ref={mountRef}
+      className="hidden lg:block"
       style={{
         position: "fixed",
         top: 72,
