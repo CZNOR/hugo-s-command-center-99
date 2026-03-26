@@ -16,19 +16,19 @@ export default function AgentsPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-white/90">Agents IA</h1>
-          <p className="text-sm text-white/40 mt-1">Automatisez vos workflows avec l'intelligence artificielle</p>
+          <p className="text-sm text-white/40 mt-1">Automatisez vos workflows avec l'IA</p>
         </div>
         <button
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white flex-shrink-0"
           style={{ background: activeBusiness.gradient, boxShadow: `0 4px 12px ${activeBusiness.glow}` }}
         >
           <Plus className="w-4 h-4" />
-          Créer un agent
+          <span className="hidden sm:inline">Créer un agent</span>
         </button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
+      <div className="grid grid-cols-3 gap-2 mb-6">
         {[
           { label: "Agents actifs", value: "0", icon: Bot },
           { label: "Tâches/jour", value: "0", icon: Zap },

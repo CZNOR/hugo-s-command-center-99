@@ -120,7 +120,7 @@ export default function GoalsPage() {
       </div>
 
       {/* Category tabs */}
-      <div className="flex items-center gap-1 p-1 rounded-xl w-fit" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+      <div className="flex items-center gap-1 p-1 rounded-xl overflow-x-auto" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", scrollbarWidth: "none" }}>
         {CATEGORIES.map(cat => (
           <button
             key={cat.id}

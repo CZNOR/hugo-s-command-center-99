@@ -298,17 +298,17 @@ export default function VentesPage() {
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Ventes & Pipeline</h1>
           <p className="text-sm text-muted-foreground mt-1">Gestion des prospects, clients et sessions</p>
         </div>
         <button
           onClick={() => activeTab === "pipeline" ? setShowLeadModal(true) : setShowSessionModal(true)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity self-start sm:self-auto"
         >
           <Plus size={16} />
-          {activeTab === "pipeline" ? "Nouveau lead" : "Nouvelle session"}
+          <span className="hidden sm:inline">{activeTab === "pipeline" ? "Nouveau lead" : "Nouvelle session"}</span>
         </button>
       </div>
 

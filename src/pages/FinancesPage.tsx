@@ -195,14 +195,14 @@ export default function FinancesPage() {
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Finances</h1>
           <p className="text-sm text-muted-foreground mt-1">Suivi des revenus et dépenses — Mars 2026</p>
         </div>
-        <button onClick={() => setShowModal(true)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity">
+        <button onClick={() => setShowModal(true)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity self-start sm:self-auto">
           <Plus size={16} />
-          Nouvelle transaction
+          <span className="hidden sm:inline">Nouvelle transaction</span>
         </button>
       </div>
 
