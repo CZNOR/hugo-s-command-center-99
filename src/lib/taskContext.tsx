@@ -24,6 +24,60 @@ type TaskMeta = {
   completedAt?: string;
 };
 
+// ─── Supabase direct (même pattern que useSocialStats) ────────
+const SB_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const SB_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+
+async function sbFetch<T = any>(path: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
+    ...options,
+    headers: {
+      apikey: SB_KEY,
+      Authorization: `Bearer ${SB_KEY}`,
+      "Content-Type": "application/json",
+      ...(options?.headers ?? {}),
+    },
+  });
+  const text = await res.text();
+  return text ? JSON.parse(text) : ([] as unknown as T);
+}
+
+async function loadMeta(): Promise<Record<string, TaskMeta>> {
+  const rows = await sbFetch<any[]>("task_meta?select=*").catch(() => []);
+  const meta: Record<string, TaskMeta> = {};
+  for (const row of rows ?? []) {
+    meta[row.notion_id] = {
+      business:    row.business,
+      priority:    row.priority,
+      time:        row.time        ?? undefined,
+      completedAt: row.completed_at ?? undefined,
+    };
+  }
+  return meta;
+}
+
+function saveMeta(task: Task) {
+  if (task.id.startsWith("temp_")) return;
+  sbFetch("task_meta", {
+    method: "POST",
+    headers: { Prefer: "resolution=merge-duplicates" },
+    body: JSON.stringify({
+      notion_id:    task.id,
+      business:     task.business,
+      priority:     task.priority,
+      time:         task.time        ?? null,
+      completed_at: task.completedAt ?? null,
+      updated_at:   new Date().toISOString(),
+    }),
+  }).catch(() => {});
+}
+
+function deleteMeta(id: string) {
+  if (id.startsWith("temp_")) return;
+  sbFetch(`task_meta?notion_id=eq.${encodeURIComponent(id)}`, { method: "DELETE" }).catch(() => {});
+}
+
+// ─── Merge Notion + Supabase meta ─────────────────────────────
 function mergeTask(
   n: { id: string; title: string; status: TaskStatus; deadline?: string; createdAt: string },
   meta: Record<string, TaskMeta>
@@ -36,31 +90,6 @@ function mergeTask(
     time:        m?.time,
     completedAt: m?.completedAt,
   };
-}
-
-// ─── Supabase meta sync (replaces localStorage) ───────────────
-function syncMeta(task: Task) {
-  if (task.id.startsWith("temp_")) return; // wait for real Notion ID
-  fetch("/api/task-meta", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      notion_id:   task.id,
-      business:    task.business,
-      priority:    task.priority,
-      time:        task.time        ?? null,
-      completedAt: task.completedAt ?? null,
-    }),
-  }).catch(() => {});
-}
-
-function deleteMeta(id: string) {
-  if (id.startsWith("temp_")) return;
-  fetch("/api/task-meta", {
-    method: "DELETE",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ notion_id: id }),
-  }).catch(() => {});
 }
 
 // ─── Context ──────────────────────────────────────────────────
@@ -80,16 +109,14 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch Notion tasks + Supabase meta concurrently on mount
   useEffect(() => {
     Promise.all([
       fetch("/api/notion-tasks").then(r => r.json()).catch(() => ({ tasks: [] })),
-      fetch("/api/task-meta").then(r => r.json()).catch(() => ({ meta: {} })),
-    ]).then(([notionData, metaData]) => {
+      loadMeta(),
+    ]).then(([notionData, meta]) => {
       const notionTasks = (notionData.tasks ?? []) as Array<{
         id: string; title: string; status: TaskStatus; deadline?: string; createdAt: string;
       }>;
-      const meta = (metaData.meta ?? {}) as Record<string, TaskMeta>;
       setTasks(notionTasks.map(t => mergeTask(t, meta)));
     }).finally(() => setLoading(false));
   }, []);
@@ -99,7 +126,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     setTasks(prev => {
       const updated = prev.map(t => t.id === id ? { ...t, status, completedAt } : t);
       const task = updated.find(t => t.id === id);
-      if (task) syncMeta(task);
+      if (task) saveMeta(task);
       return updated;
     });
     fetch("/api/notion-tasks", {
@@ -115,7 +142,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       const newStatus: TaskStatus = t.status === "done" ? "todo" : "done";
       const completedAt = newStatus === "done" ? new Date().toISOString() : undefined;
       const updated = { ...t, status: newStatus, completedAt };
-      syncMeta(updated);
+      saveMeta(updated);
       fetch("/api/notion-tasks", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -148,9 +175,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       .then(created => {
         const realId = created.id;
         if (!realId) return;
-        // Update local state with real ID then sync meta to Supabase
         setTasks(prev => prev.map(t => t.id === tempId ? { ...t, id: realId } : t));
-        syncMeta({ ...newTask, id: realId });
+        saveMeta({ ...newTask, id: realId });
       })
       .catch(() => {});
   }, []);
@@ -162,10 +188,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     setTasks(prev => {
       const updated = prev.map(t => t.id === id ? { ...t, ...updates } : t);
       const task = updated.find(t => t.id === id);
-      if (task) syncMeta(task);
+      if (task) saveMeta(task);
       return updated;
     });
-
     const notionUpdates: Record<string, unknown> = {};
     if (updates.title    !== undefined) notionUpdates.title    = updates.title;
     if (updates.deadline !== undefined) notionUpdates.deadline = updates.deadline;
