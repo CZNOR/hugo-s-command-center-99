@@ -39,7 +39,7 @@ export default function WelcomeIntro({ onDone }: Props) {
     mount.appendChild(renderer.domElement);
 
     const scene  = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
+    const camera = new THREE.PerspectiveCamera(58, 1, 0.1, 100);
     camera.position.set(0, 0, 6.5);
 
     // Lights
@@ -56,7 +56,7 @@ export default function WelcomeIntro({ onDone }: Props) {
 
     // ── Casino chip (left) ─────────────────────────────────
     const chip = new THREE.Group();
-    chip.position.set(-2.4, 0, 0);
+    chip.position.set(-2.0, 0, 0);
 
     chip.add(new THREE.Mesh(
       new THREE.CylinderGeometry(1.0, 1.0, 0.22, 64),
@@ -99,7 +99,7 @@ export default function WelcomeIntro({ onDone }: Props) {
       new THREE.WireframeGeometry(globeGeo),
       globeMat,
     );
-    globe.position.set(2.4, 0, 0);
+    globe.position.set(2.0, 0, 0);
     scene.add(globe);
 
     // ── Animation loop ─────────────────────────────────────
@@ -113,15 +113,15 @@ export default function WelcomeIntro({ onDone }: Props) {
       // Converge: starts at 0.9s over 0.65s
       const CONVERGE_START = 0.9;
       const CONVERGE_DUR   = 0.65;
-      let chipX  = -2.4;
-      let globeX =  2.4;
+      let chipX  = -2.0;
+      let globeX =  2.0;
 
       if (t > CONVERGE_START) {
         const p = Math.min((t - CONVERGE_START) / CONVERGE_DUR, 1);
         // ease-out cubic
         const e = 1 - Math.pow(1 - p, 3);
-        chipX  = -2.4 + 2.4 * e;
-        globeX =  2.4 - 2.4 * e;
+        chipX  = -2.0 + 2.0 * e;
+        globeX =  2.0 - 2.0 * e;
       }
 
       chip.position.x  = chipX;
