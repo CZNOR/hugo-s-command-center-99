@@ -40,26 +40,17 @@ function AppHeader({ onOpenSidebar }: { onOpenSidebar: () => void }) {
         alignItems: "stretch",
       }}
     >
-      {/* Zone 1 — Coaching */}
+      {/* Zone 1 — Coaching (hidden on mobile) */}
       <div
+        className="hidden lg:flex"
         style={{
           flex: "0 0 25%",
           borderRight: "1px solid rgba(255,255,255,0.06)",
-          display: "flex",
           alignItems: "center",
           gap: 10,
           paddingLeft: 16,
         }}
       >
-        {/* Mobile hamburger */}
-        <button
-          className="lg:hidden"
-          onClick={onOpenSidebar}
-          style={{ color: "rgba(255,255,255,0.4)", fontSize: 18, flexShrink: 0, lineHeight: 1 }}
-          aria-label="Open menu"
-        >
-          ☰
-        </button>
         <div>
           <p style={{
             color: "#a855f7",
@@ -77,11 +68,25 @@ function AppHeader({ onOpenSidebar }: { onOpenSidebar: () => void }) {
         </div>
       </div>
 
-      {/* Zone 2 — CZN logo */}
+      {/* Mobile hamburger + title */}
+      <div className="flex lg:hidden items-center gap-3 pl-3 flex-shrink-0">
+        <button
+          onClick={onOpenSidebar}
+          style={{ color: "rgba(255,255,255,0.5)", fontSize: 20, lineHeight: 1 }}
+          aria-label="Open menu"
+        >
+          ☰
+        </button>
+        <span style={{ color: "rgba(255,255,255,0.7)", fontWeight: 700, fontSize: 13, letterSpacing: "0.05em" }}>
+          CZN
+        </span>
+      </div>
+
+      {/* Zone 2 — CZN logo (desktop only) */}
       <div
+        className="hidden lg:flex"
         style={{
           flex: "1 1 0",
-          display: "flex",
           alignItems: "center",
           justifyContent: "center",
         }}
@@ -93,12 +98,15 @@ function AppHeader({ onOpenSidebar }: { onOpenSidebar: () => void }) {
         />
       </div>
 
-      {/* Zone 3 — Casino */}
+      {/* Spacer on mobile */}
+      <div className="flex lg:hidden flex-1" />
+
+      {/* Zone 3 — Casino (hidden on mobile) */}
       <div
+        className="hidden lg:flex"
         style={{
           flex: "0 0 25%",
           borderLeft: "1px solid rgba(255,255,255,0.06)",
-          display: "flex",
           alignItems: "center",
           paddingLeft: 16,
         }}
@@ -123,7 +131,7 @@ function AppHeader({ onOpenSidebar }: { onOpenSidebar: () => void }) {
       {/* Zone 4 — Actions */}
       <div
         style={{
-          flex: "0 0 180px",
+          flexShrink: 0,
           borderLeft: "1px solid rgba(255,255,255,0.06)",
           display: "flex",
           alignItems: "center",
@@ -133,7 +141,7 @@ function AppHeader({ onOpenSidebar }: { onOpenSidebar: () => void }) {
           paddingRight: 12,
         }}
       >
-        <span style={{
+        <span className="hidden sm:inline" style={{
           background: "rgba(255,255,255,0.06)",
           color: "rgba(255,255,255,0.7)",
           borderRadius: 20,
@@ -141,7 +149,6 @@ function AppHeader({ onOpenSidebar }: { onOpenSidebar: () => void }) {
           padding: "3px 10px",
           fontWeight: 500,
           whiteSpace: "nowrap",
-          flexShrink: 0,
         }}>
           {totalPending} à faire
         </span>

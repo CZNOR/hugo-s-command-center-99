@@ -229,7 +229,7 @@ export default function TaskBoard() {
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
 
       {/* ══ BLOC 1 — Deux cards côte à côte ══════════════════ */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 
         {/* LEFT — Formulaire */}
         <div className="glass-card" style={{ ...card, display: "flex", flexDirection: "column", gap: 14 }}>
@@ -411,7 +411,8 @@ export default function TaskBoard() {
           Planning de la semaine
         </p>
 
-        <div style={{ display: "flex", gap: 6, alignItems: "flex-start" }}>
+        <div className="overflow-x-auto -mx-1 px-1">
+        <div style={{ display: "flex", gap: 6, alignItems: "flex-start", minWidth: 480 }}>
 
           {/* Hour axis */}
           <div style={{ flexShrink: 0, paddingTop: 54, display: "flex", flexDirection: "column" }}>
@@ -504,6 +505,7 @@ export default function TaskBoard() {
               </div>
             );
           })}
+        </div>
         </div>
       </div>
     </div>

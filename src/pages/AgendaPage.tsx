@@ -192,9 +192,10 @@ export default function AgendaPage() {
       </div>
 
       {/* Calendar grid */}
+      <div className="overflow-x-auto -mx-1 px-1">
       <div
         className="rounded-2xl overflow-hidden"
-        style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}
+        style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", minWidth: 560 }}
       >
         {/* Day headers */}
         <div className="grid border-b" style={{ gridTemplateColumns: "52px repeat(7, 1fr)", borderColor: "rgba(255,255,255,0.07)" }}>
@@ -309,6 +310,7 @@ export default function AgendaPage() {
             </div>
           ))}
         </div>
+      </div>
       </div>
 
       {/* Empty / connect state */}

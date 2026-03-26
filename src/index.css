@@ -567,3 +567,41 @@ select:focus {
   border-radius: inherit;
   z-index: 0;
 }
+
+/* ═══════════════════════════════════════════
+   MOBILE RESPONSIVE
+═══════════════════════════════════════════ */
+@media (max-width: 767px) {
+  /* Reduce padding on small screens */
+  .p-4.lg\:p-6, .p-4 {
+    padding: 12px;
+  }
+
+  /* Business panels stack nicely */
+  .panel-coaching-wrap,
+  .panel-casino-wrap {
+    transform: none !important;
+  }
+  .panel-coaching-wrap:hover,
+  .panel-casino-wrap:hover {
+    transform: none !important;
+    filter: none !important;
+  }
+
+  /* KPI cards: tighter on mobile */
+  .kpi-hover:hover {
+    transform: none;
+  }
+
+  /* Glass card: disable scale on mobile (layout shift) */
+  [data-biz="coaching"] .glass-card:hover,
+  [data-biz="casino"] .glass-card:hover {
+    transform: none;
+  }
+
+  /* Modals: full-width on very small screens */
+  .fixed.inset-0 > .w-full {
+    margin-left: 8px;
+    margin-right: 8px;
+  }
+}

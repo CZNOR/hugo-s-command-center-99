@@ -40,7 +40,7 @@ interface TaskContextType {
   tasks: Task[];
   setStatus: (id: string, status: TaskStatus) => void;
   toggle: (id: string) => void; // shortcut: todo/progress → done, done → todo
-  addTask: (title: string, business: TaskBusiness, priority: TaskPriority, deadline?: string, time?: string) => void;
+  addTask: (title: string, business: TaskBusiness, priority: TaskPriority, deadline?: string, time?: string, status?: TaskStatus) => void;
   editTask: (id: string, updates: Partial<Pick<Task, "title" | "business" | "priority" | "deadline" | "time">>) => void;
   deleteTask: (id: string) => void;
 }
@@ -68,11 +68,21 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       return { ...t, status: newStatus, completedAt: newStatus === "done" ? new Date().toISOString() : undefined };
     }));
 
-  const addTask = (title: string, business: TaskBusiness, priority: TaskPriority, deadline?: string, time?: string) => {
+  const addTask = (title: string, business: TaskBusiness, priority: TaskPriority, deadline?: string, time?: string, status: TaskStatus = "todo") => {
     if (!title.trim()) return;
     const today = new Date().toISOString().split("T")[0];
     setTasks(prev => [
-      { id: Date.now().toString(), title: title.trim(), business, priority, status: "todo", deadline, time, createdAt: today },
+      {
+        id: Date.now().toString(),
+        title: title.trim(),
+        business,
+        priority,
+        status,
+        deadline,
+        time,
+        createdAt: today,
+        completedAt: status === "done" ? new Date().toISOString() : undefined,
+      },
       ...prev,
     ]);
   };

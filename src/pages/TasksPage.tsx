@@ -25,7 +25,7 @@ const COLUMNS: { status: TaskStatus; label: string; color: string }[] = [
 
 // ─── Add Task Modal ───────────────────────────────────────────
 function AddModal({ onClose, defaultStatus }: { onClose: () => void; defaultStatus: TaskStatus }) {
-  const { addTask, setStatus, tasks } = useTasks();
+  const { addTask } = useTasks();
   const [title,    setTitle]    = useState("");
   const [business, setBusiness] = useState<TaskBusiness>("coaching");
   const [priority, setPriority] = useState<TaskPriority>("normale");
@@ -34,13 +34,7 @@ function AddModal({ onClose, defaultStatus }: { onClose: () => void; defaultStat
 
   const handleAdd = () => {
     if (!title.trim()) return;
-    addTask(title, business, priority, deadline || undefined, time || undefined);
-    // Move to correct column if not "todo" — the new task is first in the array
-    if (defaultStatus !== "todo") {
-      const currentMax = tasks.reduce((max, t) => Math.max(max, parseInt(t.id) || 0), 0);
-      const newId = String(currentMax + 1);
-      setTimeout(() => setStatus(newId, defaultStatus), 10);
-    }
+    addTask(title, business, priority, deadline || undefined, time || undefined, defaultStatus);
     onClose();
   };
 
