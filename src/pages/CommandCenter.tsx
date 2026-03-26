@@ -7,6 +7,8 @@ import {
 import { gamificationProfile } from "@/lib/mock-data";
 import TaskBoard from "@/components/TaskBoard";
 import AffiliateCopyButton from "@/components/AffiliateCopyButton";
+import HomeParticles from "@/components/HomeParticles";
+import { useBusiness } from "@/lib/businessContext";
 
 // ─── Supabase helper ─────────────────────────────────────────
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
@@ -185,25 +187,30 @@ function Greeting() {
   const now     = new Date();
   const dateStr = now.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
   const g       = gamificationProfile;
+  const { activeBusiness } = useBusiness();
+  const accent  = activeBusiness.id === "casino" ? "#00cc44" : "#a855f7";
+  const accentBg = activeBusiness.id === "casino" ? "rgba(0,204,68,0.1)" : "rgba(168,85,247,0.1)";
+  const accentBorder = activeBusiness.id === "casino" ? "rgba(0,204,68,0.2)" : "rgba(168,85,247,0.2)";
 
   return (
-    <div className="flex items-center justify-between flex-wrap gap-4">
+    <div className="flex items-center justify-between flex-wrap gap-4 animate-fade-up" style={{ animationDelay: "0s" }}>
       <div>
-        <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "rgba(255,255,255,0.3)" }}>
+        <p className="text-xs font-semibold uppercase tracking-widest animate-fade-up" style={{ color: "rgba(255,255,255,0.3)", animationDelay: "0.05s" }}>
           {salut} · <span style={{ color: "rgba(255,255,255,0.45)" }}>{dateStr.charAt(0).toUpperCase() + dateStr.slice(1)}</span>
         </p>
-        <h1 className="text-3xl font-bold mt-1" style={{ color: "rgba(255,255,255,0.95)" }}>
-          Command Center <span style={{ fontSize: "1.5rem" }}>⚡</span>
+        <h1 className="text-3xl font-bold mt-1 animate-fade-up" style={{ animationDelay: "0.1s" }}>
+          <span className="czn-title">Command Center</span>{" "}
+          <span style={{ fontSize: "1.5rem" }}>⚡</span>
         </h1>
       </div>
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm" style={{ background: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.2)" }}>
+      <div className="flex items-center gap-3 animate-fade-up" style={{ animationDelay: "0.18s" }}>
+        <div className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm czn-badge" style={{ background: accentBg, border: `1px solid ${accentBorder}` }}>
           <span>🔥</span>
           <span style={{ color: "#f97316", fontWeight: 700 }}>{g.current_streak}j</span>
           <span className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>streak</span>
         </div>
-        <div className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm" style={{ background: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.2)" }}>
-          <span className="text-xs font-bold px-1.5 py-0.5 rounded-md" style={{ background: "rgba(168,85,247,0.25)", color: "#a855f7" }}>Lv.{g.level}</span>
+        <div className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm czn-badge" style={{ background: accentBg, border: `1px solid ${accentBorder}` }}>
+          <span className="text-xs font-bold px-1.5 py-0.5 rounded-md" style={{ background: `${accent}25`, color: accent }}>Lv.{g.level}</span>
           <span className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>{g.level_title}</span>
         </div>
       </div>
@@ -218,16 +225,24 @@ export default function CommandCenter() {
       <Greeting />
 
       {/* Task board — planning + today + week */}
-      <TaskBoard />
+      <div className="animate-fade-up" style={{ animationDelay: "0.22s" }}>
+        <TaskBoard />
+      </div>
 
       {/* Business panels */}
-      <div>
+      <div className="animate-fade-up" style={{ animationDelay: "0.32s" }}>
         <p className="text-[11px] font-semibold uppercase tracking-widest mb-3" style={{ color: "rgba(255,255,255,0.25)" }}>
           Mes business
         </p>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="panel-coaching-wrap"><CoachingPanel /></div>
-          <div className="panel-casino-wrap"><CasinoPanel /></div>
+        {/* Particle canvas behind panels */}
+        <div style={{ position: "relative" }}>
+          <div style={{ position: "absolute", inset: "-20px", zIndex: 0, pointerEvents: "none", overflow: "hidden", borderRadius: 24 }}>
+            <HomeParticles />
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4" style={{ position: "relative", zIndex: 1 }}>
+            <div className="panel-coaching-wrap"><CoachingPanel /></div>
+            <div className="panel-casino-wrap"><CasinoPanel /></div>
+          </div>
         </div>
       </div>
     </div>

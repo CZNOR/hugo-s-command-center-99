@@ -406,7 +406,7 @@ export default function TaskBoard() {
       </div>
 
       {/* ══ BLOC 2 — Planning semaine ═════════════════════════ */}
-      <div style={{ ...card, padding: "20px 16px 14px" }}>
+      <div className="planning-card" style={{ ...card, padding: "20px 16px 14px" }}>
         <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)", marginBottom: 12 }}>
           Planning de la semaine
         </p>
