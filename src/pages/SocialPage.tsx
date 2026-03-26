@@ -355,14 +355,14 @@ export default function SocialPage() {
       </div>
 
       {/* Platform tabs */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 overflow-x-auto pb-0.5" style={{ scrollbarWidth: "none" }}>
         {(["instagram", "tiktok", "youtube"] as Tab[]).map((tab) => {
           const meta = TAB_META[tab];
           return (
             <button
               key={tab}
               onClick={() => setActive(tab)}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 flex-shrink-0"
               style={
                 active === tab
                   ? {
