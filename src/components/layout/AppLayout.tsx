@@ -15,26 +15,33 @@ import { initGoogleAuth } from "@/lib/googleCalendar";
 const SIDEBAR_W = 220;
 const HEADER_H  = 56;
 
-// ─── Mobile bottom nav ────────────────────────────────────────
+// ─── Mobile bottom nav — floating pill style ──────────────────
 function MobileBottomNav({ onOpenSidebar, onCloseSidebar }: { onOpenSidebar: () => void; onCloseSidebar: () => void }) {
   const location = useLocation();
 
   const items = [
-    { path: "/",       label: "Home",   icon: LayoutDashboard },
-    { path: "/tasks",  label: "Tâches", icon: CheckSquare     },
-    { path: "/agenda", label: "Agenda", icon: Calendar        },
+    { path: "/",       icon: LayoutDashboard },
+    { path: "/tasks",  icon: CheckSquare     },
+    { path: "/agenda", icon: Calendar        },
   ];
 
   return (
     <nav
       className="lg:hidden"
       style={{
-        position: "fixed", bottom: 0, left: 0, right: 0,
-        height: 60, zIndex: 100,
-        background: "rgba(8,8,15,0.97)",
-        borderTop: "1px solid rgba(255,255,255,0.07)",
-        backdropFilter: "blur(12px)",
-        display: "flex", alignItems: "stretch",
+        position: "fixed", bottom: 16, left: "50%",
+        transform: "translateX(-50%)",
+        zIndex: 100,
+        display: "flex", alignItems: "center",
+        gap: 2,
+        background: "rgba(10,10,22,0.94)",
+        border: "1px solid rgba(255,255,255,0.1)",
+        backdropFilter: "blur(24px)",
+        WebkitBackdropFilter: "blur(24px)",
+        borderRadius: 50,
+        padding: "5px 6px",
+        boxShadow: "0 8px 40px rgba(0,0,0,0.55), 0 0 0 0.5px rgba(255,255,255,0.04) inset",
+        whiteSpace: "nowrap",
       }}
     >
       {items.map(item => {
@@ -47,42 +54,46 @@ function MobileBottomNav({ onOpenSidebar, onCloseSidebar }: { onOpenSidebar: () 
             to={item.path}
             onClick={onCloseSidebar}
             style={{
-              flex: 1, position: "relative",
-              display: "flex", flexDirection: "column",
-              alignItems: "center", justifyContent: "center", gap: 3,
-              color: active ? "#a855f7" : "rgba(255,255,255,0.3)",
+              width: 50, height: 50, borderRadius: 50,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              color: active ? "#a855f7" : "rgba(255,255,255,0.38)",
               textDecoration: "none",
-              transition: "color 0.15s ease",
-              background: active ? "rgba(168,85,247,0.06)" : "transparent",
+              background: active ? "rgba(168,85,247,0.18)" : "transparent",
+              transition: "all 0.15s ease",
+              position: "relative",
+              flexShrink: 0,
             }}
           >
-            <item.icon style={{ width: 20, height: 20 }} />
-            <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.03em" }}>{item.label}</span>
+            <item.icon style={{ width: 21, height: 21 }} />
             {active && (
               <div style={{
-                position: "absolute", top: 0, left: "50%",
+                position: "absolute", bottom: 7, left: "50%",
                 transform: "translateX(-50%)",
-                width: 28, height: 2,
-                background: "#a855f7", borderRadius: "0 0 2px 2px",
-                boxShadow: "0 0 8px #a855f7",
+                width: 4, height: 4, borderRadius: "50%",
+                background: "#a855f7",
+                boxShadow: "0 0 6px #a855f7",
               }} />
             )}
           </Link>
         );
       })}
+      {/* Separator */}
+      <div style={{ width: 1, height: 22, background: "rgba(255,255,255,0.1)", margin: "0 2px", flexShrink: 0 }} />
+      {/* Menu — bouton flottant voyant */}
       <button
         onClick={onOpenSidebar}
         style={{
-          flex: 1,
-          display: "flex", flexDirection: "column",
-          alignItems: "center", justifyContent: "center", gap: 3,
-          color: "rgba(255,255,255,0.3)",
-          background: "none", border: "none", cursor: "pointer",
-          transition: "color 0.15s ease",
+          width: 50, height: 50, borderRadius: 50,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          background: "linear-gradient(135deg, #7c3aed, #a855f7)",
+          border: "none", cursor: "pointer",
+          color: "#fff",
+          transition: "all 0.15s ease",
+          flexShrink: 0,
+          boxShadow: "0 0 16px rgba(168,85,247,0.5)",
         }}
       >
         <Menu style={{ width: 20, height: 20 }} />
-        <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.03em" }}>Menu</span>
       </button>
     </nav>
   );
@@ -355,7 +366,7 @@ function AppLayoutInner() {
 
       {/* Main content — offset header + sidebar */}
       <main
-        className="lg:ml-[220px] pb-16 lg:pb-0"
+        className="lg:ml-[220px] pb-28 lg:pb-0"
         style={{
           paddingTop: HEADER_H,
           minHeight: "100vh",
