@@ -281,6 +281,79 @@ export default function CoachingDashboard() {
         </div>
       </div>
 
+      {/* ── Revenus détaillés ── */}
+      {!loading && (
+        <div className="p-5" style={{ ...cardGlow, borderColor: "rgba(139,92,246,0.2)" }}>
+          <p className="text-xs font-semibold uppercase tracking-wider mb-4" style={{ color: "rgba(255,255,255,0.3)" }}>
+            Revenus — toutes sources
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+
+            {/* Coaching HT */}
+            <div className="p-4 rounded-xl" style={{ background: "rgba(168,85,247,0.07)", border: "1px solid rgba(168,85,247,0.15)" }}>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-lg">🎯</span>
+                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "#a855f7" }}>Coaching HT</p>
+              </div>
+              <p className="text-2xl font-bold" style={{ color: "rgba(255,255,255,0.9)" }}>
+                <AnimatedNum value={c.caTotal} /> €
+              </p>
+              <div className="mt-2 space-y-1">
+                <p className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
+                  {c.clients} client{c.clients !== 1 ? "s" : ""} signés
+                </p>
+                {c.clients > 0 && (
+                  <p className="text-xs font-mono" style={{ color: "rgba(168,85,247,0.7)" }}>
+                    Ticket moyen : {Math.round(c.caTotal / c.clients).toLocaleString("fr-FR")} €
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Formation */}
+            <div className="p-4 rounded-xl" style={{ background: "rgba(236,72,153,0.07)", border: "1px solid rgba(236,72,153,0.15)" }}>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-lg">📚</span>
+                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "#ec4899" }}>Formation</p>
+              </div>
+              <p className="text-2xl font-bold" style={{ color: "rgba(255,255,255,0.9)" }}>
+                <AnimatedNum value={c.formationPrix * c.formationVentes} /> €
+              </p>
+              <div className="mt-2 space-y-1">
+                <p className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
+                  {c.formationVentes} vente{c.formationVentes !== 1 ? "s" : ""} · {c.formationPrix.toLocaleString("fr-FR")} € / accès
+                </p>
+                {c.formationVentes === 0 && (
+                  <p className="text-xs font-mono" style={{ color: "rgba(236,72,153,0.6)" }}>
+                    En cours de lancement
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Total global */}
+            <div className="p-4 rounded-xl" style={{ background: "rgba(245,158,11,0.07)", border: "1px solid rgba(245,158,11,0.2)" }}>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-lg">💰</span>
+                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "#f59e0b" }}>Total cumulé</p>
+              </div>
+              <p className="text-2xl font-bold" style={{ color: "rgba(255,255,255,0.9)" }}>
+                <AnimatedNum value={c.caTotal + c.formationPrix * c.formationVentes} /> €
+              </p>
+              <div className="mt-2 space-y-1">
+                <p className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
+                  Coaching + Formation
+                </p>
+                <p className="text-xs font-mono" style={{ color: "rgba(245,158,11,0.7)" }}>
+                  {(c.clients + c.formationVentes)} vente{(c.clients + c.formationVentes) !== 1 ? "s" : ""} au total
+                </p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
 
         {/* Funnel */}
