@@ -23,10 +23,10 @@ async function sbFetch<T = any>(path: string): Promise<T> {
   return text ? JSON.parse(text) : [];
 }
 
-// ─── Real coaching data ───────────────────────────────────────
-// 9 clients · 25 483 € CA total encaissé (août–déc 2025)
-// 165 bookings Cal.com · taux closing 5,5%
+// ─── Coaching & Produits data ─────────────────────────────────
+// Coaching HT (actuel) + Formation 990€ (actuel) + Made Académie (passé)
 const COACHING = {
+  // Coaching HT — actuel
   dmSemaine: 47,
   dmDelta: "+11 vs S-1",
   bookings: 165,
@@ -35,6 +35,18 @@ const COACHING = {
   closingDelta: "9 / 165 appels",
   caTotal: 25_483,
   caDelta: "9 clients signés",
+  // Formation 990€ — actuel (nouveau produit)
+  formation: {
+    prix: 990,
+    nom: "La Formation Complète E-commerce",
+    description: "De A à Z · Meta Ads · Klaviyo",
+  },
+  // Made Académie — historique (Circle.so, export mars 2026, terminé)
+  academie: {
+    membres: 245,
+    payants: 23,     // 20 Premium + 3 Elite
+    lives: 14,       // lives organisés (mercredi + vendredi)
+  },
 };
 
 // ─── Colors ──────────────────────────────────────────────────
@@ -306,25 +318,65 @@ function CoachingPanel() {
   const c = COACHING;
   return (
     <div className="panel-inner p-5 flex flex-col gap-4 relative" style={{ background: "rgba(3,0,10,0.95)" }}>
+
+      {/* Header */}
       <div className="flex items-center justify-between relative z-10">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-xl" style={{ background: `${VIOLET_COLOR}18`, boxShadow: `0 0 16px ${VIOLET_GLOW}` }}>🎓</div>
           <div>
-            <p className="text-base font-bold" style={{ color: "rgba(255,255,255,0.9)" }}>Coaching High-Ticket</p>
-            <p className="text-[11px]" style={{ color: VIOLET_DIM + "bb" }}>9 clients · 25 483 € encaissés</p>
+            <p className="text-base font-bold" style={{ color: "rgba(255,255,255,0.9)" }}>Coaching & Formation</p>
+            <p className="text-[11px]" style={{ color: VIOLET_DIM + "bb" }}>HT · Formation 990 € · ex-Académie</p>
           </div>
         </div>
         <Link to="/coaching" className="flex items-center gap-1 text-xs" style={{ color: `${VIOLET_COLOR}99` }}>
           Voir tout <ArrowRight className="w-3 h-3" />
         </Link>
       </div>
+
       <div className="h-px relative z-10" style={{ background: `linear-gradient(to right, ${VIOLET_COLOR}30, transparent)` }} />
-      <div className="grid grid-cols-2 gap-2.5 relative z-10">
-        <KPICard label="DMs reçus cette semaine" value={String(c.dmSemaine)}                              delta={c.dmDelta}       up accent={VIOLET_COLOR} icon={MessageCircle} />
-        <KPICard label="Bookings Cal.com"         value={String(c.bookings)}                              delta={c.bookingsDelta} up accent={VIOLET_COLOR} icon={Phone} />
-        <KPICard label="Taux de closing"          value={`${c.tauxClosing}%`}                             delta={c.closingDelta}  up accent={VIOLET_COLOR} icon={Target} />
-        <KPICard label="CA total encaissé"        value={c.caTotal.toLocaleString("fr-FR") + " €"}       delta={c.caDelta}       up accent={VIOLET_COLOR} icon={DollarSign} />
+
+      {/* Formation 990€ badge */}
+      <div className="relative z-10 flex items-center justify-between rounded-xl px-4 py-3"
+        style={{ background: `${VIOLET_COLOR}12`, border: `1px solid ${VIOLET_COLOR}30` }}>
+        <div>
+          <p className="text-xs font-bold" style={{ color: VIOLET_COLOR, letterSpacing: "0.06em" }}>FORMATION ACTUELLE</p>
+          <p className="text-sm font-semibold mt-0.5" style={{ color: "rgba(255,255,255,0.85)" }}>{c.formation.nom}</p>
+          <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>{c.formation.description}</p>
+        </div>
+        <div className="flex-shrink-0 ml-3">
+          <span className="text-2xl font-black" style={{ color: "#fff" }}>990 €</span>
+        </div>
       </div>
+
+      {/* Coaching HT KPIs */}
+      <div className="grid grid-cols-2 gap-2.5 relative z-10">
+        <KPICard label="DMs reçus cette semaine" value={String(c.dmSemaine)}                         delta={c.dmDelta}       up accent={VIOLET_COLOR} icon={MessageCircle} />
+        <KPICard label="Bookings Cal.com"         value={String(c.bookings)}                         delta={c.bookingsDelta} up accent={VIOLET_COLOR} icon={Phone} />
+        <KPICard label="Taux de closing"          value={`${c.tauxClosing}%`}                        delta={c.closingDelta}  up accent={VIOLET_COLOR} icon={Target} />
+        <KPICard label="CA coaching HT encaissé"  value={c.caTotal.toLocaleString("fr-FR") + " €"}  delta={c.caDelta}       up accent={VIOLET_COLOR} icon={DollarSign} />
+      </div>
+
+      {/* Made Académie — historique */}
+      <div className="relative z-10">
+        <p className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: "rgba(255,255,255,0.2)" }}>
+          Made Académie — historique (Circle.so)
+        </p>
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { label: "Membres",  value: String(c.academie.membres) },
+            { label: "Payants",  value: String(c.academie.payants) },
+            { label: "Lives",    value: String(c.academie.lives)   },
+          ].map((s, i) => (
+            <div key={i} className="rounded-xl text-center py-2.5"
+              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+              <p className="text-lg font-bold" style={{ color: "rgba(255,255,255,0.7)" }}>{s.value}</p>
+              <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.3)" }}>{s.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Quick links */}
       <div className="grid grid-cols-3 gap-2 relative z-10">
         {[
           { label: "Leads",     path: "/coaching/leads",     emoji: "📞" },
