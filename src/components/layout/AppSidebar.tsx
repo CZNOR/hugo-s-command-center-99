@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, Link } from "react-router-dom";
 import {
   Calendar, CheckSquare, LayoutDashboard, TrendingUp,
-  Phone, Mic, DollarSign, Edit2, Users, Settings, Flame, Link2, Check,
+  Phone, Mic, DollarSign, Edit2, Users, Settings, Flame, Link2, Check, X,
 } from "lucide-react";
 import { useBusiness, type BusinessId } from "@/lib/businessContext";
 import { gamificationProfile } from "@/lib/mock-data";
@@ -108,11 +108,13 @@ function NavLink({
       ? location.pathname === "/"
       : location.pathname === item.path || location.pathname.startsWith(item.path + "/");
 
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 1024;
+
   return (
     <Link
       to={item.path}
       onClick={onClick}
-      className="flex items-center gap-3 py-2 rounded-lg text-sm transition-all duration-150"
+      className={`flex items-center gap-3 rounded-lg text-sm transition-all duration-150 ${isMobile ? "py-3.5" : "py-2"}`}
       style={
         active
           ? {
@@ -151,9 +153,21 @@ interface AppSidebarProps {
   onClose: () => void;
 }
 
+// ─── Mobile detection ─────────────────────────────────────────
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 1024);
+  useEffect(() => {
+    const fn = () => setIsMobile(window.innerWidth < 1024);
+    window.addEventListener("resize", fn);
+    return () => window.removeEventListener("resize", fn);
+  }, []);
+  return isMobile;
+}
+
 // ─── Main sidebar ─────────────────────────────────────────────
 export default function AppSidebar({ open, onClose }: AppSidebarProps) {
   const { activeBusiness, setActiveBusiness } = useBusiness();
+  const isMobile = useIsMobile();
   const g = gamificationProfile;
   const isCoaching  = activeBusiness.id === "coaching";
   const accentColor = isCoaching ? COACHING_ACCENT : CASINO_ACCENT;
@@ -161,27 +175,58 @@ export default function AppSidebar({ open, onClose }: AppSidebarProps) {
   const contextItems = isCoaching ? COACHING_ITEMS : CASINO_ITEMS;
   const xpPct = (g.total_xp / g.xp_for_next_level) * 100;
 
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMobile && open) document.body.style.overflow = "hidden";
+    else document.body.style.overflow = "";
+    return () => { document.body.style.overflow = ""; };
+  }, [isMobile, open]);
+
+  const mobileStyle = {
+    width: "100vw",
+    top: 0,
+    height: "100dvh",
+    zIndex: 200,
+    background: "rgba(7,4,15,0.98)",
+    borderRight: "none",
+  };
+
+  const desktopStyle = {
+    width: 220,
+    top: 56,
+    height: "calc(100vh - 56px)",
+    zIndex: 50,
+    background: "#08080f",
+    borderRight: "1px solid rgba(255,255,255,0.06)",
+  };
+
   return (
     <>
-      {/* Mobile overlay */}
-      {open && (
-        <div
-          className="fixed inset-0 z-40 lg:hidden"
-          style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
-          onClick={onClose}
-        />
-      )}
-
       <aside
-        className={`fixed left-0 z-50 flex flex-col transition-transform duration-300 lg:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}
-        style={{
-          width: 220,
-          top: 56,
-          height: "calc(100vh - 56px)",
-          background: "#08080f",
-          borderRight: "1px solid rgba(255,255,255,0.06)",
-        }}
+        className={`fixed left-0 flex flex-col transition-transform duration-300 ease-out lg:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}
+        style={isMobile ? mobileStyle : desktopStyle}
       >
+      {/* Mobile: header with X */}
+      {isMobile && (
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "16px 16px 12px",
+          paddingTop: "calc(16px + env(safe-area-inset-top))",
+          borderBottom: "1px solid rgba(255,255,255,0.07)",
+          flexShrink: 0,
+        }}>
+          <span style={{ fontSize: 18, fontWeight: 800, color: "#fff", letterSpacing: "-0.01em" }}>Menu</span>
+          <button onClick={onClose} style={{
+            width: 36, height: 36, borderRadius: "50%",
+            background: "rgba(255,255,255,0.08)",
+            border: "1px solid rgba(255,255,255,0.1)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            cursor: "pointer", color: "rgba(255,255,255,0.7)",
+          }}>
+            <X style={{ width: 18, height: 18 }} />
+          </button>
+        </div>
+      )}
         {/* ── Scroll zone ── */}
         <div className="flex-1 overflow-y-auto px-3 pt-3 space-y-0.5">
 
@@ -235,7 +280,7 @@ export default function AppSidebar({ open, onClose }: AppSidebarProps) {
         </div>
 
         {/* ── BOTTOM: always visible ── */}
-        <div className="px-3 pb-4">
+        <div className="px-3" style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom))" }}>
           <Sep />
 
           {BOTTOM_ITEMS.map(item => (

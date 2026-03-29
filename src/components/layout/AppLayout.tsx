@@ -29,7 +29,9 @@ function MobileBottomNav({ onOpenSidebar, onCloseSidebar }: { onOpenSidebar: () 
     <nav
       className="lg:hidden"
       style={{
-        position: "fixed", bottom: 16, left: "50%",
+        position: "fixed",
+        bottom: "calc(16px + env(safe-area-inset-bottom))",
+        left: "50%",
         transform: "translateX(-50%)",
         zIndex: 100,
         display: "flex", alignItems: "center",
@@ -366,7 +368,8 @@ function AppLayoutInner() {
 
       {/* Main content — offset header + sidebar */}
       <main
-        className="lg:ml-[220px] pb-28 lg:pb-0"
+        className="lg:ml-[220px] lg:pb-0"
+        style={{ paddingBottom: "calc(112px + env(safe-area-inset-bottom))" }}
         style={{
           paddingTop: HEADER_H,
           minHeight: "100vh",
