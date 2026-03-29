@@ -166,12 +166,15 @@ export default function CoachingDashboard() {
   const c = { academieCA: 8_730, ...rawStats };
   const [showModal, setShowModal] = useState(false);
 
+  // Total closés = coaching HT + premium académie (tous closés en call)
+  const totalCloses = c.clients + c.academiePayants;
+
   // Funnel sublabels built from live stats
   const funnelSteps = [
     { label: "Réseaux sociaux", sublabel: "12 400 vues / semaine", icon: "📱", path: "/coaching/social", conversionRate: "1.5%" },
     { label: "Clics Beacons",   sublabel: "186 clics / semaine",   icon: "🔗", path: "/coaching/beacons", conversionRate: `${(c.bookings / 186 * 100).toFixed(0)}%` },
     { label: "Appels réservés", sublabel: `${c.bookings} bookings · Cal.com`, icon: "📞", path: "/coaching/leads", conversionRate: `${c.tauxClosing.toFixed(1)}%` },
-    { label: "Clients signés",  sublabel: `${c.clients} clients · ${c.caTotal.toLocaleString("fr-FR")} €`, icon: "✅", path: "/coaching/paiements" },
+    { label: "Clients signés",  sublabel: `${totalCloses} closés (${c.clients} HT + ${c.academiePayants} Premium)`, icon: "✅", path: "/coaching/paiements" },
   ];
 
   return (
@@ -234,14 +237,14 @@ export default function CoachingDashboard() {
               <Target className="w-4 h-4" style={{ color: "#22c55e" }} />
             </div>
             <span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ background: "rgba(34,197,94,0.12)", color: "#4ade80" }}>
-              ↑ {c.clients} signés
+              ↑ {totalCloses} closés
             </span>
           </div>
           <p className="text-2xl font-bold mb-1" style={{ color: "rgba(255,255,255,0.9)" }}>
             {loading ? "—" : <><AnimatedNum value={c.tauxClosing} decimals={1} />%</>}
           </p>
           <p className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.55)" }}>Taux closing</p>
-          <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.28)" }}>{c.clients} / {c.bookings} bookings</p>
+          <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.28)" }}>{totalCloses} / {c.bookings} bookings</p>
         </Link>
 
         {/* CA total */}

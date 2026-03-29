@@ -20,9 +20,9 @@ export interface CoachingStats {
 
 export const COACHING_DEFAULTS: CoachingStats = {
   caTotal:         25_483,
-  clients:         9,
-  bookings:        165,
-  tauxClosing:     5.5,
+  clients:         9,      // coaching HT uniquement
+  bookings:        165,    // total Cal.com
+  tauxClosing:     17.6,   // 29 closés (9 HT + 20 premium académie) / 165 bookings
   dmSemaine:       47,
   formationPrix:   990,
   formationVentes: 0,
