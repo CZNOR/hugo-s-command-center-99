@@ -161,7 +161,9 @@ function UpdateModal({ stats, onSave, onClose }: {
 
 // ─── Component ───────────────────────────────────────────────
 export default function CoachingDashboard() {
-  const { stats: c, loading, save } = useCoachingStats();
+  const { stats: rawStats, loading, save } = useCoachingStats();
+  // Ensure new fields have defaults even if Supabase snapshot pre-dates them
+  const c = { academieCA: 8_730, ...rawStats };
   const [showModal, setShowModal] = useState(false);
 
   // Funnel sublabels built from live stats
