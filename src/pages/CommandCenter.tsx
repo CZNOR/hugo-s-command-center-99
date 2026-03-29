@@ -11,6 +11,7 @@ import AffiliateCopyButton from "@/components/AffiliateCopyButton";
 import HomeParticles from "@/components/HomeParticles";
 import { useBusiness } from "@/lib/businessContext";
 import { useTasks } from "@/lib/taskContext";
+import { useCoachingStats } from "@/lib/coachingStats";
 
 // ─── Supabase helper ─────────────────────────────────────────
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
@@ -23,30 +24,11 @@ async function sbFetch<T = any>(path: string): Promise<T> {
   return text ? JSON.parse(text) : [];
 }
 
-// ─── Coaching & Produits data ─────────────────────────────────
-// Coaching HT (actuel) + Formation 990€ (actuel) + Made Académie (passé)
-const COACHING = {
-  // Coaching HT — actuel
-  dmSemaine: 47,
-  dmDelta: "+11 vs S-1",
-  bookings: 165,
-  bookingsDelta: "total Cal.com",
-  tauxClosing: 5.5,
-  closingDelta: "9 / 165 appels",
-  caTotal: 25_483,
-  caDelta: "9 clients signés",
-  // Formation 990€ — actuel (nouveau produit)
-  formation: {
-    prix: 990,
-    nom: "La Formation Complète E-commerce",
-    description: "De A à Z · Meta Ads · Klaviyo",
-  },
-  // Made Académie — historique (Circle.so, export mars 2026, terminé)
-  academie: {
-    membres: 245,
-    payants: 23,     // 20 Premium + 3 Elite
-    lives: 14,       // lives organisés (mercredi + vendredi)
-  },
+// Formation info (statique — le prix ne change pas souvent)
+const FORMATION = {
+  prix: 990,
+  nom: "La Formation Complète E-commerce",
+  description: "De A à Z · Meta Ads · Klaviyo",
 };
 
 // ─── Colors ──────────────────────────────────────────────────
@@ -71,9 +53,10 @@ const MONTHLY_DATA = [
 function MobileOverview() {
   const [period, setPeriod] = useState<"7j"|"30j"|"90j">("30j");
   const { tasks } = useTasks();
+  const { stats: c } = useCoachingStats();
   const activeTasks = tasks.filter(t => t.status !== "done").length;
 
-  const caCoaching = COACHING.caTotal;
+  const caCoaching = c.caTotal;
   const PERIODS = ["7j", "30j", "90j"] as const;
 
   // Slice chart data by period
@@ -154,7 +137,7 @@ function MobileOverview() {
         }}>
           {[
             { label: "Coaching CA",  value: caCoaching.toLocaleString("fr-FR") + " €", color: "#a855f7" },
-            { label: "Closing",      value: COACHING.tauxClosing + "%",                 color: "#a855f7" },
+            { label: "Closing",      value: c.tauxClosing + "%",                        color: "#a855f7" },
             { label: "Tâches",       value: String(activeTasks),                        color: "#60a5fa" },
           ].map((m, i) => (
             <div key={i} style={{
@@ -171,8 +154,8 @@ function MobileOverview() {
       {/* Quick metrics row */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
         {[
-          { emoji: "📞", label: "Bookings",   value: String(COACHING.bookings), sub: "Cal.com total" },
-          { emoji: "💬", label: "DMs/semaine", value: String(COACHING.dmSemaine), sub: COACHING.dmDelta },
+          { emoji: "📞", label: "Bookings",    value: String(c.bookings),  sub: "Cal.com total"   },
+          { emoji: "💬", label: "DMs/semaine", value: String(c.dmSemaine), sub: "vs semaine préc." },
         ].map((item, i) => (
           <div key={i} style={{
             background: "rgba(255,255,255,0.03)",
@@ -315,7 +298,7 @@ function CasinoPanel() {
 
 // ─── Coaching panel ───────────────────────────────────────────
 function CoachingPanel() {
-  const c = COACHING;
+  const { stats: c } = useCoachingStats();
   return (
     <div className="panel-inner p-5 flex flex-col gap-4 relative" style={{ background: "rgba(3,0,10,0.95)" }}>
 
@@ -340,20 +323,23 @@ function CoachingPanel() {
         style={{ background: `${VIOLET_COLOR}12`, border: `1px solid ${VIOLET_COLOR}30` }}>
         <div>
           <p className="text-xs font-bold" style={{ color: VIOLET_COLOR, letterSpacing: "0.06em" }}>FORMATION ACTUELLE</p>
-          <p className="text-sm font-semibold mt-0.5" style={{ color: "rgba(255,255,255,0.85)" }}>{c.formation.nom}</p>
-          <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>{c.formation.description}</p>
+          <p className="text-sm font-semibold mt-0.5" style={{ color: "rgba(255,255,255,0.85)" }}>{FORMATION.nom}</p>
+          <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>{FORMATION.description}</p>
         </div>
-        <div className="flex-shrink-0 ml-3">
-          <span className="text-2xl font-black" style={{ color: "#fff" }}>990 €</span>
+        <div className="flex-shrink-0 ml-3 text-right">
+          <span className="text-2xl font-black" style={{ color: "#fff" }}>{c.formationPrix} €</span>
+          {c.formationVentes > 0 && (
+            <p className="text-[11px] mt-0.5" style={{ color: "#4ade80" }}>{c.formationVentes} ventes</p>
+          )}
         </div>
       </div>
 
       {/* Coaching HT KPIs */}
       <div className="grid grid-cols-2 gap-2.5 relative z-10">
-        <KPICard label="DMs reçus cette semaine" value={String(c.dmSemaine)}                         delta={c.dmDelta}       up accent={VIOLET_COLOR} icon={MessageCircle} />
-        <KPICard label="Bookings Cal.com"         value={String(c.bookings)}                         delta={c.bookingsDelta} up accent={VIOLET_COLOR} icon={Phone} />
-        <KPICard label="Taux de closing"          value={`${c.tauxClosing}%`}                        delta={c.closingDelta}  up accent={VIOLET_COLOR} icon={Target} />
-        <KPICard label="CA coaching HT encaissé"  value={c.caTotal.toLocaleString("fr-FR") + " €"}  delta={c.caDelta}       up accent={VIOLET_COLOR} icon={DollarSign} />
+        <KPICard label="DMs reçus cette semaine" value={String(c.dmSemaine)}                        delta="/ sem"           up accent={VIOLET_COLOR} icon={MessageCircle} />
+        <KPICard label="Bookings Cal.com"         value={String(c.bookings)}                        delta="total"          up accent={VIOLET_COLOR} icon={Phone} />
+        <KPICard label="Taux de closing"          value={`${c.tauxClosing}%`}                       delta={`${c.clients} clients`} up accent={VIOLET_COLOR} icon={Target} />
+        <KPICard label="CA coaching HT encaissé"  value={c.caTotal.toLocaleString("fr-FR") + " €"} delta={`${c.clients} signés`}  up accent={VIOLET_COLOR} icon={DollarSign} />
       </div>
 
       {/* Made Académie — historique */}
@@ -363,9 +349,9 @@ function CoachingPanel() {
         </p>
         <div className="grid grid-cols-3 gap-2">
           {[
-            { label: "Membres",  value: String(c.academie.membres) },
-            { label: "Payants",  value: String(c.academie.payants) },
-            { label: "Lives",    value: String(c.academie.lives)   },
+            { label: "Membres",  value: String(c.academieMembres) },
+            { label: "Payants",  value: String(c.academiePayants) },
+            { label: "Lives",    value: String(c.academieLives)   },
           ].map((s, i) => (
             <div key={i} className="rounded-xl text-center py-2.5"
               style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>

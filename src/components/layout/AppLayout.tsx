@@ -115,6 +115,7 @@ function AppHeader({ onOpenSidebar }: { onOpenSidebar: () => void }) {
 
   return (
     <header
+      className="hidden lg:flex"
       style={{
         position: "fixed",
         top: 0, left: 0, right: 0,
@@ -122,7 +123,6 @@ function AppHeader({ onOpenSidebar }: { onOpenSidebar: () => void }) {
         zIndex: 100,
         background: "#08080f",
         borderBottom: "1px solid rgba(255,255,255,0.06)",
-        display: "flex",
         alignItems: "stretch",
       }}
     >
@@ -366,12 +366,11 @@ function AppLayoutInner() {
       {/* Mobile bottom nav */}
       <MobileBottomNav onOpenSidebar={() => setSidebarOpen(true)} onCloseSidebar={() => setSidebarOpen(false)} />
 
-      {/* Main content — offset header + sidebar */}
+      {/* Main content — offset header (desktop only) + sidebar */}
       <main
-        className="lg:ml-[220px] lg:pb-0"
-        style={{ paddingBottom: "calc(112px + env(safe-area-inset-bottom))" }}
+        className="lg:ml-[220px] main-content"
         style={{
-          paddingTop: HEADER_H,
+          paddingBottom: "calc(112px + env(safe-area-inset-bottom))",
           minHeight: "100vh",
           position: "relative",
           zIndex: 1,
