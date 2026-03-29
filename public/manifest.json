@@ -1,0 +1,22 @@
+{
+  "name": "CZN Command Center",
+  "short_name": "CZN",
+  "description": "CZN Command Center",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#07040F",
+  "theme_color": "#07040F",
+  "icons": [
+    {
+      "src": "/czn-logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/czn-logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
