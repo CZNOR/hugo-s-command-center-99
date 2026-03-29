@@ -16,7 +16,7 @@ const SIDEBAR_W = 220;
 const HEADER_H  = 56;
 
 // ─── Mobile bottom nav ────────────────────────────────────────
-function MobileBottomNav({ onOpenSidebar }: { onOpenSidebar: () => void }) {
+function MobileBottomNav({ onOpenSidebar, onCloseSidebar }: { onOpenSidebar: () => void; onCloseSidebar: () => void }) {
   const location = useLocation();
 
   const items = [
@@ -45,6 +45,7 @@ function MobileBottomNav({ onOpenSidebar }: { onOpenSidebar: () => void }) {
           <Link
             key={item.path}
             to={item.path}
+            onClick={onCloseSidebar}
             style={{
               flex: 1, position: "relative",
               display: "flex", flexDirection: "column",
@@ -350,7 +351,7 @@ function AppLayoutInner() {
       <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       {/* Mobile bottom nav */}
-      <MobileBottomNav onOpenSidebar={() => setSidebarOpen(true)} />
+      <MobileBottomNav onOpenSidebar={() => setSidebarOpen(true)} onCloseSidebar={() => setSidebarOpen(false)} />
 
       {/* Main content — offset header + sidebar */}
       <main

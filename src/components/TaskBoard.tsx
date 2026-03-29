@@ -367,6 +367,11 @@ export default function TaskBoard() {
   // Mobile sheet
   const [sheetOpen, setSheetOpen] = useState(false);
 
+  // Mobile filters
+  const [filterBiz, setFilterBiz] = useState<TaskBusiness | "all">("all");
+  const [showAll,   setShowAll]   = useState(false);
+  const MOBILE_LIMIT = 4;
+
   const today    = todayStr();
   const weekDays = getWeekDays();
   const todayIdx = weekDays.findIndex(d => fmtDay(d) === today);
@@ -451,47 +456,88 @@ export default function TaskBoard() {
           </span>
         </div>
 
-        {/* Task groups */}
-        {activeTasks.length === 0 ? (
-          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.18)", textAlign: "center", padding: "32px 0" }}>
-            Aucune tâche active 🎉
-          </p>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {BIZ_ORDER.map(biz => {
-              const items = activeTasks.filter(t => t.business === biz);
-              if (items.length === 0) return null;
-              return (
-                <div key={biz}>
-                  {/* Group header */}
-                  <div style={{
-                    display: "flex", alignItems: "center", gap: 8,
-                    padding: "6px 4px",
-                    borderBottom: `1px solid ${BIZ[biz].color}30`,
-                    marginBottom: 6,
-                  }}>
-                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: BIZ[biz].color, boxShadow: `0 0 8px ${BIZ[biz].color}` }} />
-                    <span style={{ fontSize: 12, fontWeight: 700, color: BIZ[biz].color, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                      {BIZ[biz].label}
-                    </span>
-                    <span style={{
-                      fontSize: 11, fontWeight: 600,
-                      color: "rgba(255,255,255,0.35)",
-                      background: "rgba(255,255,255,0.06)",
-                      borderRadius: 20, padding: "1px 7px",
-                    }}>{items.length}</span>
-                  </div>
-                  {/* Tasks */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    {items.map(t => (
-                      <MobileRow key={t.id} task={t} onToggle={toggle} />
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+        {/* Filter chips */}
+        <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 2 }}>
+          {([["all", "Tous", "rgba(168,85,247,0.8)"], ...BIZ_ORDER.map(b => [b, BIZ[b].label, BIZ[b].color])] as [string, string, string][]).map(([key, label, color]) => {
+            const count = key === "all" ? activeTasks.length : activeTasks.filter(t => t.business === key).length;
+            if (key !== "all" && count === 0) return null;
+            const active = filterBiz === key;
+            return (
+              <button
+                key={key}
+                onClick={() => { setFilterBiz(key as TaskBusiness | "all"); setShowAll(false); }}
+                style={{
+                  flexShrink: 0,
+                  borderRadius: 20, fontSize: 12, fontWeight: 600,
+                  padding: "6px 12px",
+                  background: active ? `${color}22` : "rgba(255,255,255,0.05)",
+                  color: active ? color : "rgba(255,255,255,0.4)",
+                  border: active ? `1.5px solid ${color}55` : "1.5px solid rgba(255,255,255,0.08)",
+                  transition: "all 0.15s ease",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {label} {count > 0 && <span style={{ opacity: 0.7 }}>· {count}</span>}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Task list */}
+        {(() => {
+          const filtered = filterBiz === "all"
+            ? activeTasks
+            : activeTasks.filter(t => t.business === filterBiz);
+          const visible = showAll ? filtered : filtered.slice(0, MOBILE_LIMIT);
+          const hidden  = filtered.length - visible.length;
+
+          return filtered.length === 0 ? (
+            <p style={{ fontSize: 13, color: "rgba(255,255,255,0.18)", textAlign: "center", padding: "32px 0" }}>
+              Aucune tâche active 🎉
+            </p>
+          ) : (
+            <>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                {visible.map(t => (
+                  <MobileRow key={t.id} task={t} onToggle={toggle} />
+                ))}
+              </div>
+              {hidden > 0 && (
+                <button
+                  onClick={() => setShowAll(true)}
+                  style={{
+                    marginTop: 4,
+                    width: "100%", padding: "12px 0",
+                    borderRadius: 12, fontSize: 13, fontWeight: 600,
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    color: "rgba(255,255,255,0.5)",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  Afficher {hidden} tâche{hidden > 1 ? "s" : ""} de plus
+                </button>
+              )}
+              {showAll && filtered.length > MOBILE_LIMIT && (
+                <button
+                  onClick={() => setShowAll(false)}
+                  style={{
+                    marginTop: 4,
+                    width: "100%", padding: "10px 0",
+                    borderRadius: 12, fontSize: 12, fontWeight: 600,
+                    background: "transparent",
+                    border: "none",
+                    color: "rgba(255,255,255,0.25)",
+                    cursor: "pointer",
+                  }}
+                >
+                  Réduire
+                </button>
+              )}
+            </>
+          );
+        })()}
 
         {/* Completed tasks (collapsed) */}
         {doneTasks.length > 0 && (
