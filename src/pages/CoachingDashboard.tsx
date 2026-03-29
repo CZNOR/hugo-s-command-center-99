@@ -130,12 +130,13 @@ function UpdateModal({ stats, onSave, onClose }: {
 
         <div style={{ marginTop: 8, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
           <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 11, marginBottom: 12 }}>
-            Historique Made Académie (figé)
+            Historique Made Académie
           </p>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-            {field("academieMembres", "Membres")}
-            {field("academiePayants", "Payants")}
-            {field("academieLives",   "Lives")}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            {field("academieCA",      "CA total académie (€)")}
+            {field("academieMembres", "Membres total")}
+            {field("academiePayants", "Premium payants")}
+            {field("academieLives",   "Lives organisés")}
           </div>
         </div>
 
@@ -287,24 +288,24 @@ export default function CoachingDashboard() {
           <p className="text-xs font-semibold uppercase tracking-wider mb-4" style={{ color: "rgba(255,255,255,0.3)" }}>
             Revenus — toutes sources
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
 
             {/* Coaching HT */}
             <div className="p-4 rounded-xl" style={{ background: "rgba(168,85,247,0.07)", border: "1px solid rgba(168,85,247,0.15)" }}>
               <div className="flex items-center gap-2 mb-3">
-                <span className="text-lg">🎯</span>
-                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "#a855f7" }}>Coaching HT</p>
+                <span className="text-base">🎯</span>
+                <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "#a855f7" }}>Coaching HT</p>
               </div>
-              <p className="text-2xl font-bold" style={{ color: "rgba(255,255,255,0.9)" }}>
+              <p className="text-xl font-bold" style={{ color: "rgba(255,255,255,0.9)" }}>
                 <AnimatedNum value={c.caTotal} /> €
               </p>
-              <div className="mt-2 space-y-1">
+              <div className="mt-2 space-y-0.5">
                 <p className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
-                  {c.clients} client{c.clients !== 1 ? "s" : ""} signés
+                  {c.clients} client{c.clients !== 1 ? "s" : ""}
                 </p>
                 {c.clients > 0 && (
-                  <p className="text-xs font-mono" style={{ color: "rgba(168,85,247,0.7)" }}>
-                    Ticket moyen : {Math.round(c.caTotal / c.clients).toLocaleString("fr-FR")} €
+                  <p className="text-[11px] font-mono" style={{ color: "rgba(168,85,247,0.7)" }}>
+                    moy. {Math.round(c.caTotal / c.clients).toLocaleString("fr-FR")} €
                   </p>
                 )}
               </div>
@@ -313,39 +314,58 @@ export default function CoachingDashboard() {
             {/* Formation */}
             <div className="p-4 rounded-xl" style={{ background: "rgba(236,72,153,0.07)", border: "1px solid rgba(236,72,153,0.15)" }}>
               <div className="flex items-center gap-2 mb-3">
-                <span className="text-lg">📚</span>
-                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "#ec4899" }}>Formation</p>
+                <span className="text-base">📚</span>
+                <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "#ec4899" }}>Formation</p>
               </div>
-              <p className="text-2xl font-bold" style={{ color: "rgba(255,255,255,0.9)" }}>
+              <p className="text-xl font-bold" style={{ color: "rgba(255,255,255,0.9)" }}>
                 <AnimatedNum value={c.formationPrix * c.formationVentes} /> €
               </p>
-              <div className="mt-2 space-y-1">
+              <div className="mt-2 space-y-0.5">
                 <p className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
-                  {c.formationVentes} vente{c.formationVentes !== 1 ? "s" : ""} · {c.formationPrix.toLocaleString("fr-FR")} € / accès
+                  {c.formationVentes} vente{c.formationVentes !== 1 ? "s" : ""} · {c.formationPrix.toLocaleString("fr-FR")} €
                 </p>
                 {c.formationVentes === 0 && (
-                  <p className="text-xs font-mono" style={{ color: "rgba(236,72,153,0.6)" }}>
-                    En cours de lancement
+                  <p className="text-[11px] font-mono" style={{ color: "rgba(236,72,153,0.6)" }}>
+                    En lancement
                   </p>
                 )}
+              </div>
+            </div>
+
+            {/* Made Académie */}
+            <div className="p-4 rounded-xl" style={{ background: "rgba(99,102,241,0.07)", border: "1px solid rgba(99,102,241,0.2)" }}>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-base">🎓</span>
+                <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "#818cf8" }}>Académie</p>
+              </div>
+              <p className="text-xl font-bold" style={{ color: "rgba(255,255,255,0.9)" }}>
+                <AnimatedNum value={c.academieCA} /> €
+              </p>
+              <div className="mt-2 space-y-0.5">
+                <p className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
+                  {c.academiePayants} premium · 97 €/mois
+                </p>
+                <p className="text-[11px] font-mono" style={{ color: "rgba(99,102,241,0.7)" }}>
+                  historique · inactif
+                </p>
               </div>
             </div>
 
             {/* Total global */}
             <div className="p-4 rounded-xl" style={{ background: "rgba(245,158,11,0.07)", border: "1px solid rgba(245,158,11,0.2)" }}>
               <div className="flex items-center gap-2 mb-3">
-                <span className="text-lg">💰</span>
-                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "#f59e0b" }}>Total cumulé</p>
+                <span className="text-base">💰</span>
+                <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "#f59e0b" }}>Total cumulé</p>
               </div>
-              <p className="text-2xl font-bold" style={{ color: "rgba(255,255,255,0.9)" }}>
-                <AnimatedNum value={c.caTotal + c.formationPrix * c.formationVentes} /> €
+              <p className="text-xl font-bold" style={{ color: "rgba(255,255,255,0.9)" }}>
+                <AnimatedNum value={c.caTotal + c.formationPrix * c.formationVentes + c.academieCA} /> €
               </p>
-              <div className="mt-2 space-y-1">
+              <div className="mt-2 space-y-0.5">
                 <p className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
-                  Coaching + Formation
+                  HT + Formation + Académie
                 </p>
-                <p className="text-xs font-mono" style={{ color: "rgba(245,158,11,0.7)" }}>
-                  {(c.clients + c.formationVentes)} vente{(c.clients + c.formationVentes) !== 1 ? "s" : ""} au total
+                <p className="text-[11px] font-mono" style={{ color: "rgba(245,158,11,0.7)" }}>
+                  {c.clients + c.formationVentes + c.academiePayants} acheteurs
                 </p>
               </div>
             </div>
@@ -429,21 +449,22 @@ export default function CoachingDashboard() {
       </div>
 
       {/* Made Académie — historical */}
-      <div className="p-5" style={{ ...card, borderColor: "rgba(255,255,255,0.07)" }}>
-        <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "rgba(255,255,255,0.25)" }}>
+      <div className="p-5" style={{ ...card, borderColor: "rgba(99,102,241,0.12)" }}>
+        <p className="text-xs font-semibold uppercase tracking-wider mb-4" style={{ color: "rgba(99,102,241,0.5)" }}>
           Made Académie · Historique (inactif)
         </p>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
-            { label: "Membres",  value: c.academieMembres },
-            { label: "Payants",  value: c.academiePayants },
-            { label: "Lives",    value: c.academieLives   },
+            { label: "CA total",  value: c.academieCA,      suffix: " €" },
+            { label: "Membres",   value: c.academieMembres, suffix: "" },
+            { label: "Premium",   value: c.academiePayants, suffix: "" },
+            { label: "Lives",     value: c.academieLives,   suffix: "" },
           ].map(item => (
             <div key={item.label}>
-              <p className="text-xl font-bold" style={{ color: "rgba(255,255,255,0.6)" }}>
-                {loading ? "—" : <AnimatedNum value={item.value} />}
+              <p className="text-xl font-bold" style={{ color: "rgba(255,255,255,0.55)" }}>
+                {loading ? "—" : <><AnimatedNum value={item.value} />{item.suffix}</>}
               </p>
-              <p className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>{item.label}</p>
+              <p className="text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>{item.label}</p>
             </div>
           ))}
         </div>

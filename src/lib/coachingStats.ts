@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 // ─── Types ───────────────────────────────────────────────────
 export interface CoachingStats {
   // Coaching HT
-  caTotal:      number;   // CA encaissé total €
+  caTotal:      number;   // CA encaissé coaching HT €
   clients:      number;   // clients signés
   bookings:     number;   // bookings Cal.com
   tauxClosing:  number;   // taux de closing %
@@ -12,9 +12,10 @@ export interface CoachingStats {
   formationPrix:   number; // prix formation €
   formationVentes: number; // ventes formation
   // Made Académie (historique)
-  academieMembres: number;
-  academiePayants: number;
-  academieLives:   number;
+  academieCA:      number; // CA total académie € (20 premium × 97€/mois)
+  academieMembres: number; // membres total
+  academiePayants: number; // membres payants (premium)
+  academieLives:   number; // lives organisés
 }
 
 export const COACHING_DEFAULTS: CoachingStats = {
@@ -25,8 +26,9 @@ export const COACHING_DEFAULTS: CoachingStats = {
   dmSemaine:       47,
   formationPrix:   990,
   formationVentes: 0,
-  academieMembres: 245,
-  academiePayants: 23,
+  academieCA:      8_730,  // 20 premium × 97€ × mois (calculé depuis CSV Circle.so)
+  academieMembres: 236,
+  academiePayants: 20,
   academieLives:   14,
 };
 
