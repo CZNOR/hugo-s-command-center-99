@@ -64,7 +64,7 @@
 }
 
 html {
-  overflow-x: hidden;
+  overflow-x: clip; /* clip vs hidden — ne casse pas le scroll vertical sur PC */
 }
 
 body {
@@ -73,12 +73,37 @@ body {
   font-family: 'Poppins', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
-  overflow-x: hidden;
+  overflow-x: clip;
   overscroll-behavior-y: contain;
 }
 
 button, a {
   touch-action: manipulation;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Feedback tactile mobile — état actif sur boutons et liens */
+button:active,
+a:active {
+  opacity: 0.75;
+  transform: scale(0.97);
+  transition: opacity 0.08s ease, transform 0.08s ease;
+}
+
+/* Désactiver les transform hover sur mobile (évite layout shift) */
+@media (max-width: 1024px) {
+  .stat-card:hover,
+  .violet-card:hover,
+  .glass-card:hover,
+  .premium-card:hover,
+  .kpi-hover:hover,
+  .panel-coaching-wrap:hover,
+  .panel-casino-wrap:hover,
+  .btn-primary:hover {
+    transform: none !important;
+  }
 }
 
 /* Smooth scrolling */
