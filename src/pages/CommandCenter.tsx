@@ -49,74 +49,41 @@ const MONTHLY_DATA = [
   { m: "Mars", coaching: 3883,  casino: 340  },
 ];
 
-// ─── Mobile overview (Shopify-inspired) ───────────────────────
+// ─── Mobile overview ──────────────────────────────────────────
 function MobileOverview() {
-  const [period, setPeriod] = useState<"7j"|"30j"|"90j">("30j");
-  const { tasks } = useTasks();
-  const { stats: c } = useCoachingStats();
-  const activeTasks = tasks.filter(t => t.status !== "done").length;
+  const { stats: rawStats } = useCoachingStats();
+  const c = { academieCA: 8_730, ...rawStats };
 
-  const caCoaching = c.caTotal;
-  const PERIODS = ["7j", "30j", "90j"] as const;
-
-  // Slice chart data by period
-  const chartData = period === "7j"
-    ? MONTHLY_DATA.slice(-1)
-    : period === "30j"
-    ? MONTHLY_DATA.slice(-2)
-    : MONTHLY_DATA;
-
-  const totalCA = chartData.reduce((s, d) => s + d.coaching + d.casino, 0);
+  // CA global réel = HT + Académie + Formation
+  const caGlobal = c.caTotal + c.academieCA + c.formationPrix * c.formationVentes;
 
   return (
-    <div className="md:hidden" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <div className="md:hidden" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
 
-      {/* Period selector */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <p style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.4)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-          Vue d'ensemble
-        </p>
-        <div style={{ display: "flex", gap: 4, background: "rgba(255,255,255,0.05)", borderRadius: 20, padding: 3 }}>
-          {PERIODS.map(p => (
-            <button key={p} onClick={() => setPeriod(p)} style={{
-              borderRadius: 16, padding: "4px 12px", fontSize: 12, fontWeight: 600,
-              background: period === p ? "rgba(168,85,247,0.3)" : "transparent",
-              color: period === p ? "#d8b4fe" : "rgba(255,255,255,0.35)",
-              border: "none", cursor: "pointer", transition: "all 0.15s ease",
-            }}>{p}</button>
-          ))}
-        </div>
-      </div>
-
-      {/* Main metric card + chart */}
+      {/* CA global */}
       <div style={{
         background: "rgba(255,255,255,0.03)",
         border: "1px solid rgba(255,255,255,0.07)",
         borderRadius: 20, overflow: "hidden",
       }}>
-        {/* Top row */}
-        <div style={{ padding: "16px 16px 8px" }}>
-          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 4 }}>CA total (coaching + casino)</p>
+        <div style={{ padding: "16px 16px 12px" }}>
+          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 4 }}>CA global cumulé</p>
           <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-            <span style={{ fontSize: 28, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
-              {totalCA.toLocaleString("fr-FR")} €
+            <span style={{ fontSize: 30, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
+              {caGlobal.toLocaleString("fr-FR")} €
             </span>
-            <span style={{ fontSize: 12, fontWeight: 600, color: "#4ade80" }}>↑ actif</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "#4ade80" }}>↑ total</span>
           </div>
         </div>
 
-        {/* Chart */}
-        <div style={{ height: 80, marginTop: 4 }}>
+        {/* Chart historique */}
+        <div style={{ height: 72 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+            <AreaChart data={MONTHLY_DATA} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="gradCoaching" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#a855f7" stopOpacity={0.4} />
                   <stop offset="100%" stopColor="#a855f7" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="gradCasino" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#00cc44" stopOpacity={0.3} />
-                  <stop offset="100%" stopColor="#00cc44" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <XAxis dataKey="m" hide />
@@ -125,45 +92,36 @@ function MobileOverview() {
                 formatter={(v: number, name: string) => [v.toLocaleString("fr-FR") + " €", name === "coaching" ? "Coaching" : "Casino"]}
               />
               <Area type="monotone" dataKey="coaching" stroke="#a855f7" strokeWidth={2} fill="url(#gradCoaching)" />
-              <Area type="monotone" dataKey="casino"   stroke="#00cc44" strokeWidth={2} fill="url(#gradCasino)"   />
             </AreaChart>
           </ResponsiveContainer>
         </div>
 
-        {/* Bottom metrics row */}
-        <div style={{
-          display: "grid", gridTemplateColumns: "1fr 1fr 1fr",
-          borderTop: "1px solid rgba(255,255,255,0.06)",
-        }}>
+        {/* Breakdown */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
           {[
-            { label: "Coaching CA",  value: caCoaching.toLocaleString("fr-FR") + " €", color: "#a855f7" },
-            { label: "Closing",      value: c.tauxClosing + "%",                        color: "#a855f7" },
-            { label: "Tâches",       value: String(activeTasks),                        color: "#60a5fa" },
+            { label: "Coaching HT", value: c.caTotal.toLocaleString("fr-FR") + " €",   color: "#a855f7" },
+            { label: "Académie",    value: c.academieCA.toLocaleString("fr-FR") + " €", color: "#818cf8" },
+            { label: "Formation",   value: (c.formationPrix * c.formationVentes).toLocaleString("fr-FR") + " €", color: "#ec4899" },
           ].map((m, i) => (
-            <div key={i} style={{
-              padding: "10px 12px",
-              borderRight: i < 2 ? "1px solid rgba(255,255,255,0.06)" : "none",
-            }}>
+            <div key={i} style={{ padding: "10px 12px", borderRight: i < 2 ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
               <p style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginBottom: 3 }}>{m.label}</p>
-              <p style={{ fontSize: 14, fontWeight: 700, color: m.color }}>{m.value}</p>
+              <p style={{ fontSize: 13, fontWeight: 700, color: m.color }}>{m.value}</p>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Quick metrics row */}
+      {/* Stats clés */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
         {[
-          { emoji: "📞", label: "Bookings",    value: String(c.bookings),  sub: "Cal.com total"   },
-          { emoji: "💬", label: "DMs/semaine", value: String(c.dmSemaine), sub: "vs semaine préc." },
+          { emoji: "📞", label: "Bookings", value: String(c.bookings), sub: "Cal.com total" },
+          { emoji: "🎯", label: "Closing",  value: c.tauxClosing + "%", sub: c.clients + " clients signés" },
         ].map((item, i) => (
           <div key={i} style={{
-            background: "rgba(255,255,255,0.03)",
-            border: "1px solid rgba(255,255,255,0.07)",
-            borderRadius: 16, padding: "12px 14px",
-            display: "flex", alignItems: "center", gap: 10,
+            background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)",
+            borderRadius: 16, padding: "12px 14px", display: "flex", alignItems: "center", gap: 10,
           }}>
-            <span style={{ fontSize: 22 }}>{item.emoji}</span>
+            <span style={{ fontSize: 20 }}>{item.emoji}</span>
             <div>
               <p style={{ fontSize: 18, fontWeight: 800, color: "#fff", lineHeight: 1 }}>{item.value}</p>
               <p style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginTop: 2 }}>{item.label}</p>
@@ -183,11 +141,8 @@ function MobileOverview() {
           <Link key={l.path} to={l.path} style={{
             display: "flex", flexDirection: "column", alignItems: "center", gap: 5,
             padding: "12px 8px", borderRadius: 14,
-            background: `${l.color}10`,
-            border: `1px solid ${l.color}25`,
-            color: "rgba(255,255,255,0.6)",
-            textDecoration: "none", fontSize: 11, fontWeight: 600,
-            transition: "all 0.15s ease",
+            background: `${l.color}10`, border: `1px solid ${l.color}25`,
+            color: "rgba(255,255,255,0.6)", textDecoration: "none", fontSize: 11, fontWeight: 600,
           }}>
             <span style={{ fontSize: 20 }}>{l.emoji}</span>
             {l.label}
