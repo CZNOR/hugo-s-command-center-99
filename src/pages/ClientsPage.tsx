@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Mail, MapPin, Calendar, DollarSign, BookOpen, Trophy, ChevronDown, ChevronUp, Search } from "lucide-react";
+import { useCoachingStats } from "@/lib/coachingStats";
 
 // ─── Types ───────────────────────────────────────────────────
 type ClientType = "ht" | "premium";
@@ -204,11 +205,12 @@ type Filter = "tous" | "ht" | "premium";
 export default function ClientsPage() {
   const [filter, setFilter] = useState<Filter>("tous");
   const [search, setSearch] = useState("");
+  const { stats } = useCoachingStats();
 
   const htClients  = CLIENTS.filter(c => c.type === "ht") as ClientHT[];
   const premClients = CLIENTS.filter(c => c.type === "premium") as ClientPremium[];
   const caHT       = htClients.reduce((s, c) => s + c.montant, 0);
-  const caAcademie = premClients.reduce((s, c) => s + c.ltv, 0);
+  const caAcademie = stats.academieCA; // CA réel encaissé (Oct–Déc 25)
 
   const filtered = CLIENTS.filter(c => {
     if (filter === "ht" && c.type !== "ht") return false;

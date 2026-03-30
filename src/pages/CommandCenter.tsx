@@ -40,14 +40,16 @@ const VIOLET_COLOR  = "#a855f7";
 const VIOLET_DIM    = "#7c3aed";
 const VIOLET_GLOW   = "rgba(168,85,247,0.12)";
 
-type Period = "3M" | "6M" | "1an" | "2025";
+type Period = "1M" | "3M" | "6M" | "1an" | "2025";
 const PERIODS: { key: Period; label: string }[] = [
+  { key: "1M",   label: "1M"   },
   { key: "3M",   label: "3M"   },
   { key: "6M",   label: "6M"   },
   { key: "1an",  label: "1an"  },
   { key: "2025", label: "2025" },
 ];
 function filterMonths(months: MonthEntry[], p: Period) {
+  if (p === "1M")   return months.slice(-1);
   if (p === "3M")   return months.slice(-3);
   if (p === "6M")   return months.slice(-6);
   if (p === "1an")  return months;
@@ -58,7 +60,7 @@ function filterMonths(months: MonthEntry[], p: Period) {
 function MobileOverview() {
   const { stats: rawStats } = useCoachingStats();
   const { hidden } = usePrivacy();
-  const c = { academieCA: 8_730, agenceCA: 50_523, agenceNetHugo: 29_436, ...rawStats };
+  const c = rawStats;
   const [period, setPeriod] = useState<Period>("6M");
 
   // Filtered chart data — from Supabase-backed monthlyData
@@ -91,7 +93,7 @@ function MobileOverview() {
         <div style={{ padding: "16px 16px 10px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
             <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 4 }}>
-              CA {period === "1an" ? "Jan 25 → Mar 26" : period === "2025" ? "année 2025" : `sur ${period}`}
+              CA {period === "1an" ? "Jan 25 → Mar 26" : period === "2025" ? "année 2025" : period === "1M" ? "ce mois" : `sur ${period}`}
             </p>
             <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
               <span style={{ fontSize: 28, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>

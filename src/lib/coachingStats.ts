@@ -52,8 +52,8 @@ export const DEFAULT_MONTHLY: MonthEntry[] = [
   { m: "Oct 25", coaching: 2999, academie: 1940, agence: 1650 },
   { m: "Nov 25", coaching: 3500, academie: 1940, agence: 4491 },
   { m: "Déc 25", coaching: 3500, academie: 1940, agence: 1000 },
-  { m: "Jan 26", coaching: 0,    academie: 1940, agence: 1700 },
-  { m: "Fév 26", coaching: 0,    academie: 970,  agence: 1700 },
+  { m: "Jan 26", coaching: 0,    academie: 0,    agence: 1700 },
+  { m: "Fév 26", coaching: 0,    academie: 0,    agence: 1700 },
   { m: "Mar 26", coaching: 0,    academie: 0,    agence: 1700 },
 ];
 
@@ -65,7 +65,7 @@ export const COACHING_DEFAULTS: CoachingStats = {
   dmSemaine:       47,
   formationPrix:   990,
   formationVentes: 0,
-  academieCA:      8_730,
+  academieCA:      5_820,
   academieMembres: 236,
   academiePayants: 20,
   academieLives:   14,

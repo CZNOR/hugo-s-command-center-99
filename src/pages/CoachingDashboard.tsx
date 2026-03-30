@@ -165,7 +165,7 @@ export default function CoachingDashboard() {
   const { stats: rawStats, loading, save } = useCoachingStats();
   const { hidden } = usePrivacy();
   // Ensure new fields have defaults even if Supabase snapshot pre-dates them
-  const c = { academieCA: 8_730, agenceCA: 50_523, agenceNetHugo: 29_436, ...rawStats };
+  const c = rawStats;
   const [showModal, setShowModal] = useState(false);
 
   // Total closés = coaching HT + premium académie (tous closés en call)
