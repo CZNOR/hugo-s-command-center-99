@@ -52,7 +52,7 @@ const MONTHLY_DATA = [
 // ─── Mobile overview ──────────────────────────────────────────
 function MobileOverview() {
   const { stats: rawStats } = useCoachingStats();
-  const c = { academieCA: 8_730, agenceCA: 43_723, ...rawStats };
+  const c = { academieCA: 8_730, agenceCA: 22_636, ...rawStats };
 
   // CA global réel = Coaching HT + Académie + Formation + Agence
   const caGlobal = c.caTotal + c.academieCA + c.formationPrix * c.formationVentes + c.agenceCA;

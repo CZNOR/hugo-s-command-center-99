@@ -32,7 +32,7 @@ export const COACHING_DEFAULTS: CoachingStats = {
   academieMembres: 236,
   academiePayants: 20,
   academieLives:   14,
-  agenceCA:        43_723, // CA agence (CSV Notion, Hugo + non-assigné)
+  agenceCA:        22_636, // CA agence (CSV Notion, Hugo + CM non-assignés — 36 ventes)
 };
 
 // ─── Supabase ─────────────────────────────────────────────────
