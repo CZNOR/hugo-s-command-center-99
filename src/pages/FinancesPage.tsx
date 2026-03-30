@@ -893,7 +893,8 @@ export default function FinancesPage() {
       d.setMonth(d.getMonth() - i);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       const label = d.toLocaleDateString("fr-FR", { month: "short", year: "2-digit" });
-      const mEnts = entries.filter(e => e.date.startsWith(key));
+      // Exclude cumulative summary seeds from the monthly chart
+      const mEnts = entries.filter(e => e.date?.startsWith(key) && !e.label?.toLowerCase().includes("cumul"));
       months.push({
         month: label,
         "Entrées":         mEnts.filter(e => e.type === "entree"         && e.status === "recu").reduce((s, e) => s + e.amount, 0),
