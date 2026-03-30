@@ -1,264 +1,240 @@
-import { useEffect, useRef, useState } from "react";
-import * as THREE from "three";
+import { useEffect, useState } from "react";
 
-interface Props {
-  onDone: () => void;
-}
+interface Props { onDone: () => void }
 
-// ── Timing ────────────────────────────────────────────────────
-// 0ms    → fade in (300ms)
-// 900ms  → objects start converging
-// 1500ms → logo appears
-// 2100ms → fade out starts
-// 2600ms → done
+type Phase = "init" | "show" | "converge" | "logo" | "exit";
 
 export default function WelcomeIntro({ onDone }: Props) {
-  const mountRef  = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-  const [logo,    setLogo]    = useState(false);
-  const [exiting, setExiting] = useState(false);
+  const [phase, setPhase] = useState<Phase>("init");
 
   useEffect(() => {
-    const t0 = setTimeout(() => setVisible(true),  30);
-    const t1 = setTimeout(() => setLogo(true),     1500);
-    const t2 = setTimeout(() => setExiting(true),  2100);
-    const t3 = setTimeout(() => onDone(),           2600);
-    return () => { clearTimeout(t0); clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+    const t1 = setTimeout(() => setPhase("show"),     60);
+    const t2 = setTimeout(() => setPhase("converge"), 900);
+    const t3 = setTimeout(() => setPhase("logo"),     1300);
+    const t4 = setTimeout(() => setPhase("exit"),     2300);
+    const t5 = setTimeout(() => onDone(),              2850);
+    return () => [t1, t2, t3, t4, t5].forEach(clearTimeout);
   }, []);
 
-  // ── Three.js scene ──────────────────────────────────────────
-  useEffect(() => {
-    const mount = mountRef.current;
-    if (!mount) return;
-
-    const SIZE = 520;
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(SIZE, SIZE);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setClearColor(0x000000, 0);
-    mount.appendChild(renderer.domElement);
-
-    const scene  = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(58, 1, 0.1, 100);
-    camera.position.set(0, 0, 6.5);
-
-    // Lights
-    scene.add(new THREE.AmbientLight(0xffffff, 0.35));
-    const ptGreen = new THREE.PointLight(0x00ff88, 8, 20);
-    ptGreen.position.set(-4, 3, 3);
-    scene.add(ptGreen);
-    const ptViolet = new THREE.PointLight(0xa855f7, 8, 20);
-    ptViolet.position.set(4, 3, 3);
-    scene.add(ptViolet);
-    const ptFront = new THREE.PointLight(0xffffff, 2, 12);
-    ptFront.position.set(0, -2, 5);
-    scene.add(ptFront);
-
-    // ── Casino chip (left) ─────────────────────────────────
-    const chip = new THREE.Group();
-    chip.position.set(-2.0, 0, 0);
-
-    chip.add(new THREE.Mesh(
-      new THREE.CylinderGeometry(1.0, 1.0, 0.22, 64),
-      new THREE.MeshStandardMaterial({
-        color: 0x00aa33, emissive: 0x00cc44, emissiveIntensity: 0.4,
-        metalness: 0.8, roughness: 0.2,
-      }),
-    ));
-
-    const rimGeo = new THREE.TorusGeometry(1.0, 0.06, 10, 64);
-    const rimMat = new THREE.MeshStandardMaterial({
-      color: 0xffffff, emissive: 0x00ff88, emissiveIntensity: 0.7,
-      metalness: 1, roughness: 0.1,
-    });
-    const rim = new THREE.Mesh(rimGeo, rimMat);
-    rim.rotation.x = Math.PI / 2;
-    chip.add(rim);
-
-    for (let i = 0; i < 8; i++) {
-      const notch = new THREE.Mesh(
-        new THREE.BoxGeometry(0.09, 0.26, 0.14),
-        new THREE.MeshStandardMaterial({
-          color: 0xffffff, emissive: 0x88ffaa, emissiveIntensity: 0.5, metalness: 0.9,
-        }),
-      );
-      const angle = (i / 8) * Math.PI * 2;
-      notch.position.set(Math.cos(angle) * 1.0, 0, Math.sin(angle) * 1.0);
-      notch.rotation.y = -angle;
-      chip.add(notch);
-    }
-    chip.rotation.x = 0.3;
-    scene.add(chip);
-
-    // ── Coaching globe (right) ─────────────────────────────
-    const globeGeo = new THREE.SphereGeometry(1.0, 22, 16);
-    const globeMat = new THREE.LineBasicMaterial({
-      color: 0xa855f7, transparent: true, opacity: 0.9,
-    });
-    const globe = new THREE.LineSegments(
-      new THREE.WireframeGeometry(globeGeo),
-      globeMat,
-    );
-    globe.position.set(2.0, 0, 0);
-    scene.add(globe);
-
-    // ── Animation loop ─────────────────────────────────────
-    const t0 = performance.now();
-    let rafId: number;
-
-    const loop = () => {
-      rafId = requestAnimationFrame(loop);
-      const t = (performance.now() - t0) / 1000;
-
-      // Converge: starts at 0.9s over 0.65s
-      const CONVERGE_START = 0.9;
-      const CONVERGE_DUR   = 0.65;
-      let chipX  = -2.0;
-      let globeX =  2.0;
-
-      if (t > CONVERGE_START) {
-        const p = Math.min((t - CONVERGE_START) / CONVERGE_DUR, 1);
-        // ease-out cubic
-        const e = 1 - Math.pow(1 - p, 3);
-        chipX  = -2.0 + 2.0 * e;
-        globeX =  2.0 - 2.0 * e;
-      }
-
-      chip.position.x  = chipX;
-      globe.position.x = globeX;
-
-      // Rotate
-      chip.rotation.y  = t * 9;
-      chip.rotation.z  = Math.sin(t * 3.5) * 0.18;
-      const cs = 0.85 + 0.15 * Math.sin(t * 4);
-      chip.scale.setScalar(cs);
-
-      globe.rotation.y = t * 1.8;
-      globe.rotation.x = Math.sin(t * 1.3) * 0.4;
-
-      renderer.render(scene, camera);
-    };
-    loop();
-
-    return () => {
-      cancelAnimationFrame(rafId);
-      renderer.dispose();
-      if (mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement);
-    };
-  }, []);
-
-  const show = visible && !exiting;
+  const shown     = phase !== "init";
+  const converged = phase === "logo" || phase === "exit";
+  const logoVis   = phase === "logo" || phase === "exit";
+  const exiting   = phase === "exit";
 
   return (
-    <div
-      style={{
+    <>
+      <style>{`
+        @keyframes globe-spin   { to { transform: rotateY(360deg); } }
+        @keyframes chip-spin    { to { transform: rotateZ(360deg); } }
+        @keyframes ring-pulse {
+          0%   { transform: translate(-50%,-50%) scale(0.5); opacity: 0.8; }
+          100% { transform: translate(-50%,-50%) scale(2.2); opacity: 0; }
+        }
+        @keyframes aurora-drift {
+          0%,100% { transform: translate(-50%,-50%) scale(1)    rotate(0deg); }
+          50%     { transform: translate(-50%,-50%) scale(1.12) rotate(6deg); }
+        }
+        @keyframes logo-glow {
+          0%,100% { filter: drop-shadow(0 0 20px rgba(168,85,247,0.8)) drop-shadow(0 0 50px rgba(0,255,136,0.4)); }
+          50%     { filter: drop-shadow(0 0 40px rgba(168,85,247,1))   drop-shadow(0 0 80px rgba(0,255,136,0.7)); }
+        }
+        @keyframes bar-in {
+          from { width: 0; opacity: 0; }
+          to   { width: 110px; opacity: 1; }
+        }
+        @keyframes scan-down {
+          from { top: -2px; }
+          to   { top: 100%; }
+        }
+        @keyframes notch-glow {
+          0%,100% { box-shadow: 0 0 6px rgba(0,255,136,0.5); }
+          50%     { box-shadow: 0 0 14px rgba(0,255,136,0.9); }
+        }
+      `}</style>
+
+      <div style={{
         position: "fixed", inset: 0, zIndex: 10000,
-        background: "#02010A",
-        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-        gap: 0,
-        opacity: exiting ? 0 : visible ? 1 : 0,
-        transition: exiting
-          ? "opacity 0.5s cubic-bezier(0.4,0,1,1)"
-          : "opacity 0.3s cubic-bezier(0,0,0.2,1)",
-        overflow: "hidden",
+        background: "#03010D",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        opacity: exiting ? 0 : 1,
+        transition: exiting ? "opacity 0.55s cubic-bezier(0.4,0,1,1)" : "opacity 0.15s ease",
         pointerEvents: exiting ? "none" : "auto",
-      }}
-    >
-      {/* Dual radial glow — green left, violet right */}
-      <div style={{
-        position: "absolute", inset: 0, pointerEvents: "none",
-        background:
-          "radial-gradient(ellipse 45% 65% at 25% 50%, rgba(0,255,136,0.1) 0%, transparent 70%)," +
-          "radial-gradient(ellipse 45% 65% at 75% 50%, rgba(168,85,247,0.1) 0%, transparent 70%)",
-      }} />
-
-      {/* Scan lines */}
-      <div style={{
-        position: "absolute", inset: 0, pointerEvents: "none", opacity: 0.12,
-        backgroundImage:
-          "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.4) 3px, rgba(0,0,0,0.4) 4px)",
-      }} />
-
-      {/* Corner accents — green bottom, violet top */}
-      {[
-        { top: 24,    left:  24,   bt: "2px solid rgba(168,85,247,0.5)", bl: "2px solid rgba(168,85,247,0.5)", bb: "none", br: "none", r: "8px 0 0 0" },
-        { top: 24,    right: 24,   bt: "2px solid rgba(168,85,247,0.5)", br: "2px solid rgba(168,85,247,0.5)", bb: "none", bl: "none", r: "0 8px 0 0" },
-        { bottom: 24, left:  24,   bb: "2px solid rgba(0,255,136,0.5)",  bl: "2px solid rgba(0,255,136,0.5)",  bt: "none", br: "none", r: "0 0 0 8px" },
-        { bottom: 24, right: 24,   bb: "2px solid rgba(0,255,136,0.5)",  br: "2px solid rgba(0,255,136,0.5)",  bt: "none", bl: "none", r: "0 0 8px 0" },
-      ].map((c, i) => (
-        <div key={i} style={{
-          position: "absolute",
-          top: (c as any).top, left: (c as any).left, right: (c as any).right, bottom: (c as any).bottom,
-          width: 44, height: 44, pointerEvents: "none",
-          borderTop: c.bt, borderBottom: c.bb, borderLeft: c.bl, borderRight: c.br,
-          borderRadius: c.r,
-        }} />
-      ))}
-
-      {/* Center divider line (fades out when converged) */}
-      <div style={{
-        position: "absolute",
-        left: "50%", top: "20%", bottom: "20%",
-        width: 1,
-        background: "linear-gradient(to bottom, transparent, rgba(255,255,255,0.06) 30%, rgba(255,255,255,0.06) 70%, transparent)",
-        transform: "translateX(-50%)",
-        opacity: logo ? 0 : 0.6,
-        transition: "opacity 0.4s ease",
-      }} />
-
-      {/* 3D canvas */}
-      <div
-        ref={mountRef}
-        style={{
-          width: 520, height: 520,
-          filter:
-            "drop-shadow(0 0 40px rgba(0,255,136,0.25)) " +
-            "drop-shadow(0 0 40px rgba(168,85,247,0.25))",
-          opacity: show ? 1 : 0,
-          transform: show ? "scale(1)" : "scale(0.75)",
-          transition: "opacity 0.5s ease, transform 0.5s cubic-bezier(0.34,1.56,0.64,1)",
-        }}
-      />
-
-      {/* C2N logo — appears after convergence */}
-      <div style={{
-        textAlign: "center",
-        marginTop: -64,
-        opacity: logo && !exiting ? 1 : 0,
-        transform: logo && !exiting ? "translateY(0) scale(1)" : "translateY(24px) scale(0.9)",
-        transition: "opacity 0.4s ease 0.05s, transform 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.05s",
+        overflow: "hidden",
       }}>
-        <img
-          src="/czn-logo.png"
-          alt="CZN"
-          style={{
-            height: 80,
-            width: "auto",
-            userSelect: "none",
-            mixBlendMode: "screen",
-            filter:
-              "drop-shadow(0 0 20px rgba(0,255,136,0.6)) " +
-              "drop-shadow(0 0 40px rgba(168,85,247,0.5))",
-          }}
-        />
-        <p style={{
-          color: "rgba(255,255,255,0.45)",
-          fontSize: 12,
-          letterSpacing: "0.38em",
-          textTransform: "uppercase",
-          marginTop: 10,
-          fontFamily: "Poppins, sans-serif",
-        }}>
-          COMMAND CENTER
-        </p>
+
+        {/* Aurora */}
         <div style={{
-          height: 3, borderRadius: 2,
-          background: "linear-gradient(90deg, #00ff88, rgba(168,85,247,0.8))",
-          margin: "16px auto 0",
-          width: 100,
-          boxShadow: "0 0 20px rgba(0,255,136,0.4), 0 0 20px rgba(168,85,247,0.4)",
+          position: "absolute", width: "150vw", height: "150vw",
+          maxWidth: 720, maxHeight: 720, borderRadius: "50%",
+          background:
+            "radial-gradient(ellipse 55% 55% at 30% 50%, rgba(0,255,136,0.1) 0%, transparent 60%)," +
+            "radial-gradient(ellipse 55% 55% at 70% 50%, rgba(168,85,247,0.14) 0%, transparent 60%)",
+          top: "50%", left: "50%",
+          animation: "aurora-drift 4s ease-in-out infinite",
+          pointerEvents: "none",
         }} />
+
+        {/* Pulse rings */}
+        {[0, 500, 1000].map((delay, i) => (
+          <div key={i} style={{
+            position: "absolute", top: "50%", left: "50%",
+            width: 260, height: 260, borderRadius: "50%",
+            border: `1px solid ${i % 2 ? "rgba(0,255,136,0.35)" : "rgba(168,85,247,0.45)"}`,
+            animation: `ring-pulse 2.6s ease-out ${delay}ms infinite`,
+            pointerEvents: "none",
+          }} />
+        ))}
+
+        {/* Scan line */}
+        <div style={{
+          position: "absolute", left: 0, right: 0, height: 1, pointerEvents: "none",
+          background: "linear-gradient(90deg, transparent 0%, rgba(168,85,247,0.5) 30%, rgba(0,255,136,0.5) 70%, transparent 100%)",
+          animation: "scan-down 2s linear infinite",
+          opacity: 0.5,
+        }} />
+
+        {/* Corner brackets */}
+        {[
+          { top: 24, left: 24,   borderTop: "1.5px solid rgba(168,85,247,0.55)", borderLeft:  "1.5px solid rgba(168,85,247,0.55)", borderRadius: "6px 0 0 0" },
+          { top: 24, right: 24,  borderTop: "1.5px solid rgba(168,85,247,0.55)", borderRight: "1.5px solid rgba(168,85,247,0.55)", borderRadius: "0 6px 0 0" },
+          { bottom: 24, left: 24,  borderBottom: "1.5px solid rgba(0,255,136,0.45)", borderLeft:  "1.5px solid rgba(0,255,136,0.45)", borderRadius: "0 0 0 6px" },
+          { bottom: 24, right: 24, borderBottom: "1.5px solid rgba(0,255,136,0.45)", borderRight: "1.5px solid rgba(0,255,136,0.45)", borderRadius: "0 0 6px 0" },
+        ].map((s, i) => (
+          <div key={i} style={{ position: "absolute", width: 34, height: 34, pointerEvents: "none", ...s }} />
+        ))}
+
+        {/* ── Casino chip (left → center) ── */}
+        <div style={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: converged
+            ? "translate(-50%, -50%) scale(0.45) translateX(-30px)"
+            : shown
+              ? "translate(calc(-50% - 140px), -50%) scale(1)"
+              : "translate(calc(-50% - 200px), -50%) scale(0.5)",
+          opacity: converged ? 0 : shown ? 1 : 0,
+          transition: converged
+            ? "transform 0.5s cubic-bezier(0.4,0,0.6,1), opacity 0.35s ease"
+            : "transform 0.55s cubic-bezier(0.34,1.4,0.64,1), opacity 0.4s ease",
+          zIndex: 2,
+        }}>
+          <div style={{
+            width: 96, height: 96, borderRadius: "50%", position: "relative",
+            background: "conic-gradient(#00aa33 0deg 22.5deg, #1a6b35 22.5deg 45deg, #00aa33 45deg 67.5deg, #1a6b35 67.5deg 90deg, #00aa33 90deg 112.5deg, #1a6b35 112.5deg 135deg, #00aa33 135deg 157.5deg, #1a6b35 157.5deg 180deg, #00aa33 180deg 202.5deg, #1a6b35 202.5deg 225deg, #00aa33 225deg 247.5deg, #1a6b35 247.5deg 270deg, #00aa33 270deg 292.5deg, #1a6b35 292.5deg 315deg, #00aa33 315deg 337.5deg, #1a6b35 337.5deg 360deg)",
+            border: "3px solid rgba(0,255,136,0.85)",
+            boxShadow: "0 0 28px rgba(0,255,136,0.55), 0 0 60px rgba(0,255,136,0.2)",
+            animation: shown ? "chip-spin 3.5s linear infinite" : "none",
+          }}>
+            {/* Inner disc */}
+            <div style={{
+              position: "absolute", inset: 14, borderRadius: "50%",
+              background: "radial-gradient(circle, #00cc44 0%, #007722 100%)",
+              border: "1.5px solid rgba(0,255,136,0.6)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <span style={{ fontSize: 22, userSelect: "none" }}>🎰</span>
+            </div>
+            {/* Notches */}
+            {Array.from({ length: 8 }, (_, i) => {
+              const angle = (i / 8) * 360;
+              return (
+                <div key={i} style={{
+                  position: "absolute",
+                  width: 6, height: 14,
+                  background: "rgba(0,255,136,0.9)",
+                  borderRadius: 3,
+                  top: "50%", left: "50%",
+                  transformOrigin: "50% 0",
+                  transform: `translateX(-50%) rotate(${angle}deg) translateY(-42px)`,
+                  animation: "notch-glow 1.8s ease-in-out infinite",
+                  animationDelay: `${i * 0.22}s`,
+                }} />
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ── Globe wireframe (right → center) ── */}
+        <div style={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: converged
+            ? "translate(-50%, -50%) scale(0.45) translateX(30px)"
+            : shown
+              ? "translate(calc(-50% + 140px), -50%) scale(1)"
+              : "translate(calc(-50% + 200px), -50%) scale(0.5)",
+          opacity: converged ? 0 : shown ? 1 : 0,
+          transition: converged
+            ? "transform 0.5s cubic-bezier(0.4,0,0.6,1), opacity 0.35s ease"
+            : "transform 0.55s cubic-bezier(0.34,1.4,0.64,1), opacity 0.4s ease",
+          zIndex: 2,
+        }}>
+          <div style={{
+            width: 96, height: 96, position: "relative",
+            animation: shown ? "globe-spin 5s linear infinite" : "none",
+            filter: "drop-shadow(0 0 20px rgba(168,85,247,0.7)) drop-shadow(0 0 40px rgba(168,85,247,0.3))",
+          }}>
+            <svg width="96" height="96" viewBox="-48 -48 96 96" style={{ overflow: "visible" }}>
+              {/* Main sphere */}
+              <circle r="44" fill="none" stroke="rgba(168,85,247,0.75)" strokeWidth="1.5" />
+              {/* Equator */}
+              <ellipse rx="44" ry="12" fill="none" stroke="rgba(168,85,247,0.55)" strokeWidth="1" />
+              {/* Lat -30 */}
+              <ellipse rx="38" ry="9" cy="-22" fill="none" stroke="rgba(168,85,247,0.35)" strokeWidth="0.8" />
+              {/* Lat +30 */}
+              <ellipse rx="38" ry="9" cy="22" fill="none" stroke="rgba(168,85,247,0.35)" strokeWidth="0.8" />
+              {/* Meridian 1 */}
+              <ellipse ry="44" rx="12" fill="none" stroke="rgba(168,85,247,0.45)" strokeWidth="1" />
+              {/* Meridian 2 */}
+              <ellipse ry="44" rx="12" fill="none" stroke="rgba(168,85,247,0.25)" strokeWidth="0.8" transform="rotate(60)" />
+              {/* Meridian 3 */}
+              <ellipse ry="44" rx="12" fill="none" stroke="rgba(168,85,247,0.25)" strokeWidth="0.8" transform="rotate(-60)" />
+              {/* Glow dot top */}
+              <circle cy="-44" r="3" fill="rgba(168,85,247,0.9)" />
+              <circle cy="44"  r="3" fill="rgba(168,85,247,0.9)" />
+            </svg>
+          </div>
+        </div>
+
+        {/* ── Logo (appears on convergence) ── */}
+        <div style={{
+          display: "flex", flexDirection: "column", alignItems: "center", gap: 0,
+          position: "absolute", top: "50%", left: "50%",
+          transform: logoVis
+            ? "translate(-50%, -50%) scale(1)"
+            : "translate(-50%, -50%) scale(0.75)",
+          opacity: logoVis ? 1 : 0,
+          transition: "opacity 0.45s cubic-bezier(0.34,1.56,0.64,1), transform 0.55s cubic-bezier(0.34,1.56,0.64,1)",
+          zIndex: 3,
+        }}>
+          <img
+            src="/czn-logo.png"
+            alt="CZN"
+            style={{
+              height: 100, width: "auto", userSelect: "none", mixBlendMode: "screen",
+              animation: logoVis ? "logo-glow 2.4s ease-in-out infinite" : "none",
+            }}
+          />
+          <p style={{
+            marginTop: 16,
+            color: "rgba(255,255,255,0.5)", fontSize: 11,
+            letterSpacing: "0.4em", textTransform: "uppercase",
+            fontFamily: "Poppins, sans-serif",
+          }}>
+            COMMAND CENTER
+          </p>
+          <div style={{
+            height: 2, borderRadius: 2, marginTop: 14,
+            background: "linear-gradient(90deg, rgba(0,255,136,0.9), rgba(168,85,247,0.9))",
+            boxShadow: "0 0 16px rgba(0,255,136,0.5), 0 0 16px rgba(168,85,247,0.5)",
+            animation: logoVis ? "bar-in 0.7s cubic-bezier(0.34,1.56,0.64,1) forwards" : "none",
+            width: 0,
+          }} />
+        </div>
+
       </div>
-    </div>
+    </>
   );
 }

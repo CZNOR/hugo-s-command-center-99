@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight, TrendingUp, Users,
   Phone, DollarSign, MessageCircle, Target, Zap, RefreshCw,
 } from "lucide-react";
-import { AreaChart, Area, ResponsiveContainer, Tooltip, XAxis } from "recharts";
+import { AreaChart, Area, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
 import { gamificationProfile } from "@/lib/mock-data";
 import TaskBoard from "@/components/TaskBoard";
 import AffiliateCopyButton from "@/components/AffiliateCopyButton";
@@ -40,14 +40,33 @@ const VIOLET_COLOR  = "#a855f7";
 const VIOLET_DIM    = "#7c3aed";
 const VIOLET_GLOW   = "rgba(168,85,247,0.12)";
 
-// ─── Monthly CA data (coaching + casino combined) ─────────────
-const MONTHLY_DATA = [
-  { m: "Oct",  coaching: 3200,  casino: 420  },
-  { m: "Nov",  coaching: 4100,  casino: 380  },
-  { m: "Déc",  coaching: 5800,  casino: 510  },
-  { m: "Jan",  coaching: 3900,  casino: 290  },
-  { m: "Fév",  coaching: 4600,  casino: 460  },
-  { m: "Mars", coaching: 3883,  casino: 340  },
+// ─── Monthly CA data — toutes sources (Hugo) ──────────────────
+// coaching ÷3 = net Hugo | académie ÷3 = net Hugo | agence = 100% Hugo
+// Totaux : coaching 25 483 | académie 8 730 | agence Hugo 29 436
+const ALL_MONTHS = [
+  { m: "Jan 25", coaching: 2500, academie: 0,    agence: 2200 },
+  { m: "Fév 25", coaching: 3200, academie: 0,    agence: 1000 },
+  { m: "Mar 25", coaching: 2800, academie: 0,    agence: 1200 },
+  { m: "Avr 25", coaching: 1800, academie: 0,    agence: 0    },
+  { m: "Mai 25", coaching: 2483, academie: 0,    agence: 1350 },
+  { m: "Jun 25", coaching: 3500, academie: 0,    agence: 4690 },
+  { m: "Jul 25", coaching: 2000, academie: 0,    agence: 3580 },
+  { m: "Aoû 25", coaching: 0,    academie: 0,    agence: 1475 },
+  { m: "Sep 25", coaching: 3500, academie: 0,    agence: 0    },
+  { m: "Oct 25", coaching: 0,    academie: 1940, agence: 1650 },
+  { m: "Nov 25", coaching: 1700, academie: 1940, agence: 4491 },
+  { m: "Déc 25", coaching: 2000, academie: 1940, agence: 1000 },
+  { m: "Jan 26", coaching: 0,    academie: 1940, agence: 1700 },
+  { m: "Fév 26", coaching: 0,    academie: 970,  agence: 1700 },
+  { m: "Mar 26", coaching: 0,    academie: 0,    agence: 1700 },
+];
+
+type Period = "3M" | "6M" | "1an" | "Tout";
+const PERIODS: { key: Period; label: string; n: number }[] = [
+  { key: "3M",   label: "3M",  n: 3  },
+  { key: "6M",   label: "6M",  n: 6  },
+  { key: "1an",  label: "1an", n: 12 },
+  { key: "Tout", label: "Tout",n: 999 },
 ];
 
 // ─── Mobile overview ──────────────────────────────────────────
@@ -55,17 +74,35 @@ function MobileOverview() {
   const { stats: rawStats } = useCoachingStats();
   const { hidden } = usePrivacy();
   const c = { academieCA: 8_730, agenceCA: 50_523, agenceNetHugo: 29_436, ...rawStats };
+  const [period, setPeriod] = useState<Period>("6M");
 
-  // CA global réel = Coaching HT + Académie + Formation + Agence (tous associés)
-  const caGlobal  = c.caTotal + c.academieCA + c.formationPrix * c.formationVentes + c.agenceCA;
-  // Net Hugo : coaching ÷3, académie ÷3, agence part Hugo 100%, formation 100%
-  const netHugo   = Math.round(c.caTotal / 3) + Math.round(c.academieCA / 3)
-                  + c.agenceNetHugo + c.formationPrix * c.formationVentes;
+  // All-time totals (include associates for agenceCA)
+  const caGlobalTout = c.caTotal + c.academieCA + c.formationPrix * c.formationVentes + c.agenceCA;
+  const netHugoTout  = Math.round(c.caTotal / 3) + Math.round(c.academieCA / 3)
+                     + c.agenceNetHugo + c.formationPrix * c.formationVentes;
+
+  // Filtered chart data
+  const chartData = useMemo(() => {
+    const p = PERIODS.find(p => p.key === period)!;
+    return p.n >= ALL_MONTHS.length ? ALL_MONTHS : ALL_MONTHS.slice(-p.n);
+  }, [period]);
+
+  // Period totals (Hugo's tracked sources)
+  const pTotals = useMemo(() => {
+    if (period === "Tout") return { gross: caGlobalTout, net: netHugoTout };
+    const coaching  = chartData.reduce((s, d) => s + d.coaching, 0);
+    const academie  = chartData.reduce((s, d) => s + d.academie, 0);
+    const agence    = chartData.reduce((s, d) => s + d.agence,   0);
+    const formation = c.formationPrix * c.formationVentes;
+    const gross = coaching + academie + agence + formation;
+    const net   = Math.round(coaching / 3) + Math.round(academie / 3) + agence + formation;
+    return { gross, net };
+  }, [chartData, period, caGlobalTout, netHugoTout]);
 
   return (
     <div className="md:hidden" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
 
-      {/* CA global */}
+      {/* CA card — Shopify-style */}
       <div style={{
         background: "rgba(255,255,255,0.03)",
         border: "1px solid rgba(255,255,255,0.07)",
@@ -74,46 +111,108 @@ function MobileOverview() {
         transition: "filter 0.25s ease",
         userSelect: hidden ? "none" : "auto",
       }}>
-        <div style={{ padding: "16px 16px 12px" }}>
-          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 4 }}>CA global cumulé</p>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-            <span style={{ fontSize: 30, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
-              {caGlobal.toLocaleString("fr-FR")} €
-            </span>
-            <span style={{ fontSize: 12, fontWeight: 600, color: "#4ade80" }}>↑ total</span>
+        {/* Header: metric + period pills */}
+        <div style={{ padding: "16px 16px 10px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div>
+            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 4 }}>
+              CA {period === "Tout" ? "cumulé total" : `sur ${period}`}
+            </p>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+              <span style={{ fontSize: 28, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
+                {pTotals.gross.toLocaleString("fr-FR")} €
+              </span>
+            </div>
+            <p style={{ fontSize: 11, color: "#4ade80", marginTop: 3 }}>
+              net Hugo ≈ <span style={{ fontWeight: 700 }}>{pTotals.net.toLocaleString("fr-FR")} €</span>
+            </p>
           </div>
-          <p style={{ fontSize: 11, color: "#4ade80", marginTop: 4 }}>
-            net Hugo ≈ <span style={{ fontWeight: 700 }}>{netHugo.toLocaleString("fr-FR")} €</span>
-          </p>
+
+          {/* Period pills */}
+          <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+            {PERIODS.map(p => (
+              <button
+                key={p.key}
+                onClick={() => setPeriod(p.key)}
+                style={{
+                  padding: "4px 8px",
+                  borderRadius: 20,
+                  fontSize: 10, fontWeight: 600,
+                  border: period === p.key ? "1px solid rgba(168,85,247,0.6)" : "1px solid rgba(255,255,255,0.1)",
+                  background: period === p.key ? "rgba(168,85,247,0.2)" : "transparent",
+                  color: period === p.key ? "#a855f7" : "rgba(255,255,255,0.4)",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+              >{p.label}</button>
+            ))}
+          </div>
         </div>
 
-        {/* Chart historique */}
-        <div style={{ height: 72 }}>
+        {/* Chart */}
+        <div style={{ height: 160, paddingBottom: 0 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={MONTHLY_DATA} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+            <AreaChart data={chartData} margin={{ top: 8, right: 0, left: 0, bottom: 0 }}>
               <defs>
-                <linearGradient id="gradCoaching" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#a855f7" stopOpacity={0.4} />
-                  <stop offset="100%" stopColor="#a855f7" stopOpacity={0} />
+                <linearGradient id="gCoaching" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#a855f7" stopOpacity={0.5} />
+                  <stop offset="100%" stopColor="#a855f7" stopOpacity={0.03} />
+                </linearGradient>
+                <linearGradient id="gAcademie" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#818cf8" stopOpacity={0.5} />
+                  <stop offset="100%" stopColor="#818cf8" stopOpacity={0.03} />
+                </linearGradient>
+                <linearGradient id="gAgence" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.5} />
+                  <stop offset="100%" stopColor="#22d3ee" stopOpacity={0.03} />
                 </linearGradient>
               </defs>
-              <XAxis dataKey="m" hide />
-              <Tooltip
-                contentStyle={{ background: "#0e0e1e", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, fontSize: 12 }}
-                formatter={(v: number, name: string) => [v.toLocaleString("fr-FR") + " €", name === "coaching" ? "Coaching" : "Casino"]}
+              <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.04)" />
+              <XAxis
+                dataKey="m"
+                tick={{ fontSize: 9, fill: "rgba(255,255,255,0.3)" }}
+                axisLine={false} tickLine={false}
+                interval={chartData.length > 6 ? 1 : 0}
               />
-              <Area type="monotone" dataKey="coaching" stroke="#a855f7" strokeWidth={2} fill="url(#gradCoaching)" />
+              <YAxis hide domain={[0, "auto"]} />
+              <Tooltip
+                contentStyle={{
+                  background: "#0d0d1a", border: "1px solid rgba(255,255,255,0.12)",
+                  borderRadius: 12, fontSize: 12, padding: "10px 14px",
+                }}
+                labelStyle={{ color: "rgba(255,255,255,0.6)", fontWeight: 600, marginBottom: 6, display: "block" }}
+                formatter={(v: number, name: string) => {
+                  const labels: Record<string, string> = { coaching: "Coaching HT", academie: "Académie", agence: "Agence" };
+                  return [v.toLocaleString("fr-FR") + " €", labels[name] ?? name];
+                }}
+              />
+              <Area type="monotone" dataKey="agence"   stackId="a" stroke="#22d3ee" strokeWidth={1.5} fill="url(#gAgence)"   />
+              <Area type="monotone" dataKey="academie"  stackId="a" stroke="#818cf8" strokeWidth={1.5} fill="url(#gAcademie)"  />
+              <Area type="monotone" dataKey="coaching"  stackId="a" stroke="#a855f7" strokeWidth={2}   fill="url(#gCoaching)"  />
             </AreaChart>
           </ResponsiveContainer>
         </div>
 
-        {/* Breakdown */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+        {/* Legend */}
+        <div style={{ display: "flex", gap: 12, padding: "8px 16px 4px", justifyContent: "flex-end" }}>
           {[
-            { label: "Coaching HT", value: c.caTotal,                            net: Math.round(c.caTotal / 3),             color: "#a855f7" },
-            { label: "Académie",    value: c.academieCA,                          net: Math.round(c.academieCA / 3),          color: "#818cf8" },
-            { label: "Agence",      value: c.agenceCA,                            net: c.agenceNetHugo,                       color: "#22d3ee" },
-            { label: "Formation",   value: c.formationPrix * c.formationVentes,   net: c.formationPrix * c.formationVentes,   color: "#ec4899" },
+            { label: "Coaching", color: "#a855f7" },
+            { label: "Académie", color: "#818cf8" },
+            { label: "Agence",   color: "#22d3ee" },
+          ].map(l => (
+            <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <div style={{ width: 8, height: 8, borderRadius: 2, background: l.color }} />
+              <span style={{ fontSize: 9, color: "rgba(255,255,255,0.35)" }}>{l.label}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Breakdown */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", borderTop: "1px solid rgba(255,255,255,0.06)", marginTop: 6 }}>
+          {[
+            { label: "Coaching HT", value: c.caTotal,                          net: Math.round(c.caTotal / 3),          color: "#a855f7" },
+            { label: "Académie",    value: c.academieCA,                        net: Math.round(c.academieCA / 3),       color: "#818cf8" },
+            { label: "Agence",      value: c.agenceCA,                          net: c.agenceNetHugo,                    color: "#22d3ee" },
+            { label: "Formation",   value: c.formationPrix * c.formationVentes, net: c.formationPrix * c.formationVentes, color: "#ec4899" },
           ].map((m, i, arr) => (
             <div key={i} style={{ padding: "10px 8px", borderRight: i < arr.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
               <p style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", marginBottom: 2 }}>{m.label}</p>
