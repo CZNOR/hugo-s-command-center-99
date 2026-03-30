@@ -66,13 +66,19 @@ const ALL_MONTHS = [
   { m: "Mar 26", coaching: 0,    academie: 0,    agence: 1700 },
 ];
 
-type Period = "3M" | "6M" | "1an" | "Tout";
-const PERIODS: { key: Period; label: string; n: number }[] = [
-  { key: "3M",   label: "3M",  n: 3  },
-  { key: "6M",   label: "6M",  n: 6  },
-  { key: "1an",  label: "1an", n: 12 },
-  { key: "Tout", label: "Tout",n: 999 },
+type Period = "3M" | "6M" | "2025" | "Tout";
+const PERIODS: { key: Period; label: string }[] = [
+  { key: "3M",   label: "3M"   },
+  { key: "6M",   label: "6M"   },
+  { key: "2025", label: "2025" },
+  { key: "Tout", label: "Tout" },
 ];
+function filterMonths(p: Period) {
+  if (p === "3M")   return ALL_MONTHS.slice(-3);
+  if (p === "6M")   return ALL_MONTHS.slice(-6);
+  if (p === "2025") return ALL_MONTHS.slice(0, 12);   // Jan 25 → Déc 25
+  return ALL_MONTHS;                                   // Tout
+}
 
 // ─── Mobile overview ──────────────────────────────────────────
 function MobileOverview() {
@@ -81,20 +87,11 @@ function MobileOverview() {
   const c = { academieCA: 8_730, agenceCA: 50_523, agenceNetHugo: 29_436, ...rawStats };
   const [period, setPeriod] = useState<Period>("6M");
 
-  // All-time totals (include associates for agenceCA)
-  const caGlobalTout = c.caTotal + c.academieCA + c.formationPrix * c.formationVentes + c.agenceCA;
-  const netHugoTout  = Math.round(c.caTotal / 3) + Math.round(c.academieCA / 3)
-                     + c.agenceNetHugo + c.formationPrix * c.formationVentes;
-
   // Filtered chart data
-  const chartData = useMemo(() => {
-    const p = PERIODS.find(p => p.key === period)!;
-    return p.n >= ALL_MONTHS.length ? ALL_MONTHS : ALL_MONTHS.slice(-p.n);
-  }, [period]);
+  const chartData = useMemo(() => filterMonths(period), [period]);
 
-  // Period totals (Hugo's tracked sources)
+  // Period totals — cohérent avec les données mensuelles (agence = part Hugo)
   const pTotals = useMemo(() => {
-    if (period === "Tout") return { gross: caGlobalTout, net: netHugoTout };
     const coaching  = chartData.reduce((s, d) => s + d.coaching, 0);
     const academie  = chartData.reduce((s, d) => s + d.academie, 0);
     const agence    = chartData.reduce((s, d) => s + d.agence,   0);
@@ -102,7 +99,7 @@ function MobileOverview() {
     const gross = coaching + academie + agence + formation;
     const net   = Math.round(coaching / 3) + Math.round(academie / 3) + agence + formation;
     return { gross, net };
-  }, [chartData, period, caGlobalTout, netHugoTout]);
+  }, [chartData]);
 
   return (
     <div className="md:hidden" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -120,7 +117,7 @@ function MobileOverview() {
         <div style={{ padding: "16px 16px 10px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
             <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 4 }}>
-              CA {period === "Tout" ? "cumulé total" : `sur ${period}`}
+              CA {period === "Tout" ? "cumulé (Jan 25 → Mar 26)" : period === "2025" ? "année 2025" : `sur ${period}`}
             </p>
             <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
               <span style={{ fontSize: 28, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
