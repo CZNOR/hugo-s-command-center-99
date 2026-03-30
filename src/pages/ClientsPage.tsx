@@ -44,9 +44,9 @@ type Client = ClientHT | ClientPremium | ClientAgence;
 const CLIENTS_AGENCE: ClientAgence[] = [
   { type: "agence", id: "ag1",  nom: "Alexandre Senek",  ca: 16_100, projets: 25, derniere: "2026-04-01" },
   { type: "agence", id: "ag2",  nom: "Angello",          ca: 1_500,  projets: 1,  derniere: "2025-11-12" },
-  { type: "agence", id: "ag3",  nom: "Aymane",           ca: 2_190,  projets: 1,  derniere: "2025-07-01" },
-  { type: "agence", id: "ag4",  nom: "Guilan",           ca: 2_000,  projets: 1,  derniere: "2025-06-04" },
-  { type: "agence", id: "ag5",  nom: "Lilo",             ca: 1_490,  projets: 1,  derniere: "2025-06-02" },
+  { type: "agence", id: "ag3",  nom: "Aymane",           ca: 500,    projets: 1,  derniere: "2025-07-01" },
+  { type: "agence", id: "ag4",  nom: "Guilan",           ca: 700,    projets: 1,  derniere: "2025-06-04" },
+  { type: "agence", id: "ag5",  nom: "Lilo",             ca: 497,    projets: 1,  derniere: "2025-06-02" },
   { type: "agence", id: "ag6",  nom: "sabri bk",         ca: 1_196,  projets: 5,  derniere: "2025-11-30" },
   { type: "agence", id: "ag7",  nom: "Ines",             ca: 590,    projets: 1,  derniere: "2025-10-19" },
   { type: "agence", id: "ag8",  nom: "Dimitry Santiago", ca: 195,    projets: 1,  derniere: "2025-11-07" },

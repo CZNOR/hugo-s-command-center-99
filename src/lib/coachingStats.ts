@@ -42,11 +42,11 @@ export interface CoachingStats {
 export const DEFAULT_MONTHLY: MonthEntry[] = [
   { m: "Jan 25", coaching: 0,    academie: 0,    agence: 2200 },
   { m: "Fév 25", coaching: 0,    academie: 0,    agence: 1000 },
-  { m: "Mar 25", coaching: 0,    academie: 0,    agence: 1200 },
-  { m: "Avr 25", coaching: 0,    academie: 0,    agence: 500  },
+  { m: "Mar 25", coaching: 0,    academie: 0,    agence: 2200 },
+  { m: "Avr 25", coaching: 0,    academie: 0,    agence: 1500 },
   { m: "Mai 25", coaching: 0,    academie: 0,    agence: 1350 },
-  { m: "Jun 25", coaching: 0,    academie: 0,    agence: 4690 },
-  { m: "Jul 25", coaching: 0,    academie: 0,    agence: 3385 },
+  { m: "Jun 25", coaching: 0,    academie: 0,    agence: 2397 },
+  { m: "Jul 25", coaching: 0,    academie: 0,    agence: 1695 },
   { m: "Aoû 25", coaching: 7284, academie: 0,    agence: 1475 },
   { m: "Sep 25", coaching: 8200, academie: 0,    agence: 0    },
   { m: "Oct 25", coaching: 2999, academie: 1940, agence: 1650 },
@@ -55,6 +55,7 @@ export const DEFAULT_MONTHLY: MonthEntry[] = [
   { m: "Jan 26", coaching: 0,    academie: 0,    agence: 0    },
   { m: "Fév 26", coaching: 0,    academie: 0,    agence: 1700 },
   { m: "Mar 26", coaching: 0,    academie: 0,    agence: 1700 },
+  { m: "Avr 26", coaching: 0,    academie: 0,    agence: 1700 },
 ];
 
 export const COACHING_DEFAULTS: CoachingStats = {
@@ -70,7 +71,7 @@ export const COACHING_DEFAULTS: CoachingStats = {
   academiePayants: 16,
   academieLives:   14,
   agenceCA:        45_623,
-  agenceNetHugo:   26_346,
+  agenceNetHugo:   24_363,
   monthlyData:     DEFAULT_MONTHLY,
 };
 
