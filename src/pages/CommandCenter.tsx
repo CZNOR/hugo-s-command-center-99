@@ -58,7 +58,7 @@ function filterMonths(months: MonthEntry[], p: Period) {
 
 // ─── Mobile overview ──────────────────────────────────────────
 function MobileOverview() {
-  const { stats: rawStats } = useCoachingStats();
+  const { stats: rawStats, loading: statsLoading } = useCoachingStats();
   const { hidden } = usePrivacy();
   const c = rawStats;
   const [period, setPeriod] = useState<Period>("6M");
@@ -78,7 +78,14 @@ function MobileOverview() {
   }, [chartData]);
 
   return (
-    <div className="md:hidden" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+    <div
+      className="md:hidden"
+      style={{
+        display: "flex", flexDirection: "column", gap: 10,
+        opacity: statsLoading ? 0.6 : 1,
+        transition: "opacity 0.4s ease",
+      }}
+    >
 
       {/* CA card — Shopify-style */}
       <div style={{
@@ -352,9 +359,16 @@ function CasinoPanel() {
 
 // ─── Coaching panel ───────────────────────────────────────────
 function CoachingPanel() {
-  const { stats: c } = useCoachingStats();
+  const { stats: c, loading } = useCoachingStats();
   return (
-    <div className="panel-inner p-5 flex flex-col gap-4 relative" style={{ background: "rgba(3,0,10,0.95)" }}>
+    <div
+      className="panel-inner p-5 flex flex-col gap-4 relative"
+      style={{
+        background: "rgba(3,0,10,0.95)",
+        opacity: loading ? 0.7 : 1,
+        transition: "opacity 0.4s ease",
+      }}
+    >
 
       {/* Header */}
       <div className="flex items-center justify-between relative z-10">

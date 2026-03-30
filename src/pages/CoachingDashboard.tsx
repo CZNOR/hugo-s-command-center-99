@@ -160,6 +160,21 @@ function UpdateModal({ stats, onSave, onClose }: {
   );
 }
 
+// ─── Skeleton card ────────────────────────────────────────────
+function SkeletonCard() {
+  return (
+    <div className="block p-5 rounded-2xl" style={{
+      background: "rgba(255,255,255,0.025)", border: "1px solid rgba(139,92,246,0.08)",
+      animation: "skeleton-pulse 1.5s ease-in-out infinite",
+    }}>
+      <style>{`@keyframes skeleton-pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }`}</style>
+      <div style={{ width: 36, height: 36, borderRadius: 12, background: "rgba(255,255,255,0.06)", marginBottom: 12 }} />
+      <div style={{ width: "70%", height: 28, borderRadius: 8, background: "rgba(255,255,255,0.08)", marginBottom: 8 }} />
+      <div style={{ width: "50%", height: 12, borderRadius: 6, background: "rgba(255,255,255,0.05)" }} />
+    </div>
+  );
+}
+
 // ─── Component ───────────────────────────────────────────────
 export default function CoachingDashboard() {
   const { stats: rawStats, loading, save } = useCoachingStats();
@@ -207,11 +222,21 @@ export default function CoachingDashboard() {
         </button>
       </div>
 
-      {/* KPI Cards */}
+      {/* KPI Cards — skeletons shown while loading */}
+      {loading && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
+      )}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4" style={{
         filter: hidden ? "blur(10px)" : "none",
-        transition: "filter 0.25s ease",
+        transition: "filter 0.25s ease, opacity 0.3s ease",
         userSelect: hidden ? "none" : "auto",
+        opacity: loading ? 0 : 1,
+        pointerEvents: loading ? "none" : "auto",
       }}>
         {/* Bookings */}
         <Link to="/coaching/leads" className="block p-5 transition-all duration-200" style={{ ...cardGlow, borderColor: "#a855f722" }}
@@ -293,7 +318,17 @@ export default function CoachingDashboard() {
         </div>
       </div>
 
-      {/* ── Revenus détaillés ── */}
+      {/* ── Revenus détaillés — skeleton or real ── */}
+      {loading && (
+        <div className="p-5 rounded-2xl" style={{ ...cardGlow, borderColor: "rgba(139,92,246,0.2)" }}>
+          <div style={{ width: 160, height: 12, borderRadius: 6, background: "rgba(255,255,255,0.05)", marginBottom: 16 }} className="skeleton" />
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="p-4 rounded-xl skeleton" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", minHeight: 80 }} />
+            ))}
+          </div>
+        </div>
+      )}
       {!loading && (
         <div className="p-5" style={{
           ...cardGlow, borderColor: "rgba(139,92,246,0.2)",

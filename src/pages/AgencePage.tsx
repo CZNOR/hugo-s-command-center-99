@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { Search, ChevronDown, ChevronUp, Building2 } from "lucide-react";
 import { usePrivacy } from "@/lib/privacyContext";
+import { useCoachingStats } from "@/lib/coachingStats";
 
 // ─── Types ───────────────────────────────────────────────────
 interface Vente {
@@ -65,8 +66,8 @@ const VENTES: Vente[] = [
   { id: "RET-2026-04", date: "2026-04-01", prestation: "Retainer mensuel", client: "Alexandre Senek", montant: 1700, paiement: "En attente", livraison: "En cours" },
 ];
 
-const NET_HUGO  = VENTES.reduce((s, v) => s + v.montant, 0); // part Hugo (Hugo + CM non-assignés + retainer)
-const TOTAL_CA  = 40_833 + 5_100; // CA global agence tous associés (CSV -scams -jan retainer + retainers fév-avr 2026)
+// NET_HUGO = part Hugo calculée depuis les ventes (correspond à agenceNetHugo dans coachingStats)
+const NET_HUGO_STATIC = VENTES.reduce((s, v) => s + v.montant, 0);
 
 // ─── Styles ──────────────────────────────────────────────────
 const card: React.CSSProperties = {
@@ -176,6 +177,10 @@ export default function AgencePage() {
   const [search,  setSearch]  = useState("");
   const [view,    setView]    = useState<ViewMode>("chrono");
   const { hidden } = usePrivacy();
+  const { stats } = useCoachingStats();
+  // Use source of truth from coachingStats; fall back to static if not yet loaded
+  const TOTAL_CA = stats.agenceCA || 45_623;
+  const NET_HUGO = stats.agenceNetHugo || NET_HUGO_STATIC;
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
