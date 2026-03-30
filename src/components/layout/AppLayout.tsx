@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Outlet, useNavigate, useLocation, Link } from "react-router-dom";
-import { Plus, LayoutDashboard, CheckSquare, Calendar, Menu } from "lucide-react";
+import { Plus, LayoutDashboard, CheckSquare, Calendar, Menu, Eye, EyeOff } from "lucide-react";
 import AppSidebar from "./AppSidebar";
 import StarField from "../StarField";
 import RippleCanvas from "../RippleCanvas";
@@ -10,6 +10,7 @@ import BizTransitionOverlay from "../BizTransitionOverlay";
 import WelcomeIntro from "../WelcomeIntro";
 import { BusinessProvider, useBusiness } from "@/lib/businessContext";
 import { TaskProvider, useTasks, type TaskBusiness } from "@/lib/taskContext";
+import { PrivacyProvider, usePrivacy } from "@/lib/privacyContext";
 import { initGoogleAuth } from "@/lib/googleCalendar";
 
 const SIDEBAR_W = 220;
@@ -18,6 +19,7 @@ const HEADER_H  = 56;
 // ─── Mobile bottom nav — floating pill style ──────────────────
 function MobileBottomNav({ onOpenSidebar, onCloseSidebar }: { onOpenSidebar: () => void; onCloseSidebar: () => void }) {
   const location = useLocation();
+  const { hidden, toggle } = usePrivacy();
 
   const items = [
     { path: "/",       icon: LayoutDashboard },
@@ -79,6 +81,23 @@ function MobileBottomNav({ onOpenSidebar, onCloseSidebar }: { onOpenSidebar: () 
           </Link>
         );
       })}
+      {/* Eye — privacy toggle */}
+      <button
+        onClick={toggle}
+        style={{
+          width: 50, height: 50, borderRadius: 50,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          background: hidden ? "rgba(168,85,247,0.2)" : "transparent",
+          border: "none", cursor: "pointer",
+          color: hidden ? "#a855f7" : "rgba(255,255,255,0.38)",
+          transition: "all 0.15s ease",
+          flexShrink: 0,
+        }}
+      >
+        {hidden
+          ? <EyeOff style={{ width: 20, height: 20 }} />
+          : <Eye    style={{ width: 20, height: 20 }} />}
+      </button>
       {/* Separator */}
       <div style={{ width: 1, height: 22, background: "rgba(255,255,255,0.1)", margin: "0 2px", flexShrink: 0 }} />
       {/* Menu — bouton flottant voyant */}
@@ -389,10 +408,12 @@ function AppLayoutInner() {
 // ─── Root export ──────────────────────────────────────────────
 export default function AppLayout() {
   return (
-    <BusinessProvider>
-      <TaskProvider>
-        <AppLayoutInner />
-      </TaskProvider>
-    </BusinessProvider>
+    <PrivacyProvider>
+      <BusinessProvider>
+        <TaskProvider>
+          <AppLayoutInner />
+        </TaskProvider>
+      </BusinessProvider>
+    </PrivacyProvider>
   );
 }

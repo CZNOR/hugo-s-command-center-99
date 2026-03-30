@@ -5,6 +5,7 @@ import {
   AreaChart, Area, ResponsiveContainer, Tooltip, XAxis, CartesianGrid,
 } from "recharts";
 import { useCoachingStats, type CoachingStats } from "@/lib/coachingStats";
+import { usePrivacy } from "@/lib/privacyContext";
 
 // ─── Count-up hook ───────────────────────────────────────────
 function useCountUp(target: number, duration = 1200, decimals = 0): string {
@@ -162,8 +163,9 @@ function UpdateModal({ stats, onSave, onClose }: {
 // ─── Component ───────────────────────────────────────────────
 export default function CoachingDashboard() {
   const { stats: rawStats, loading, save } = useCoachingStats();
+  const { hidden } = usePrivacy();
   // Ensure new fields have defaults even if Supabase snapshot pre-dates them
-  const c = { academieCA: 8_730, ...rawStats };
+  const c = { academieCA: 8_730, agenceCA: 29_436, ...rawStats };
   const [showModal, setShowModal] = useState(false);
 
   // Total closés = coaching HT + premium académie (tous closés en call)
@@ -206,7 +208,11 @@ export default function CoachingDashboard() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4" style={{
+        filter: hidden ? "blur(10px)" : "none",
+        transition: "filter 0.25s ease",
+        userSelect: hidden ? "none" : "auto",
+      }}>
         {/* Bookings */}
         <Link to="/coaching/leads" className="block p-5 transition-all duration-200" style={{ ...cardGlow, borderColor: "#a855f722" }}
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = "0 0 40px #a855f722"; }}
@@ -289,7 +295,12 @@ export default function CoachingDashboard() {
 
       {/* ── Revenus détaillés ── */}
       {!loading && (
-        <div className="p-5" style={{ ...cardGlow, borderColor: "rgba(139,92,246,0.2)" }}>
+        <div className="p-5" style={{
+          ...cardGlow, borderColor: "rgba(139,92,246,0.2)",
+          filter: hidden ? "blur(10px)" : "none",
+          transition: "filter 0.25s ease",
+          userSelect: hidden ? "none" : "auto",
+        }}>
           <p className="text-xs font-semibold uppercase tracking-wider mb-4" style={{ color: "rgba(255,255,255,0.3)" }}>
             Revenus — toutes sources
           </p>
@@ -304,9 +315,12 @@ export default function CoachingDashboard() {
               <p className="text-xl font-bold" style={{ color: "rgba(255,255,255,0.9)" }}>
                 <AnimatedNum value={c.caTotal} /> €
               </p>
-              <div className="mt-2 space-y-0.5">
+              <p className="text-xs font-semibold mt-1" style={{ color: "#4ade80" }}>
+                net Hugo ≈ {Math.round(c.caTotal / 3).toLocaleString("fr-FR")} €
+              </p>
+              <div className="mt-1.5 space-y-0.5">
                 <p className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
-                  {c.clients} client{c.clients !== 1 ? "s" : ""}
+                  {c.clients} client{c.clients !== 1 ? "s" : ""} · ÷3 associés
                 </p>
                 {c.clients > 0 && (
                   <p className="text-[11px] font-mono" style={{ color: "rgba(168,85,247,0.7)" }}>
@@ -346,9 +360,12 @@ export default function CoachingDashboard() {
               <p className="text-xl font-bold" style={{ color: "rgba(255,255,255,0.9)" }}>
                 <AnimatedNum value={c.academieCA} /> €
               </p>
-              <div className="mt-2 space-y-0.5">
+              <p className="text-xs font-semibold mt-1" style={{ color: "#4ade80" }}>
+                net Hugo ≈ {Math.round(c.academieCA / 3).toLocaleString("fr-FR")} €
+              </p>
+              <div className="mt-1.5 space-y-0.5">
                 <p className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
-                  {c.academiePayants} premium · 97 €/mois
+                  {c.academiePayants} premium · ÷3 associés
                 </p>
                 <p className="text-[11px] font-mono" style={{ color: "rgba(99,102,241,0.7)" }}>
                   historique · inactif
@@ -363,11 +380,14 @@ export default function CoachingDashboard() {
                 <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "#f59e0b" }}>Total cumulé</p>
               </div>
               <p className="text-xl font-bold" style={{ color: "rgba(255,255,255,0.9)" }}>
-                <AnimatedNum value={c.caTotal + c.formationPrix * c.formationVentes + c.academieCA} /> €
+                <AnimatedNum value={c.caTotal + c.formationPrix * c.formationVentes + c.academieCA + c.agenceCA} /> €
               </p>
-              <div className="mt-2 space-y-0.5">
+              <p className="text-xs font-semibold mt-1" style={{ color: "#4ade80" }}>
+                net Hugo ≈ {(Math.round(c.caTotal / 3) + Math.round(c.academieCA / 3) + c.agenceCA + c.formationPrix * c.formationVentes).toLocaleString("fr-FR")} €
+              </p>
+              <div className="mt-1.5 space-y-0.5">
                 <p className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
-                  HT + Formation + Académie
+                  HT + Académie + Agence + Formation
                 </p>
                 <p className="text-[11px] font-mono" style={{ color: "rgba(245,158,11,0.7)" }}>
                   {c.clients + c.formationVentes + c.academiePayants} acheteurs

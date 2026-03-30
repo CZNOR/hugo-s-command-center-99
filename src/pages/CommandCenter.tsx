@@ -12,6 +12,7 @@ import HomeParticles from "@/components/HomeParticles";
 import { useBusiness } from "@/lib/businessContext";
 import { useTasks } from "@/lib/taskContext";
 import { useCoachingStats } from "@/lib/coachingStats";
+import { usePrivacy } from "@/lib/privacyContext";
 
 // ─── Supabase helper ─────────────────────────────────────────
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
@@ -52,10 +53,14 @@ const MONTHLY_DATA = [
 // ─── Mobile overview ──────────────────────────────────────────
 function MobileOverview() {
   const { stats: rawStats } = useCoachingStats();
-  const c = { academieCA: 8_730, agenceCA: 22_636, ...rawStats };
+  const { hidden } = usePrivacy();
+  const c = { academieCA: 8_730, agenceCA: 29_436, ...rawStats };
 
   // CA global réel = Coaching HT + Académie + Formation + Agence
-  const caGlobal = c.caTotal + c.academieCA + c.formationPrix * c.formationVentes + c.agenceCA;
+  const caGlobal  = c.caTotal + c.academieCA + c.formationPrix * c.formationVentes + c.agenceCA;
+  // Net Hugo : coaching ÷3, académie ÷3, agence 100%, formation 100%
+  const netHugo   = Math.round(c.caTotal / 3) + Math.round(c.academieCA / 3)
+                  + c.agenceCA + c.formationPrix * c.formationVentes;
 
   return (
     <div className="md:hidden" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -65,6 +70,9 @@ function MobileOverview() {
         background: "rgba(255,255,255,0.03)",
         border: "1px solid rgba(255,255,255,0.07)",
         borderRadius: 20, overflow: "hidden",
+        filter: hidden ? "blur(10px)" : "none",
+        transition: "filter 0.25s ease",
+        userSelect: hidden ? "none" : "auto",
       }}>
         <div style={{ padding: "16px 16px 12px" }}>
           <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 4 }}>CA global cumulé</p>
@@ -74,6 +82,9 @@ function MobileOverview() {
             </span>
             <span style={{ fontSize: 12, fontWeight: 600, color: "#4ade80" }}>↑ total</span>
           </div>
+          <p style={{ fontSize: 11, color: "#4ade80", marginTop: 4 }}>
+            net Hugo ≈ <span style={{ fontWeight: 700 }}>{netHugo.toLocaleString("fr-FR")} €</span>
+          </p>
         </div>
 
         {/* Chart historique */}
@@ -99,14 +110,15 @@ function MobileOverview() {
         {/* Breakdown */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
           {[
-            { label: "Coaching HT", value: c.caTotal.toLocaleString("fr-FR") + " €",   color: "#a855f7" },
-            { label: "Académie",    value: c.academieCA.toLocaleString("fr-FR") + " €", color: "#818cf8" },
-            { label: "Agence",      value: c.agenceCA.toLocaleString("fr-FR") + " €",   color: "#22d3ee" },
-            { label: "Formation",   value: (c.formationPrix * c.formationVentes).toLocaleString("fr-FR") + " €", color: "#ec4899" },
+            { label: "Coaching HT", value: c.caTotal,                            net: Math.round(c.caTotal / 3),             color: "#a855f7" },
+            { label: "Académie",    value: c.academieCA,                          net: Math.round(c.academieCA / 3),          color: "#818cf8" },
+            { label: "Agence",      value: c.agenceCA,                            net: c.agenceCA,                            color: "#22d3ee" },
+            { label: "Formation",   value: c.formationPrix * c.formationVentes,   net: c.formationPrix * c.formationVentes,   color: "#ec4899" },
           ].map((m, i, arr) => (
             <div key={i} style={{ padding: "10px 8px", borderRight: i < arr.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
-              <p style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", marginBottom: 3 }}>{m.label}</p>
-              <p style={{ fontSize: 11, fontWeight: 700, color: m.color }}>{m.value}</p>
+              <p style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", marginBottom: 2 }}>{m.label}</p>
+              <p style={{ fontSize: 11, fontWeight: 700, color: m.color }}>{m.value.toLocaleString("fr-FR")} €</p>
+              <p style={{ fontSize: 9, color: "#4ade80", marginTop: 1 }}>net {m.net.toLocaleString("fr-FR")} €</p>
             </div>
           ))}
         </div>

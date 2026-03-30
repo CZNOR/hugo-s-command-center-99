@@ -14,8 +14,8 @@ interface Vente {
 
 type ViewMode = "chrono" | "client";
 
-// ─── Data (CSV Notion — Hugo + CM non-assignés) ───────────────
-// Total: 22 636€ — 36 ventes
+// ─── Data (CSV Notion — Hugo + CM non-assignés + retainer 2026) ─
+// Total: 29 436€ — 40 ventes
 const VENTES: Vente[] = [
   { id: "MADE-388", date: "2025-12-04", prestation: "CM Billio", client: "Alexandre Senek", montant: 1000, paiement: "Payer", livraison: "En cours" },
   { id: "MADE-377", date: "2025-11-30", prestation: "Créa x1", client: "Sofiane", montant: 40, paiement: "Payer", livraison: "Terminé" },
@@ -53,6 +53,11 @@ const VENTES: Vente[] = [
   { id: "MADE-318", date: "2025-01-13", prestation: "CM Tradamax IT", client: "Alexandre Senek", montant: 200, paiement: "Payer", livraison: "Terminé" },
   { id: "MADE-320", date: "2025-01-13", prestation: "CM Tradamax FR", client: "Alexandre Senek", montant: 1000, paiement: "Payer", livraison: "Terminé" },
   { id: "MADE-321", date: "2025-01-01", prestation: "CM Billio", client: "Alexandre Senek", montant: 1000, paiement: "Payer", livraison: "Terminé" },
+  // ── Retainer fixe 2026 — Alexandre Senek (1 700 €/mois) ──
+  { id: "RET-2026-01", date: "2026-01-01", prestation: "Retainer mensuel", client: "Alexandre Senek", montant: 1700, paiement: "Payer", livraison: "Terminé" },
+  { id: "RET-2026-02", date: "2026-02-01", prestation: "Retainer mensuel", client: "Alexandre Senek", montant: 1700, paiement: "Payer", livraison: "Terminé" },
+  { id: "RET-2026-03", date: "2026-03-01", prestation: "Retainer mensuel", client: "Alexandre Senek", montant: 1700, paiement: "Payer", livraison: "Terminé" },
+  { id: "RET-2026-04", date: "2026-04-01", prestation: "Retainer mensuel", client: "Alexandre Senek", montant: 1700, paiement: "En attente", livraison: "En cours" },
 ];
 
 const TOTAL_CA = VENTES.reduce((s, v) => s + v.montant, 0);

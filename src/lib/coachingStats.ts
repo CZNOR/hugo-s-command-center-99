@@ -32,7 +32,7 @@ export const COACHING_DEFAULTS: CoachingStats = {
   academieMembres: 236,
   academiePayants: 20,
   academieLives:   14,
-  agenceCA:        22_636, // CA agence (CSV Notion, Hugo + CM non-assignés — 36 ventes)
+  agenceCA:        29_436, // CA agence (Hugo + CM + retainer Senek 1 700€/mois jan-avr 2026)
 };
 
 // ─── Supabase ─────────────────────────────────────────────────
