@@ -64,8 +64,9 @@
 }
 
 html {
-  overflow-x: hidden;
+  overflow-x: clip; /* clip ne bloque pas le scroll vertical (contrairement à hidden) */
   max-width: 100%;
+  overflow-y: auto;
 }
 
 body {
@@ -74,13 +75,14 @@ body {
   font-family: 'Poppins', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
-  overflow-x: hidden;
+  overflow-x: clip;
+  overflow-y: auto;
   max-width: 100%;
   overscroll-behavior-y: contain;
 }
 
 #root {
-  overflow-x: hidden;
+  overflow-x: clip;
   max-width: 100vw;
 }
 

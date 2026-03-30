@@ -341,7 +341,7 @@ function AppLayoutInner() {
     : undefined;
 
   return (
-    <div style={{ background: "#07040F", minHeight: "100vh", animation: bgAnimation, overflowX: "hidden", maxWidth: "100vw" }}>
+    <div style={{ background: "#07040F", minHeight: "100vh", animation: bgAnimation, maxWidth: "100vw" }}>
       {showIntro && <WelcomeIntro onDone={() => setShowIntro(false)} />}
       {showOverlay && (
         <BizTransitionOverlay
