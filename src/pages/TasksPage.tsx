@@ -605,38 +605,38 @@ export default function TasksPage() {
 
   return (
     <div className="p-4 lg:p-6 min-h-screen max-w-6xl animate-fade-up">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: "#fff" }}>Tâches</h1>
-          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", marginTop: 2 }}>
-            {active} active{active !== 1 ? "s" : ""} · {done} terminée{done !== 1 ? "s" : ""}
-            {lateCount > 0 && <span style={{ color: "#ef4444", fontWeight: 700 }}> · {lateCount} en retard</span>}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* View toggle */}
-          <div className="flex rounded-lg overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.12)" }}>
-            <button onClick={() => setViewMode("categories")} style={{
-              padding: "6px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer", border: "none",
-              background: viewMode === "categories" ? "rgba(168,85,247,0.3)" : "rgba(255,255,255,0.05)",
-              color: viewMode === "categories" ? "#fff" : "rgba(255,255,255,0.55)",
-              transition: "all 0.15s",
-            }}>Catégories</button>
-            <button onClick={() => setViewMode("columns")} style={{
-              padding: "6px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer", border: "none",
-              background: viewMode === "columns" ? "rgba(168,85,247,0.3)" : "rgba(255,255,255,0.05)",
-              color: viewMode === "columns" ? "#fff" : "rgba(255,255,255,0.55)",
-              transition: "all 0.15s",
-            }}>Kanban</button>
+      {/* Header — 2 rows on mobile */}
+      <div className="mb-4">
+        <div className="flex items-start justify-between mb-3">
+          <div>
+            <h1 className="text-2xl font-bold" style={{ color: "#fff" }}>Tâches</h1>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", marginTop: 2 }}>
+              {active} actives · {done} terminées
+              {lateCount > 0 && <span style={{ color: "#ef4444", fontWeight: 700 }}> · {lateCount} en retard</span>}
+            </p>
           </div>
           <button
             onClick={() => openAdd()}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-white"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white flex-shrink-0"
             style={{ background: activeBusiness.gradient, boxShadow: `0 4px 12px ${activeBusiness.glow}` }}
           >
             <Plus className="w-4 h-4" /> Nouvelle tâche
           </button>
+        </div>
+        {/* View toggle — full width on mobile */}
+        <div className="flex rounded-xl overflow-hidden w-full" style={{ border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.04)" }}>
+          <button onClick={() => setViewMode("categories")} style={{
+            flex: 1, padding: "9px 0", fontSize: 13, fontWeight: 700, cursor: "pointer", border: "none",
+            background: viewMode === "categories" ? "rgba(168,85,247,0.35)" : "transparent",
+            color: viewMode === "categories" ? "#fff" : "rgba(255,255,255,0.5)",
+            transition: "all 0.2s",
+          }}>Par catégorie</button>
+          <button onClick={() => setViewMode("columns")} style={{
+            flex: 1, padding: "9px 0", fontSize: 13, fontWeight: 700, cursor: "pointer", border: "none",
+            background: viewMode === "columns" ? "rgba(168,85,247,0.35)" : "transparent",
+            color: viewMode === "columns" ? "#fff" : "rgba(255,255,255,0.5)",
+            transition: "all 0.2s",
+          }}>Kanban</button>
         </div>
       </div>
 
@@ -664,29 +664,32 @@ export default function TasksPage() {
       {/* ── CATEGORY VIEW ─────────────────────────────────── */}
       {viewMode === "categories" && (
         <>
-          {/* Category tabs */}
-          <div className="flex gap-2 mb-4 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+          {/* Category tabs — full width grid on mobile */}
+          <div className="grid grid-cols-5 gap-1.5 mb-4">
             {CAT_TABS.map(tab => {
               const count = tab.val === "all"
                 ? tasks.filter(t => t.status !== "done").length
                 : tasks.filter(t => t.business === tab.val && t.status !== "done").length;
+              const isActive = catFilter === tab.val;
               return (
                 <button key={tab.val} onClick={() => setCatFilter(tab.val)} style={{
-                  flexShrink: 0, padding: "7px 14px", borderRadius: 10, fontSize: 12, fontWeight: 700,
-                  cursor: "pointer", display: "flex", alignItems: "center", gap: 6, transition: "all 0.15s ease",
-                  background: catFilter === tab.val ? `${tab.color}25` : "rgba(255,255,255,0.05)",
-                  border: catFilter === tab.val ? `1.5px solid ${tab.color}` : "1.5px solid rgba(255,255,255,0.1)",
-                  color: catFilter === tab.val ? "#fff" : "rgba(255,255,255,0.65)",
+                  padding: "8px 4px", borderRadius: 10, fontSize: 11, fontWeight: 700,
+                  cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
+                  transition: "all 0.15s ease",
+                  background: isActive ? `${tab.color}30` : "rgba(255,255,255,0.06)",
+                  border: isActive ? `1.5px solid ${tab.color}` : "1.5px solid rgba(255,255,255,0.12)",
+                  color: isActive ? "#fff" : "rgba(255,255,255,0.7)",
                 }}>
                   {tab.val !== "all" && (
-                    <span style={{ width: 7, height: 7, borderRadius: "50%", background: tab.color, display: "inline-block", flexShrink: 0 }} />
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: tab.color, display: "inline-block",
+                      boxShadow: isActive ? `0 0 6px ${tab.color}` : "none" }} />
                   )}
-                  {tab.label}
+                  <span style={{ fontSize: 10, lineHeight: 1.2, textAlign: "center" }}>{tab.label}</span>
                   {count > 0 && (
                     <span style={{
-                      background: catFilter === tab.val ? tab.color : "rgba(255,255,255,0.12)",
-                      color: catFilter === tab.val ? "#fff" : "rgba(255,255,255,0.7)",
-                      borderRadius: 20, fontSize: 10, fontWeight: 700, padding: "0px 6px", minWidth: 18, textAlign: "center",
+                      background: isActive ? tab.color : "rgba(255,255,255,0.15)",
+                      color: "#fff", borderRadius: 20, fontSize: 9, fontWeight: 800,
+                      padding: "1px 5px", minWidth: 16, textAlign: "center",
                     }}>{count}</span>
                   )}
                 </button>
@@ -695,13 +698,13 @@ export default function TasksPage() {
           </div>
 
           {/* Status sub-filter */}
-          <div className="flex gap-2 mb-4 flex-wrap">
+          <div className="flex gap-2 mb-4 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
             {([["all", "Toutes"], ["todo", "À faire"], ["progress", "En cours"], ["done", "Terminées"]] as const).map(([val, label]) => (
               <button key={val} onClick={() => setStatusFilter(val)} style={{
-                padding: "5px 12px", borderRadius: 8, fontSize: 11, fontWeight: 600, cursor: "pointer",
-                background: statusFilter === val ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.04)",
-                border: statusFilter === val ? "1px solid rgba(255,255,255,0.3)" : "1px solid rgba(255,255,255,0.1)",
-                color: statusFilter === val ? "#fff" : "rgba(255,255,255,0.6)",
+                flexShrink: 0, padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                background: statusFilter === val ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.05)",
+                border: statusFilter === val ? "1px solid rgba(255,255,255,0.4)" : "1px solid rgba(255,255,255,0.12)",
+                color: "#fff",
                 transition: "all 0.15s ease",
               }}>{label}</button>
             ))}
