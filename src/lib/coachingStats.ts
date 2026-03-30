@@ -1,6 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 
 // ─── Types ───────────────────────────────────────────────────
+export interface MonthEntry {
+  m: string;        // label "Jan 25"
+  coaching: number; // CA coaching HT encaissé ce mois
+  academie: number; // CA académie ce mois
+  agence:   number; // CA agence (part Hugo) ce mois
+}
+
 export interface CoachingStats {
   // Coaching HT
   caTotal:      number;   // CA encaissé coaching HT €
@@ -9,32 +16,62 @@ export interface CoachingStats {
   tauxClosing:  number;   // taux de closing %
   dmSemaine:    number;   // DMs reçus / semaine
   // Formation
-  formationPrix:   number; // prix formation €
-  formationVentes: number; // ventes formation
-  // Made Académie (historique)
-  academieCA:      number; // CA total académie € (20 premium × 97€/mois)
-  academieMembres: number; // membres total
-  academiePayants: number; // membres payants (premium)
-  academieLives:   number; // lives organisés
-  // Agence (prestations de services)
-  agenceCA:        number; // CA total agence € (tous associés)
-  agenceNetHugo:   number; // CA agence part Hugo €
+  formationPrix:   number;
+  formationVentes: number;
+  // Made Académie
+  academieCA:      number;
+  academieMembres: number;
+  academiePayants: number;
+  academieLives:   number;
+  // Agence
+  agenceCA:        number; // CA total agence tous associés
+  agenceNetHugo:   number; // part Hugo
+  // Données mensuelles (graphique)
+  monthlyData: MonthEntry[];
 }
+
+// ─── Données mensuelles — sources exactes ────────────────────
+// Coaching : 9 clients avec dates exactes de signature
+//   Aoû 25 : Ayoub 2490 + Amèle 2397 + Yassine 2397 = 7 284
+//   Sep 25 : Shirlie 2200 + Aristote 3000 + Thomas 3000 = 8 200
+//   Oct 25 : Kryz Emile 2999
+//   Nov 25 : Flavio 3500
+//   Déc 25 : Lenny 3500    → total 25 483 ✓
+// Académie : Circle.so CSV — Oct 25 → Fév 26
+// Agence   : Notion CSV + retainer Senek Jan-Mar 26
+export const DEFAULT_MONTHLY: MonthEntry[] = [
+  { m: "Jan 25", coaching: 0,    academie: 0,    agence: 2200 },
+  { m: "Fév 25", coaching: 0,    academie: 0,    agence: 1000 },
+  { m: "Mar 25", coaching: 0,    academie: 0,    agence: 1200 },
+  { m: "Avr 25", coaching: 0,    academie: 0,    agence: 0    },
+  { m: "Mai 25", coaching: 0,    academie: 0,    agence: 1350 },
+  { m: "Jun 25", coaching: 0,    academie: 0,    agence: 4690 },
+  { m: "Jul 25", coaching: 0,    academie: 0,    agence: 3580 },
+  { m: "Aoû 25", coaching: 7284, academie: 0,    agence: 1475 },
+  { m: "Sep 25", coaching: 8200, academie: 0,    agence: 0    },
+  { m: "Oct 25", coaching: 2999, academie: 1940, agence: 1650 },
+  { m: "Nov 25", coaching: 3500, academie: 1940, agence: 4491 },
+  { m: "Déc 25", coaching: 3500, academie: 1940, agence: 1000 },
+  { m: "Jan 26", coaching: 0,    academie: 1940, agence: 1700 },
+  { m: "Fév 26", coaching: 0,    academie: 970,  agence: 1700 },
+  { m: "Mar 26", coaching: 0,    academie: 0,    agence: 1700 },
+];
 
 export const COACHING_DEFAULTS: CoachingStats = {
   caTotal:         25_483,
-  clients:         9,      // coaching HT uniquement
-  bookings:        165,    // total Cal.com
-  tauxClosing:     17.6,   // 29 closés (9 HT + 20 premium académie) / 165 bookings
+  clients:         9,
+  bookings:        165,
+  tauxClosing:     17.6,
   dmSemaine:       47,
   formationPrix:   990,
   formationVentes: 0,
-  academieCA:      8_730,  // 20 premium × 97€ × mois (calculé depuis CSV Circle.so)
+  academieCA:      8_730,
   academieMembres: 236,
   academiePayants: 20,
   academieLives:   14,
-  agenceCA:        50_523, // CA agence global tous associés (43 723€ CSV + 6 800€ retainers 2026)
-  agenceNetHugo:   29_436, // part Hugo (Hugo + CM non-assignés + retainer Senek jan-avr 2026)
+  agenceCA:        50_523,
+  agenceNetHugo:   29_436,
+  monthlyData:     DEFAULT_MONTHLY,
 };
 
 // ─── Supabase ─────────────────────────────────────────────────

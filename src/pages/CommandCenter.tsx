@@ -11,7 +11,7 @@ import AffiliateCopyButton from "@/components/AffiliateCopyButton";
 import HomeParticles from "@/components/HomeParticles";
 import { useBusiness } from "@/lib/businessContext";
 import { useTasks } from "@/lib/taskContext";
-import { useCoachingStats } from "@/lib/coachingStats";
+import { useCoachingStats, type MonthEntry } from "@/lib/coachingStats";
 import { usePrivacy } from "@/lib/privacyContext";
 
 // ─── Supabase helper ─────────────────────────────────────────
@@ -40,32 +40,6 @@ const VIOLET_COLOR  = "#a855f7";
 const VIOLET_DIM    = "#7c3aed";
 const VIOLET_GLOW   = "rgba(168,85,247,0.12)";
 
-// ─── Monthly CA data — données exactes (CSV Notion + tableau clients) ─
-// Coaching HT : 9 clients avec dates exactes de signature
-//   Aoû 25 : Ayoub 2490 + Amèle 2397 + Yassine 2397 = 7 284
-//   Sep 25 : Shirlie 2200 + Aristote 3000 + Thomas 3000 = 8 200
-//   Oct 25 : Kryz Emile 2999
-//   Nov 25 : Flavio 3500
-//   Déc 25 : Lenny 3500  → total : 25 483 ✓
-// Académie + Agence : données CSV Notion avec dates exactes
-const ALL_MONTHS = [
-  { m: "Jan 25", coaching: 0,    academie: 0,    agence: 2200 },
-  { m: "Fév 25", coaching: 0,    academie: 0,    agence: 1000 },
-  { m: "Mar 25", coaching: 0,    academie: 0,    agence: 1200 },
-  { m: "Avr 25", coaching: 0,    academie: 0,    agence: 0    },
-  { m: "Mai 25", coaching: 0,    academie: 0,    agence: 1350 },
-  { m: "Jun 25", coaching: 0,    academie: 0,    agence: 4690 },
-  { m: "Jul 25", coaching: 0,    academie: 0,    agence: 3580 },
-  { m: "Aoû 25", coaching: 7284, academie: 0,    agence: 1475 },
-  { m: "Sep 25", coaching: 8200, academie: 0,    agence: 0    },
-  { m: "Oct 25", coaching: 2999, academie: 1940, agence: 1650 },
-  { m: "Nov 25", coaching: 3500, academie: 1940, agence: 4491 },
-  { m: "Déc 25", coaching: 3500, academie: 1940, agence: 1000 },
-  { m: "Jan 26", coaching: 0,    academie: 1940, agence: 1700 },
-  { m: "Fév 26", coaching: 0,    academie: 970,  agence: 1700 },
-  { m: "Mar 26", coaching: 0,    academie: 0,    agence: 1700 },
-];
-
 type Period = "3M" | "6M" | "1an" | "2025";
 const PERIODS: { key: Period; label: string }[] = [
   { key: "3M",   label: "3M"   },
@@ -73,11 +47,11 @@ const PERIODS: { key: Period; label: string }[] = [
   { key: "1an",  label: "1an"  },
   { key: "2025", label: "2025" },
 ];
-function filterMonths(p: Period) {
-  if (p === "3M")   return ALL_MONTHS.slice(-3);            // Jan-Mar 26
-  if (p === "6M")   return ALL_MONTHS.slice(-6);            // Oct 25-Mar 26
-  if (p === "1an")  return ALL_MONTHS;                      // Jan 25-Mar 26 (tout)
-  return ALL_MONTHS.slice(0, 12);                           // Jan-Déc 2025 uniquement
+function filterMonths(months: MonthEntry[], p: Period) {
+  if (p === "3M")   return months.slice(-3);
+  if (p === "6M")   return months.slice(-6);
+  if (p === "1an")  return months;
+  return months.slice(0, 12); // Jan-Déc 2025
 }
 
 // ─── Mobile overview ──────────────────────────────────────────
@@ -87,8 +61,8 @@ function MobileOverview() {
   const c = { academieCA: 8_730, agenceCA: 50_523, agenceNetHugo: 29_436, ...rawStats };
   const [period, setPeriod] = useState<Period>("6M");
 
-  // Filtered chart data
-  const chartData = useMemo(() => filterMonths(period), [period]);
+  // Filtered chart data — from Supabase-backed monthlyData
+  const chartData = useMemo(() => filterMonths(c.monthlyData, period), [c.monthlyData, period]);
 
   // Period totals — cohérent avec les données mensuelles (agence = part Hugo)
   const pTotals = useMemo(() => {
