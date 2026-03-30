@@ -46,13 +46,13 @@ export const DEFAULT_MONTHLY: MonthEntry[] = [
   { m: "Avr 25", coaching: 0,    academie: 0,    agence: 0    },
   { m: "Mai 25", coaching: 0,    academie: 0,    agence: 1350 },
   { m: "Jun 25", coaching: 0,    academie: 0,    agence: 4690 },
-  { m: "Jul 25", coaching: 0,    academie: 0,    agence: 3580 },
+  { m: "Jul 25", coaching: 0,    academie: 0,    agence: 3385 },
   { m: "Aoû 25", coaching: 7284, academie: 0,    agence: 1475 },
   { m: "Sep 25", coaching: 8200, academie: 0,    agence: 0    },
   { m: "Oct 25", coaching: 2999, academie: 1940, agence: 1650 },
-  { m: "Nov 25", coaching: 3500, academie: 1940, agence: 2991 },
+  { m: "Nov 25", coaching: 3500, academie: 1940, agence: 2796 },
   { m: "Déc 25", coaching: 3500, academie: 1940, agence: 1000 },
-  { m: "Jan 26", coaching: 0,    academie: 0,    agence: 1700 },
+  { m: "Jan 26", coaching: 0,    academie: 0,    agence: 0    },
   { m: "Fév 26", coaching: 0,    academie: 0,    agence: 1700 },
   { m: "Mar 26", coaching: 0,    academie: 0,    agence: 1700 },
 ];
@@ -69,8 +69,8 @@ export const COACHING_DEFAULTS: CoachingStats = {
   academieMembres: 236,
   academiePayants: 20,
   academieLives:   14,
-  agenceCA:        49_023,
-  agenceNetHugo:   27_936,
+  agenceCA:        45_623,
+  agenceNetHugo:   25_846,
   monthlyData:     DEFAULT_MONTHLY,
 };
 

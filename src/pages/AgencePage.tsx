@@ -26,7 +26,7 @@ const VENTES: Vente[] = [
   { id: "MADE-383", date: "2025-11-12", prestation: "Vente de société", client: "Angello", montant: 1500, paiement: "Payer", livraison: "Terminé" },
   { id: "MADE-380", date: "2025-11-08", prestation: "Logo", client: "Alexandre Senek", montant: 220, paiement: "Payer", livraison: "Terminé" },
   { id: "MADE-378", date: "2025-11-07", prestation: "2 créa", client: "sabri bk", montant: 76, paiement: "Payer", livraison: "Terminé" },
-  { id: "MADE-379", date: "2025-11-07", prestation: "Site testing", client: "Dimitry santiago", montant: 390, paiement: "Acompte Payé", livraison: "Terminé" },
+  { id: "MADE-379", date: "2025-11-07", prestation: "Site testing", client: "Dimitry santiago", montant: 195, paiement: "Acompte Payé", livraison: "Scam 50%" },
   { id: "MADE-375", date: "2025-10-22", prestation: "Bannière", client: "sabri bk", montant: 110, paiement: "Payer", livraison: "Terminé" },
   { id: "MADE-376", date: "2025-10-21", prestation: "Pack logo", client: "Alexandre Senek", montant: 220, paiement: "Payer", livraison: "Terminé" },
   { id: "MADE-374", date: "2025-10-19", prestation: "4 Packaging", client: "ines", montant: 590, paiement: "Payer", livraison: "En attente" },
@@ -40,7 +40,7 @@ const VENTES: Vente[] = [
   { id: "MADE-354", date: "2025-08-17", prestation: "Batch story avis client x14/sem", client: "Alexandre Senek", montant: 100, paiement: "Payer", livraison: "En cours" },
   { id: "MADE-352", date: "2025-08-15", prestation: "Bannière académie trading", client: "Alexandre Senek", montant: 100, paiement: "Payer", livraison: "Terminé" },
   { id: "MADE-351", date: "2025-08-01", prestation: "CM Billio", client: "Alexandre Senek", montant: 1000, paiement: "Payer", livraison: "Terminé" },
-  { id: "MADE-233", date: "2025-07-15", prestation: "Recherche produit + brandé", client: "Geneviève", montant: 390, paiement: "Acompte Payé", livraison: "Terminé" },
+  { id: "MADE-233", date: "2025-07-15", prestation: "Recherche produit + brandé", client: "Geneviève", montant: 195, paiement: "Acompte Payé", livraison: "Scam 50%" },
   { id: "MADE-239", date: "2025-07-01", prestation: "CM Billio", client: "Alexandre Senek", montant: 1000, paiement: "Payer", livraison: "Terminé" },
   { id: "MADE-240", date: "2025-07-01", prestation: "Site Premium + Brand", client: "Aymane", montant: 2190, paiement: "Acompte Payé", livraison: "En cours" },
   { id: "MADE-247", date: "2025-06-04", prestation: "Site webflow", client: "Guilan", montant: 2000, paiement: "Payer", livraison: "Terminé" },
@@ -55,14 +55,13 @@ const VENTES: Vente[] = [
   { id: "MADE-320", date: "2025-01-13", prestation: "CM Tradamax FR", client: "Alexandre Senek", montant: 1000, paiement: "Payer", livraison: "Terminé" },
   { id: "MADE-321", date: "2025-01-01", prestation: "CM Billio", client: "Alexandre Senek", montant: 1000, paiement: "Payer", livraison: "Terminé" },
   // ── Retainer fixe 2026 — Alexandre Senek (1 700 €/mois) ──
-  { id: "RET-2026-01", date: "2026-01-01", prestation: "Retainer mensuel", client: "Alexandre Senek", montant: 1700, paiement: "Payer", livraison: "Terminé" },
   { id: "RET-2026-02", date: "2026-02-01", prestation: "Retainer mensuel", client: "Alexandre Senek", montant: 1700, paiement: "Payer", livraison: "Terminé" },
   { id: "RET-2026-03", date: "2026-03-01", prestation: "Retainer mensuel", client: "Alexandre Senek", montant: 1700, paiement: "Payer", livraison: "Terminé" },
   { id: "RET-2026-04", date: "2026-04-01", prestation: "Retainer mensuel", client: "Alexandre Senek", montant: 1700, paiement: "En attente", livraison: "En cours" },
 ];
 
 const NET_HUGO  = VENTES.reduce((s, v) => s + v.montant, 0); // part Hugo (Hugo + CM non-assignés + retainer)
-const TOTAL_CA  = 42_223 + 6_800; // CA global agence tous associés (43 723€ CSV -1500€ Angello + 6 800€ retainers 2026)
+const TOTAL_CA  = 40_333 + 5_100; // CA global agence tous associés (CSV -scams -jan retainer + retainers fév-avr 2026)
 
 // ─── Styles ──────────────────────────────────────────────────
 const card: React.CSSProperties = {
