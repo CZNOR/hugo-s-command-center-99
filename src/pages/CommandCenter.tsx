@@ -66,18 +66,18 @@ const ALL_MONTHS = [
   { m: "Mar 26", coaching: 0,    academie: 0,    agence: 1700 },
 ];
 
-type Period = "3M" | "6M" | "2025" | "Tout";
+type Period = "3M" | "6M" | "1an" | "2025";
 const PERIODS: { key: Period; label: string }[] = [
   { key: "3M",   label: "3M"   },
   { key: "6M",   label: "6M"   },
+  { key: "1an",  label: "1an"  },
   { key: "2025", label: "2025" },
-  { key: "Tout", label: "Tout" },
 ];
 function filterMonths(p: Period) {
-  if (p === "3M")   return ALL_MONTHS.slice(-3);
-  if (p === "6M")   return ALL_MONTHS.slice(-6);
-  if (p === "2025") return ALL_MONTHS.slice(0, 12);   // Jan 25 → Déc 25
-  return ALL_MONTHS;                                   // Tout
+  if (p === "3M")   return ALL_MONTHS.slice(-3);            // Jan-Mar 26
+  if (p === "6M")   return ALL_MONTHS.slice(-6);            // Oct 25-Mar 26
+  if (p === "1an")  return ALL_MONTHS;                      // Jan 25-Mar 26 (tout)
+  return ALL_MONTHS.slice(0, 12);                           // Jan-Déc 2025 uniquement
 }
 
 // ─── Mobile overview ──────────────────────────────────────────
@@ -117,7 +117,7 @@ function MobileOverview() {
         <div style={{ padding: "16px 16px 10px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
             <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 4 }}>
-              CA {period === "Tout" ? "cumulé (Jan 25 → Mar 26)" : period === "2025" ? "année 2025" : `sur ${period}`}
+              CA {period === "1an" ? "Jan 25 → Mar 26" : period === "2025" ? "année 2025" : `sur ${period}`}
             </p>
             <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
               <span style={{ fontSize: 28, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
