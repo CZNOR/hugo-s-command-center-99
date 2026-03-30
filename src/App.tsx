@@ -21,6 +21,7 @@ import BeaconsPage from "@/pages/BeaconsPage";
 import LeadsPage from "@/pages/LeadsPage";
 import PaiementsPage from "@/pages/PaiementsPage";
 import ClientsPage from "@/pages/ClientsPage";
+import AgencePage from "@/pages/AgencePage";
 import EquipePage from "@/pages/EquipePage";
 import CasinoDashboard from "@/pages/CasinoDashboard";
 import CasinoSocialPage from "@/pages/CasinoSocialPage";
@@ -54,6 +55,7 @@ const App = () => (
             <Route path="/coaching/beacons" element={<BeaconsPage />} />
             <Route path="/coaching/leads" element={<LeadsPage />} />
             <Route path="/coaching/clients" element={<ClientsPage />} />
+            <Route path="/coaching/agence" element={<AgencePage />} />
             <Route path="/coaching/paiements" element={<PaiementsPage />} />
             <Route path="/coaching/equipe" element={<EquipePage />} />
             {/* Casino */}

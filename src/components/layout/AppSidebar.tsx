@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation, Link } from "react-router-dom";
 import {
   Calendar, CheckSquare, LayoutDashboard, TrendingUp,
-  Phone, DollarSign, Edit2, Users, Settings, Flame, Link2, Check, X,
+  Phone, DollarSign, Edit2, Users, Settings, Flame, Link2, Check, X, Building2,
 } from "lucide-react";
 import { useBusiness, type BusinessId } from "@/lib/businessContext";
 import { gamificationProfile } from "@/lib/mock-data";
@@ -29,6 +29,7 @@ const COACHING_ITEMS: NavItem[] = [
   { path: "/coaching/social",    label: "Réseaux sociaux", icon: TrendingUp      },
   { path: "/coaching/leads",     label: "Leads & Appels",  icon: Phone           },
   { path: "/coaching/clients",   label: "Clients",         icon: Users           },
+  { path: "/coaching/agence",    label: "Agence",          icon: Building2       },
   { path: "/coaching/paiements", label: "Paiements",       icon: DollarSign      },
   { path: "/content",            label: "Contenu",         icon: Edit2           },
 ];

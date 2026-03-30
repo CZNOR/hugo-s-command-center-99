@@ -16,6 +16,8 @@ export interface CoachingStats {
   academieMembres: number; // membres total
   academiePayants: number; // membres payants (premium)
   academieLives:   number; // lives organisés
+  // Agence (prestations de services)
+  agenceCA:        number; // CA total agence €
 }
 
 export const COACHING_DEFAULTS: CoachingStats = {
@@ -30,6 +32,7 @@ export const COACHING_DEFAULTS: CoachingStats = {
   academieMembres: 236,
   academiePayants: 20,
   academieLives:   14,
+  agenceCA:        43_723, // CA agence (CSV Notion, Hugo + non-assigné)
 };
 
 // ─── Supabase ─────────────────────────────────────────────────
