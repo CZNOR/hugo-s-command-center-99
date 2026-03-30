@@ -40,22 +40,27 @@ const VIOLET_COLOR  = "#a855f7";
 const VIOLET_DIM    = "#7c3aed";
 const VIOLET_GLOW   = "rgba(168,85,247,0.12)";
 
-// ─── Monthly CA data — toutes sources (Hugo) ──────────────────
-// coaching ÷3 = net Hugo | académie ÷3 = net Hugo | agence = 100% Hugo
-// Totaux : coaching 25 483 | académie 8 730 | agence Hugo 29 436
+// ─── Monthly CA data — données exactes (CSV Notion + tableau clients) ─
+// Coaching HT : 9 clients avec dates exactes de signature
+//   Aoû 25 : Ayoub 2490 + Amèle 2397 + Yassine 2397 = 7 284
+//   Sep 25 : Shirlie 2200 + Aristote 3000 + Thomas 3000 = 8 200
+//   Oct 25 : Kryz Emile 2999
+//   Nov 25 : Flavio 3500
+//   Déc 25 : Lenny 3500  → total : 25 483 ✓
+// Académie + Agence : données CSV Notion avec dates exactes
 const ALL_MONTHS = [
-  { m: "Jan 25", coaching: 2500, academie: 0,    agence: 2200 },
-  { m: "Fév 25", coaching: 3200, academie: 0,    agence: 1000 },
-  { m: "Mar 25", coaching: 2800, academie: 0,    agence: 1200 },
-  { m: "Avr 25", coaching: 1800, academie: 0,    agence: 0    },
-  { m: "Mai 25", coaching: 2483, academie: 0,    agence: 1350 },
-  { m: "Jun 25", coaching: 3500, academie: 0,    agence: 4690 },
-  { m: "Jul 25", coaching: 2000, academie: 0,    agence: 3580 },
-  { m: "Aoû 25", coaching: 0,    academie: 0,    agence: 1475 },
-  { m: "Sep 25", coaching: 3500, academie: 0,    agence: 0    },
-  { m: "Oct 25", coaching: 0,    academie: 1940, agence: 1650 },
-  { m: "Nov 25", coaching: 1700, academie: 1940, agence: 4491 },
-  { m: "Déc 25", coaching: 2000, academie: 1940, agence: 1000 },
+  { m: "Jan 25", coaching: 0,    academie: 0,    agence: 2200 },
+  { m: "Fév 25", coaching: 0,    academie: 0,    agence: 1000 },
+  { m: "Mar 25", coaching: 0,    academie: 0,    agence: 1200 },
+  { m: "Avr 25", coaching: 0,    academie: 0,    agence: 0    },
+  { m: "Mai 25", coaching: 0,    academie: 0,    agence: 1350 },
+  { m: "Jun 25", coaching: 0,    academie: 0,    agence: 4690 },
+  { m: "Jul 25", coaching: 0,    academie: 0,    agence: 3580 },
+  { m: "Aoû 25", coaching: 7284, academie: 0,    agence: 1475 },
+  { m: "Sep 25", coaching: 8200, academie: 0,    agence: 0    },
+  { m: "Oct 25", coaching: 2999, academie: 1940, agence: 1650 },
+  { m: "Nov 25", coaching: 3500, academie: 1940, agence: 4491 },
+  { m: "Déc 25", coaching: 3500, academie: 1940, agence: 1000 },
   { m: "Jan 26", coaching: 0,    academie: 1940, agence: 1700 },
   { m: "Fév 26", coaching: 0,    academie: 970,  agence: 1700 },
   { m: "Mar 26", coaching: 0,    academie: 0,    agence: 1700 },
@@ -174,17 +179,26 @@ function MobileOverview() {
                 interval={chartData.length > 6 ? 1 : 0}
               />
               <YAxis hide domain={[0, "auto"]} />
-              <Tooltip
-                contentStyle={{
-                  background: "#0d0d1a", border: "1px solid rgba(255,255,255,0.12)",
-                  borderRadius: 12, fontSize: 12, padding: "10px 14px",
-                }}
-                labelStyle={{ color: "rgba(255,255,255,0.6)", fontWeight: 600, marginBottom: 6, display: "block" }}
-                formatter={(v: number, name: string) => {
-                  const labels: Record<string, string> = { coaching: "Coaching HT", academie: "Académie", agence: "Agence" };
-                  return [v.toLocaleString("fr-FR") + " €", labels[name] ?? name];
-                }}
-              />
+              <Tooltip content={({ active, payload, label }) => {
+                if (!active || !payload?.length) return null;
+                const coaching = payload.find((p: any) => p.dataKey === "coaching")?.value ?? 0;
+                const academie = payload.find((p: any) => p.dataKey === "academie")?.value ?? 0;
+                const agence   = payload.find((p: any) => p.dataKey === "agence")?.value ?? 0;
+                const total    = coaching + academie + agence;
+                const net      = Math.round(coaching / 3) + Math.round(academie / 3) + agence;
+                return (
+                  <div style={{ background: "#0d0d1a", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 12, padding: "10px 14px", fontSize: 12, minWidth: 160 }}>
+                    <p style={{ color: "rgba(255,255,255,0.55)", fontWeight: 700, marginBottom: 8, letterSpacing: "0.02em" }}>{label}</p>
+                    {coaching > 0 && <p style={{ color: "#a855f7", marginBottom: 3 }}>Coaching HT : <b>{coaching.toLocaleString("fr-FR")} €</b></p>}
+                    {academie > 0 && <p style={{ color: "#818cf8", marginBottom: 3 }}>Académie : <b>{academie.toLocaleString("fr-FR")} €</b></p>}
+                    {agence   > 0 && <p style={{ color: "#22d3ee", marginBottom: 3 }}>Agence : <b>{agence.toLocaleString("fr-FR")} €</b></p>}
+                    <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", marginTop: 8, paddingTop: 8 }}>
+                      <p style={{ color: "rgba(255,255,255,0.85)", fontWeight: 700, marginBottom: 3 }}>Total : {total.toLocaleString("fr-FR")} €</p>
+                      <p style={{ color: "#4ade80", fontWeight: 700, fontSize: 11 }}>net Hugo ≈ {net.toLocaleString("fr-FR")} €</p>
+                    </div>
+                  </div>
+                );
+              }} />
               <Area type="monotone" dataKey="agence"   stackId="a" stroke="#22d3ee" strokeWidth={1.5} fill="url(#gAgence)"   />
               <Area type="monotone" dataKey="academie"  stackId="a" stroke="#818cf8" strokeWidth={1.5} fill="url(#gAcademie)"  />
               <Area type="monotone" dataKey="coaching"  stackId="a" stroke="#a855f7" strokeWidth={2}   fill="url(#gCoaching)"  />

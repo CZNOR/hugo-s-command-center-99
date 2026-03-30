@@ -394,10 +394,6 @@ function AppLayoutInner() {
           minHeight: "100vh",
           position: "relative",
           zIndex: 1,
-          filter: hidden ? "blur(14px)" : "none",
-          transition: "filter 0.3s ease",
-          userSelect: hidden ? "none" : "auto",
-          pointerEvents: hidden ? "none" : "auto",
         }}
       >
         <div className="p-4 lg:p-6">

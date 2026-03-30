@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { Search, ChevronDown, ChevronUp, Building2 } from "lucide-react";
+import { usePrivacy } from "@/lib/privacyContext";
 
 // ─── Types ───────────────────────────────────────────────────
 interface Vente {
@@ -96,6 +97,7 @@ function paiementBadge(p: string) {
 function VenteRow({ v }: { v: Vente }) {
   const liv  = livraisonBadge(v.livraison);
   const pay  = paiementBadge(v.paiement);
+  const { hidden } = usePrivacy();
   return (
     <div className="flex items-center gap-3 p-3 rounded-xl"
       style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(34,211,238,0.07)" }}>
@@ -113,7 +115,13 @@ function VenteRow({ v }: { v: Vente }) {
           style={{ background: liv.bg, color: liv.color }}>{v.livraison}</span>
         <span className="text-[10px] px-2 py-0.5 rounded-full hidden md:inline-flex"
           style={{ background: pay.bg, color: pay.color }}>{v.paiement}</span>
-        <span className="text-sm font-bold tabular-nums" style={{ color: "#22d3ee" }}>
+        <span className="text-sm font-bold tabular-nums" style={{
+          color: "#22d3ee",
+          filter: hidden ? "blur(8px)" : "none",
+          transition: "filter 0.25s ease",
+          userSelect: hidden ? "none" : "auto",
+          display: "inline-block",
+        }}>
           {v.montant.toLocaleString("fr-FR")} €
         </span>
       </div>
@@ -163,6 +171,7 @@ function ClientGroup({ client, ventes }: { client: string; ventes: Vente[] }) {
 export default function AgencePage() {
   const [search,  setSearch]  = useState("");
   const [view,    setView]    = useState<ViewMode>("chrono");
+  const { hidden } = usePrivacy();
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -200,7 +209,8 @@ export default function AgencePage() {
       </div>
 
       {/* KPI cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4"
+        style={{ filter: hidden ? "blur(10px)" : "none", transition: "filter 0.25s ease", userSelect: hidden ? "none" : "auto" }}>
         {/* CA card — shows global + net Hugo */}
         <div className="p-4" style={cardGlow}>
           <span className="text-xl">💰</span>
