@@ -444,6 +444,89 @@ function CategoryGroupHeader({ biz, tasks }: { biz: TaskBusiness; tasks: Task[] 
   );
 }
 
+// ─── Category section (used in category view) ─────────────────
+function CategorySection({
+  biz, tasks, onEdit, onAdd,
+}: { biz: TaskBusiness; tasks: Task[]; onEdit: (t: Task) => void; onAdd: () => void }) {
+  const color = BIZ_COLORS[biz];
+  const todo     = tasks.filter(t => t.status === "todo");
+  const progress = tasks.filter(t => t.status === "progress");
+  const done     = tasks.filter(t => t.status === "done");
+  const doneCount = done.length;
+  const total     = tasks.length;
+
+  const StatusBlock = ({ items, col }: { items: Task[]; col: typeof COLUMNS[0] }) => {
+    if (items.length === 0) return null;
+    return (
+      <div className="mb-3">
+        <div className="flex items-center gap-1.5 mb-1.5">
+          <span style={{ fontSize: 9, fontWeight: 700, color: col.color, letterSpacing: "0.08em", textTransform: "uppercase" as const, opacity: 0.8 }}>
+            {col.emoji} {col.label}
+          </span>
+          <span style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", fontWeight: 600 }}>{items.length}</span>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          {items.map((t, i) => (
+            <TaskCard key={t.id} task={t} onEdit={() => onEdit(t)} animationDelay={i * 25} />
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="rounded-2xl p-4 mb-3" style={{
+      background: `${color}08`,
+      border: `1px solid ${color}25`,
+    }}>
+      {/* Category header */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div style={{ width: 10, height: 10, borderRadius: "50%", background: color, boxShadow: `0 0 8px ${color}80` }} />
+          <span style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>{BIZ_LABELS[biz]}</span>
+          <span style={{
+            background: `${color}20`, color, borderRadius: 20,
+            fontSize: 10, fontWeight: 700, padding: "1px 8px",
+          }}>{tasks.filter(t => t.status !== "done").length} actives</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", fontWeight: 500 }}>{doneCount}/{total} ✓</span>
+          {/* Mini progress bar */}
+          <div style={{ width: 48, height: 4, borderRadius: 99, background: "rgba(255,255,255,0.08)", overflow: "hidden" }}>
+            <div style={{ height: "100%", width: `${total === 0 ? 0 : Math.round((doneCount / total) * 100)}%`, background: color, borderRadius: 99, transition: "width 0.5s ease" }} />
+          </div>
+        </div>
+      </div>
+
+      {tasks.length === 0 ? (
+        <div className="text-center py-4">
+          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}>Aucune tâche</p>
+          <button onClick={onAdd} style={{
+            marginTop: 8, fontSize: 11, padding: "4px 12px", borderRadius: 8,
+            background: `${color}15`, border: `1px solid ${color}30`, color, cursor: "pointer",
+          }}>+ Ajouter</button>
+        </div>
+      ) : (
+        <>
+          <StatusBlock items={todo}     col={COLUMNS[0]} />
+          <StatusBlock items={progress} col={COLUMNS[1]} />
+          <StatusBlock items={done}     col={COLUMNS[2]} />
+          <button onClick={onAdd} style={{
+            width: "100%", padding: "7px 0", borderRadius: 8, cursor: "pointer", marginTop: 4,
+            background: "transparent", border: `1px dashed ${color}30`,
+            color: `${color}80`, fontSize: 11,
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+            transition: "all 0.15s",
+          }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = `${color}08`; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+          ><Plus className="w-3 h-3" /> Ajouter une tâche</button>
+        </>
+      )}
+    </div>
+  );
+}
+
 // ─── Main page ────────────────────────────────────────────────
 export default function TasksPage() {
   const { tasks, loading } = useTasks();
@@ -451,18 +534,17 @@ export default function TasksPage() {
   const [showModal,   setShowModal]   = useState(false);
   const [modalStatus, setModalStatus] = useState<TaskStatus>("todo");
   const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [filter,      setFilter]      = useState<"all" | "today" | "week" | "late">("all");
-  const [groupByBiz,  setGroupByBiz]  = useState(false);
+  const [viewMode,    setViewMode]    = useState<"columns" | "categories">("categories");
+  const [catFilter,   setCatFilter]   = useState<"all" | TaskBusiness>("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | TaskStatus>("all");
 
   const today   = new Date().toISOString().split("T")[0];
-  const weekEnd = useMemo(() => { const d = new Date(); d.setDate(d.getDate() + 7); return d.toISOString().split("T")[0]; }, []);
 
   const filtered = useMemo(() => tasks.filter(t => {
-    if (filter === "today") return t.deadline === today;
-    if (filter === "week")  return !!t.deadline && t.deadline >= today && t.deadline <= weekEnd;
-    if (filter === "late")  return !!t.deadline && t.deadline < today && t.status !== "done";
+    if (catFilter    !== "all" && t.business !== catFilter) return false;
+    if (statusFilter !== "all" && t.status   !== statusFilter) return false;
     return true;
-  }), [tasks, filter, today, weekEnd]);
+  }), [tasks, catFilter, statusFilter]);
 
   const openAdd = useCallback((status: TaskStatus = "todo") => {
     setModalStatus(status);
@@ -472,12 +554,22 @@ export default function TasksPage() {
   const active = useMemo(() => tasks.filter(t => t.status !== "done").length, [tasks]);
   const done   = useMemo(() => tasks.filter(t => t.status === "done").length, [tasks]);
 
+  // late count (deadline past and not done)
+  const lateCount = useMemo(() => tasks.filter(t => !!t.deadline && t.deadline < today && t.status !== "done").length, [tasks, today]);
+
   // Group tasks by business category within each column
   const getGroupedTasks = useCallback((colTasks: Task[]) => {
     const groups: Record<TaskBusiness, Task[]> = { coaching: [], casino: [], content: [], equipe: [] };
     for (const t of colTasks) groups[t.business].push(t);
     return (Object.entries(groups) as [TaskBusiness, Task[]][]).filter(([, arr]) => arr.length > 0);
   }, []);
+
+  // Tasks per business for category view
+  const tasksByBiz = useMemo(() => {
+    const r: Record<TaskBusiness, Task[]> = { coaching: [], casino: [], content: [], equipe: [] };
+    for (const t of filtered) r[t.business].push(t);
+    return r;
+  }, [filtered]);
 
   // ─── Skeleton loading state ───────────────────────────────
   if (loading) {
@@ -502,31 +594,45 @@ export default function TasksPage() {
     );
   }
 
+  // ─── Category view ────────────────────────────────────────
+  const CAT_TABS: { val: "all" | TaskBusiness; label: string; color: string }[] = [
+    { val: "all",      label: "Toutes",  color: "#a855f7" },
+    { val: "coaching", label: "Coaching", color: BIZ_COLORS.coaching },
+    { val: "casino",   label: "Casino",   color: BIZ_COLORS.casino },
+    { val: "content",  label: "Contenu",  color: BIZ_COLORS.content },
+    { val: "equipe",   label: "Équipe",   color: BIZ_COLORS.equipe },
+  ];
+
   return (
     <div className="p-4 lg:p-6 min-h-screen max-w-6xl animate-fade-up">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-5">
         <div>
-          <h1 className="text-2xl font-bold text-white/90">Tâches</h1>
-          <p className="text-sm text-white/40 mt-1">
+          <h1 className="text-2xl font-bold" style={{ color: "#fff" }}>Tâches</h1>
+          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", marginTop: 2 }}>
             {active} active{active !== 1 ? "s" : ""} · {done} terminée{done !== 1 ? "s" : ""}
+            {lateCount > 0 && <span style={{ color: "#ef4444", fontWeight: 700 }}> · {lateCount} en retard</span>}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {/* Group toggle */}
-          <button
-            onClick={() => setGroupByBiz(g => !g)}
-            style={{
-              padding: "7px 12px", borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: "pointer",
-              background: groupByBiz ? "rgba(168,85,247,0.18)" : "rgba(255,255,255,0.04)",
-              border: groupByBiz ? "1px solid rgba(168,85,247,0.4)" : "1px solid rgba(255,255,255,0.08)",
-              color: groupByBiz ? "#a855f7" : "rgba(255,255,255,0.4)",
-              transition: "all 0.15s ease",
-            }}
-          >Grouper</button>
+          {/* View toggle */}
+          <div className="flex rounded-lg overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.12)" }}>
+            <button onClick={() => setViewMode("categories")} style={{
+              padding: "6px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer", border: "none",
+              background: viewMode === "categories" ? "rgba(168,85,247,0.3)" : "rgba(255,255,255,0.05)",
+              color: viewMode === "categories" ? "#fff" : "rgba(255,255,255,0.55)",
+              transition: "all 0.15s",
+            }}>Catégories</button>
+            <button onClick={() => setViewMode("columns")} style={{
+              padding: "6px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer", border: "none",
+              background: viewMode === "columns" ? "rgba(168,85,247,0.3)" : "rgba(255,255,255,0.05)",
+              color: viewMode === "columns" ? "#fff" : "rgba(255,255,255,0.55)",
+              transition: "all 0.15s",
+            }}>Kanban</button>
+          </div>
           <button
             onClick={() => openAdd()}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-white"
             style={{ background: activeBusiness.gradient, boxShadow: `0 4px 12px ${activeBusiness.glow}` }}
           >
             <Plus className="w-4 h-4" /> Nouvelle tâche
@@ -534,114 +640,158 @@ export default function TasksPage() {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-2 mb-6 flex-wrap">
-        {([["all", "Toutes"], ["today", "Aujourd'hui"], ["week", "Cette semaine"], ["late", "En retard"]] as const).map(([val, label]) => (
-          <button key={val} onClick={() => setFilter(val)} style={{
-            padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 500, cursor: "pointer",
-            background: filter === val ? `${activeBusiness.accent}22` : "rgba(255,255,255,0.04)",
-            border: filter === val ? `1px solid ${activeBusiness.accent}` : "1px solid rgba(255,255,255,0.08)",
-            color: filter === val ? activeBusiness.accent : "rgba(248,250,252,0.5)",
-            transition: "all 0.15s ease",
-          }}>{label}</button>
-        ))}
-      </div>
-
       {/* Progress overview bar */}
       {tasks.length > 0 && (
-        <div className="mb-6 p-3 rounded-xl flex items-center gap-4"
-          style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
+        <div className="mb-4 p-3 rounded-xl flex items-center gap-4"
+          style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
           {COLUMNS.map(col => {
-            const count = filtered.filter(t => t.status === col.status).length;
-            const total = filtered.length;
+            const count = tasks.filter(t => t.status === col.status).length;
+            const total = tasks.length;
             const pct = total === 0 ? 0 : Math.round((count / total) * 100);
             return (
               <div key={col.status} className="flex items-center gap-2 flex-1 min-w-0">
                 <div style={{ width: 8, height: 8, borderRadius: "50%", background: col.color, flexShrink: 0 }} />
-                <div style={{ flex: 1, height: 4, borderRadius: 99, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+                <div style={{ flex: 1, height: 4, borderRadius: 99, background: "rgba(255,255,255,0.08)", overflow: "hidden" }}>
                   <div style={{ height: "100%", width: `${pct}%`, background: col.color, borderRadius: 99, transition: "width 0.5s cubic-bezier(0.4,0,0.2,1)" }} />
                 </div>
-                <span style={{ fontSize: 10, color: col.color, fontWeight: 700, flexShrink: 0 }}>{count}</span>
+                <span style={{ fontSize: 10, color: "#fff", fontWeight: 700, flexShrink: 0 }}>{count}</span>
               </div>
             );
           })}
         </div>
       )}
 
-      {/* Columns */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {COLUMNS.map(col => {
-          const colTasks = filtered.filter(t => t.status === col.status);
-          const groups   = getGroupedTasks(colTasks);
+      {/* ── CATEGORY VIEW ─────────────────────────────────── */}
+      {viewMode === "categories" && (
+        <>
+          {/* Category tabs */}
+          <div className="flex gap-2 mb-4 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+            {CAT_TABS.map(tab => {
+              const count = tab.val === "all"
+                ? tasks.filter(t => t.status !== "done").length
+                : tasks.filter(t => t.business === tab.val && t.status !== "done").length;
+              return (
+                <button key={tab.val} onClick={() => setCatFilter(tab.val)} style={{
+                  flexShrink: 0, padding: "7px 14px", borderRadius: 10, fontSize: 12, fontWeight: 700,
+                  cursor: "pointer", display: "flex", alignItems: "center", gap: 6, transition: "all 0.15s ease",
+                  background: catFilter === tab.val ? `${tab.color}25` : "rgba(255,255,255,0.05)",
+                  border: catFilter === tab.val ? `1.5px solid ${tab.color}` : "1.5px solid rgba(255,255,255,0.1)",
+                  color: catFilter === tab.val ? "#fff" : "rgba(255,255,255,0.65)",
+                }}>
+                  {tab.val !== "all" && (
+                    <span style={{ width: 7, height: 7, borderRadius: "50%", background: tab.color, display: "inline-block", flexShrink: 0 }} />
+                  )}
+                  {tab.label}
+                  {count > 0 && (
+                    <span style={{
+                      background: catFilter === tab.val ? tab.color : "rgba(255,255,255,0.12)",
+                      color: catFilter === tab.val ? "#fff" : "rgba(255,255,255,0.7)",
+                      borderRadius: 20, fontSize: 10, fontWeight: 700, padding: "0px 6px", minWidth: 18, textAlign: "center",
+                    }}>{count}</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
 
-          return (
-            <div key={col.status} className="rounded-2xl p-4 flex flex-col gap-3" style={{
-              background: "rgba(255,255,255,0.025)",
-              border: "1px solid rgba(255,255,255,0.07)",
-            }}>
-              {/* Column header */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <ProgressRing done={col.status === "done" ? colTasks.length : 0} total={Math.max(colTasks.length, 1)} color={col.color} />
-                  <div>
-                    <span className="text-sm font-semibold" style={{ color: "rgba(255,255,255,0.7)" }}>{col.emoji} {col.label}</span>
+          {/* Status sub-filter */}
+          <div className="flex gap-2 mb-4 flex-wrap">
+            {([["all", "Toutes"], ["todo", "À faire"], ["progress", "En cours"], ["done", "Terminées"]] as const).map(([val, label]) => (
+              <button key={val} onClick={() => setStatusFilter(val)} style={{
+                padding: "5px 12px", borderRadius: 8, fontSize: 11, fontWeight: 600, cursor: "pointer",
+                background: statusFilter === val ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.04)",
+                border: statusFilter === val ? "1px solid rgba(255,255,255,0.3)" : "1px solid rgba(255,255,255,0.1)",
+                color: statusFilter === val ? "#fff" : "rgba(255,255,255,0.6)",
+                transition: "all 0.15s ease",
+              }}>{label}</button>
+            ))}
+          </div>
+
+          {/* Category sections */}
+          {catFilter === "all"
+            ? (["coaching", "casino", "content", "equipe"] as TaskBusiness[]).map(biz => (
+                <CategorySection
+                  key={biz}
+                  biz={biz}
+                  tasks={tasksByBiz[biz]}
+                  onEdit={setEditingTask}
+                  onAdd={() => openAdd("todo")}
+                />
+              ))
+            : (
+              <CategorySection
+                biz={catFilter as TaskBusiness}
+                tasks={tasksByBiz[catFilter as TaskBusiness]}
+                onEdit={setEditingTask}
+                onAdd={() => openAdd("todo")}
+              />
+            )
+          }
+        </>
+      )}
+
+      {/* ── KANBAN VIEW ───────────────────────────────────── */}
+      {viewMode === "columns" && (
+        <>
+          {/* Status filter chips */}
+          <div className="flex gap-2 mb-4 flex-wrap">
+            {([["all", "Toutes"], ["todo", "À faire"], ["progress", "En cours"], ["done", "Terminées"]] as const).map(([val, label]) => (
+              <button key={val} onClick={() => setStatusFilter(val as any)} style={{
+                padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                background: statusFilter === val ? `${activeBusiness.accent}22` : "rgba(255,255,255,0.05)",
+                border: statusFilter === val ? `1px solid ${activeBusiness.accent}` : "1px solid rgba(255,255,255,0.1)",
+                color: statusFilter === val ? activeBusiness.accent : "rgba(255,255,255,0.7)",
+                transition: "all 0.15s ease",
+              }}>{label}</button>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {COLUMNS.map(col => {
+              const colTasks = filtered.filter(t => t.status === col.status);
+              const groups   = getGroupedTasks(colTasks);
+              return (
+                <div key={col.status} className="rounded-2xl p-4 flex flex-col gap-3" style={{
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.09)",
+                }}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <ProgressRing done={col.status === "done" ? colTasks.length : 0} total={Math.max(colTasks.length, 1)} color={col.color} />
+                      <span className="text-sm font-bold" style={{ color: "#fff" }}>{col.emoji} {col.label}</span>
+                    </div>
+                    <span style={{ background: `${col.color}20`, color: col.color, borderRadius: 20, fontSize: 11, fontWeight: 700, padding: "2px 9px" }}>{colTasks.length}</span>
                   </div>
-                </div>
-                <span style={{
-                  background: `${col.color}18`, color: col.color,
-                  borderRadius: 20, fontSize: 11, fontWeight: 700, padding: "2px 9px",
-                }}>{colTasks.length}</span>
-              </div>
-
-              {/* Task list */}
-              <div className="flex flex-col gap-2" style={{ minHeight: 60 }}>
-                {colTasks.length === 0
-                  ? <EmptyState status={col.status} onAdd={() => openAdd(col.status)} />
-                  : groupByBiz
-                    ? groups.map(([biz, bizTasks]) => (
-                        <div key={biz}>
-                          <CategoryGroupHeader biz={biz} tasks={bizTasks} />
-                          <div className="flex flex-col gap-1.5 pl-1">
-                            {bizTasks.map((t, i) => (
-                              <TaskCard
-                                key={t.id}
-                                task={t}
-                                onEdit={() => setEditingTask(t)}
-                                animationDelay={i * 30}
-                              />
-                            ))}
+                  <div className="flex flex-col gap-2" style={{ minHeight: 60 }}>
+                    {colTasks.length === 0
+                      ? <EmptyState status={col.status} onAdd={() => openAdd(col.status)} />
+                      : groups.map(([biz, bizTasks]) => (
+                          <div key={biz}>
+                            <CategoryGroupHeader biz={biz} tasks={bizTasks} />
+                            <div className="flex flex-col gap-1.5 pl-1">
+                              {bizTasks.map((t, i) => <TaskCard key={t.id} task={t} onEdit={() => setEditingTask(t)} animationDelay={i * 30} />)}
+                            </div>
+                            <div style={{ height: 8 }} />
                           </div>
-                          <div style={{ height: 8 }} />
-                        </div>
-                      ))
-                    : colTasks.map((t, i) => (
-                        <TaskCard
-                          key={t.id}
-                          task={t}
-                          onEdit={() => setEditingTask(t)}
-                          animationDelay={i * 25}
-                        />
-                      ))
-                }
-              </div>
-
-              {/* Add button */}
-              <button onClick={() => openAdd(col.status)} style={{
-                width: "100%", padding: "8px 0", borderRadius: 8, cursor: "pointer",
-                background: "transparent", border: `1px dashed ${col.color}30`,
-                color: `${col.color}60`, fontSize: 12,
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
-                transition: "all 0.15s",
-              }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = `${col.color}08`; (e.currentTarget as HTMLElement).style.borderColor = `${col.color}60`; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.borderColor = `${col.color}30`; }}
-              >
-                <Plus className="w-3 h-3" /> Ajouter
-              </button>
-            </div>
-          );
-        })}
-      </div>
+                        ))
+                    }
+                  </div>
+                  <button onClick={() => openAdd(col.status)} style={{
+                    width: "100%", padding: "8px 0", borderRadius: 8, cursor: "pointer",
+                    background: "transparent", border: `1px dashed ${col.color}35`,
+                    color: `${col.color}80`, fontSize: 12,
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+                    transition: "all 0.15s",
+                  }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = `${col.color}08`; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+                  ><Plus className="w-3 h-3" /> Ajouter</button>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
 
       {showModal    && <AddModal onClose={() => setShowModal(false)} defaultStatus={modalStatus} />}
       {editingTask  && <EditModal task={editingTask} onClose={() => setEditingTask(null)} />}
