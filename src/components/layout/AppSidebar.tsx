@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation, Link } from "react-router-dom";
 import {
   Calendar, CheckSquare, LayoutDashboard, TrendingUp,
-  Phone, Mic, DollarSign, Edit2, Users, Settings, Flame, Link2, Check, X,
+  Phone, DollarSign, Edit2, Users, Settings, Flame, Link2, Check, X,
 } from "lucide-react";
 import { useBusiness, type BusinessId } from "@/lib/businessContext";
 import { gamificationProfile } from "@/lib/mock-data";
@@ -27,8 +27,8 @@ const TOP_ITEMS: NavItem[] = [
 const COACHING_ITEMS: NavItem[] = [
   { path: "/coaching",           label: "Dashboard",       icon: LayoutDashboard },
   { path: "/coaching/social",    label: "Réseaux sociaux", icon: TrendingUp      },
-  { path: "/coaching/leads",     label: "Leads",           icon: Phone           },
-  { path: "/coaching/appels",    label: "Appels",          icon: Mic             },
+  { path: "/coaching/leads",     label: "Leads & Appels",  icon: Phone           },
+  { path: "/coaching/clients",   label: "Clients",         icon: Users           },
   { path: "/coaching/paiements", label: "Paiements",       icon: DollarSign      },
   { path: "/content",            label: "Contenu",         icon: Edit2           },
 ];
