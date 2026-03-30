@@ -47,6 +47,7 @@ const VENTES: Vente[] = [
   { id: "MADE-248", date: "2025-06-02", prestation: "CM Billio", client: "Alexandre Senek", montant: 1000, paiement: "Payer", livraison: "Terminé" },
   { id: "MADE-253", date: "2025-06-02", prestation: "Accompagnement", client: "Lilo", montant: 1490, paiement: "Payer", livraison: "Terminé" },
   { id: "MADE-255", date: "2025-06-02", prestation: "6 créatives", client: "Alexandre Senek", montant: 200, paiement: "Payer", livraison: "Terminé" },
+  { id: "MADE-265", date: "2025-04-23", prestation: "Site premium", client: "Luka Metral", montant: 500, paiement: "Payer", livraison: "Terminé" },
   { id: "MADE-259", date: "2025-05-13", prestation: "Logo x2 DA", client: "Bryan Ecom", montant: 350, paiement: "Payer", livraison: "Terminé" },
   { id: "MADE-260", date: "2025-05-06", prestation: "CM Billio", client: "Alexandre Senek", montant: 1000, paiement: "Payer", livraison: "Terminé" },
   { id: "MADE-292", date: "2025-03-01", prestation: "CM Tradamax IT/FR", client: "Alexandre Senek", montant: 1200, paiement: "Payer", livraison: "Terminé" },
@@ -61,7 +62,7 @@ const VENTES: Vente[] = [
 ];
 
 const NET_HUGO  = VENTES.reduce((s, v) => s + v.montant, 0); // part Hugo (Hugo + CM non-assignés + retainer)
-const TOTAL_CA  = 40_333 + 5_100; // CA global agence tous associés (CSV -scams -jan retainer + retainers fév-avr 2026)
+const TOTAL_CA  = 40_833 + 5_100; // CA global agence tous associés (CSV -scams -jan retainer + retainers fév-avr 2026)
 
 // ─── Styles ──────────────────────────────────────────────────
 const card: React.CSSProperties = {

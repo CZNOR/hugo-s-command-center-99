@@ -52,7 +52,8 @@ const CLIENTS_AGENCE: ClientAgence[] = [
   { type: "agence", id: "ag8",  nom: "Dimitry Santiago", ca: 195,    projets: 1,  derniere: "2025-11-07" },
   { type: "agence", id: "ag9",  nom: "Geneviève",        ca: 195,    projets: 1,  derniere: "2025-07-15" },
   { type: "agence", id: "ag10", nom: "Bryan Ecom",       ca: 350,    projets: 1,  derniere: "2025-05-13" },
-  { type: "agence", id: "ag11", nom: "Sofiane",          ca: 40,     projets: 1,  derniere: "2025-11-30" },
+  { type: "agence", id: "ag11", nom: "Luka Metral",      ca: 500,    projets: 1,  derniere: "2025-04-23" },
+  { type: "agence", id: "ag12", nom: "Sofiane",          ca: 40,     projets: 1,  derniere: "2025-11-30" },
 ];
 
 // ─── Data ────────────────────────────────────────────────────
@@ -68,27 +69,24 @@ const CLIENTS: Client[] = [
   { type: "ht", id: "ht8",  nom: "Flavio",       programme: "Accompagnement HT", montant: 3500, dateDebut: "2025-11-25" },
   { type: "ht", id: "ht9",  nom: "Lenny",        programme: "Accompagnement HT", montant: 3500, dateDebut: "2025-12-16" },
 
-  // ── Académie Premium (20) — tous closés en call ──
-  { type: "premium", id: "ac1",  nom: "Sheyma",          email: "sheymaelqoqui27@gmail.com",   joinDate: "2025-08-05", lastActive: "2026-03-22", location: "France", actif30j: true,  ltv: 485, posts: 0, activityScore: 1.97 },
-  { type: "premium", id: "ac2",  nom: "Ali",             email: "tarfa_ali@hotmail.com",        joinDate: "2025-08-05", lastActive: "2025-12-11", location: "France", actif30j: false, ltv: 485, posts: 1, activityScore: 0 },
-  { type: "premium", id: "ac3",  nom: "Amèle",           email: "amele.hellal@gmail.com",       joinDate: "2025-08-05", lastActive: "2026-01-12", location: "France", actif30j: false, ltv: 485, posts: 0, activityScore: 0 },
-  { type: "premium", id: "ac4",  nom: "Geneviève",       email: "queen9.tg@gmail.com",          joinDate: "2025-08-05", lastActive: "2025-09-11", location: "France", actif30j: false, ltv: 485, posts: 0, activityScore: 0 },
-  { type: "premium", id: "ac5",  nom: "Hugo Pottier",    email: "hugo.pottier.1161@gmail.com",  joinDate: "2025-08-05", lastActive: "2026-03-16", location: "France", actif30j: true,  ltv: 485, posts: 0, activityScore: 0 },
-  { type: "premium", id: "ac6",  nom: "Rizk",            email: "rizk.sarouphim@gmail.com",     joinDate: "2025-08-05", lastActive: "2025-12-30", location: "Canada", actif30j: false, ltv: 485, posts: 0, activityScore: 0 },
-  { type: "premium", id: "ac7",  nom: "Reda",            email: "reda-2008@gmx.fr",             joinDate: "2025-08-05", lastActive: "2026-02-05", location: "France", actif30j: false, ltv: 485, posts: 0, activityScore: 0 },
-  { type: "premium", id: "ac8",  nom: "Samy",            email: "premiumoui@gmail.com",         joinDate: "2025-08-06", lastActive: "2025-12-07", location: "France", actif30j: false, ltv: 485, posts: 1, activityScore: 0 },
-  { type: "premium", id: "ac9",  nom: "Ainoussa",        email: "ainoussa_boumed@yahoo.fr",     joinDate: "2025-08-06", lastActive: "2026-03-14", location: "Canada", actif30j: true,  ltv: 485, posts: 1, activityScore: 0 },
-  { type: "premium", id: "ac10", nom: "Rachid",          email: "rachid.amlouka89@gmail.com",   joinDate: "2025-08-06", lastActive: "2026-02-02", location: "France", actif30j: false, ltv: 485, posts: 3, activityScore: 0 },
-  { type: "premium", id: "ac11", nom: "Chahine",         email: "booggiestyle@hotmail.com",     joinDate: "2025-08-08", lastActive: "2026-03-19", location: "France", actif30j: true,  ltv: 485, posts: 3, activityScore: 5 },
-  { type: "premium", id: "ac12", nom: "Antoine",         email: "antoine.vyc@hotmail.com",      joinDate: "2025-08-09", lastActive: "2026-02-02", location: "France", actif30j: false, ltv: 485, posts: 3, activityScore: 0 },
-  { type: "premium", id: "ac13", nom: "Kryzz",           email: "emilegozan90@gmail.com",       joinDate: "2025-08-11", lastActive: "2026-02-27", location: "France", actif30j: true,  ltv: 485, posts: 0, activityScore: 1 },
-  { type: "premium", id: "ac14", nom: "Manu",            email: "salemdcom@gmail.com",          joinDate: "2025-08-12", lastActive: "2025-11-23", location: "Israel", actif30j: false, ltv: 485, posts: 2, activityScore: 0 },
-  { type: "premium", id: "ac15", nom: "Karine",          email: "shourock@yahoo.fr",            joinDate: "2025-08-13", lastActive: "2025-11-28", location: "France", actif30j: false, ltv: 485, posts: 0, activityScore: 0 },
-  { type: "premium", id: "ac16", nom: "Ashley",          email: "bondeliashley@gmail.com",      joinDate: "2025-08-24", lastActive: "2025-10-18", location: "",       actif30j: false, ltv: 485, posts: 1, activityScore: 0 },
-  { type: "premium", id: "ac17", nom: "Ahmed Ibrahim",   email: "aibhraim01@gmail.com",         joinDate: "2025-09-14", lastActive: "2025-10-20", location: "France", actif30j: false, ltv: 388, posts: 0, activityScore: 0 },
-  { type: "premium", id: "ac18", nom: "Tom",             email: "tbrignolas@gmail.com",         joinDate: "2025-10-06", lastActive: "2026-03-03", location: "France", actif30j: true,  ltv: 291, posts: 0, activityScore: 0 },
+  // ── Académie Premium payants (16) — Oct–Déc 25, LTV max 3 mois = 291€ ──
+  // Exclus : Amèle + Kryzz (coaching Elite, accès gratuit), Tom + Said (non comptés)
+  { type: "premium", id: "ac1",  nom: "Sheyma",          email: "sheymaelqoqui27@gmail.com",   joinDate: "2025-08-05", lastActive: "2026-03-22", location: "France", actif30j: true,  ltv: 291, posts: 0, activityScore: 1.97 },
+  { type: "premium", id: "ac2",  nom: "Ali",             email: "tarfa_ali@hotmail.com",        joinDate: "2025-08-05", lastActive: "2025-12-11", location: "France", actif30j: false, ltv: 291, posts: 1, activityScore: 0 },
+  { type: "premium", id: "ac4",  nom: "Geneviève",       email: "queen9.tg@gmail.com",          joinDate: "2025-08-05", lastActive: "2025-09-11", location: "France", actif30j: false, ltv: 291, posts: 0, activityScore: 0 },
+  { type: "premium", id: "ac5",  nom: "Hugo Pottier",    email: "hugo.pottier.1161@gmail.com",  joinDate: "2025-08-05", lastActive: "2026-03-16", location: "France", actif30j: true,  ltv: 291, posts: 0, activityScore: 0 },
+  { type: "premium", id: "ac6",  nom: "Rizk",            email: "rizk.sarouphim@gmail.com",     joinDate: "2025-08-05", lastActive: "2025-12-30", location: "Canada", actif30j: false, ltv: 291, posts: 0, activityScore: 0 },
+  { type: "premium", id: "ac7",  nom: "Reda",            email: "reda-2008@gmx.fr",             joinDate: "2025-08-05", lastActive: "2026-02-05", location: "France", actif30j: false, ltv: 291, posts: 0, activityScore: 0 },
+  { type: "premium", id: "ac8",  nom: "Samy",            email: "premiumoui@gmail.com",         joinDate: "2025-08-06", lastActive: "2025-12-07", location: "France", actif30j: false, ltv: 291, posts: 1, activityScore: 0 },
+  { type: "premium", id: "ac9",  nom: "Ainoussa",        email: "ainoussa_boumed@yahoo.fr",     joinDate: "2025-08-06", lastActive: "2026-03-14", location: "Canada", actif30j: true,  ltv: 291, posts: 1, activityScore: 0 },
+  { type: "premium", id: "ac10", nom: "Rachid",          email: "rachid.amlouka89@gmail.com",   joinDate: "2025-08-06", lastActive: "2026-02-02", location: "France", actif30j: false, ltv: 291, posts: 3, activityScore: 0 },
+  { type: "premium", id: "ac11", nom: "Chahine",         email: "booggiestyle@hotmail.com",     joinDate: "2025-08-08", lastActive: "2026-03-19", location: "France", actif30j: true,  ltv: 291, posts: 3, activityScore: 5 },
+  { type: "premium", id: "ac12", nom: "Antoine",         email: "antoine.vyc@hotmail.com",      joinDate: "2025-08-09", lastActive: "2026-02-02", location: "France", actif30j: false, ltv: 291, posts: 3, activityScore: 0 },
+  { type: "premium", id: "ac14", nom: "Manu",            email: "salemdcom@gmail.com",          joinDate: "2025-08-12", lastActive: "2025-11-23", location: "Israel", actif30j: false, ltv: 291, posts: 2, activityScore: 0 },
+  { type: "premium", id: "ac15", nom: "Karine",          email: "shourock@yahoo.fr",            joinDate: "2025-08-13", lastActive: "2025-11-28", location: "France", actif30j: false, ltv: 291, posts: 0, activityScore: 0 },
+  { type: "premium", id: "ac16", nom: "Ashley",          email: "bondeliashley@gmail.com",      joinDate: "2025-08-24", lastActive: "2025-10-18", location: "",       actif30j: false, ltv: 291, posts: 1, activityScore: 0 },
+  { type: "premium", id: "ac17", nom: "Ahmed Ibrahim",   email: "aibhraim01@gmail.com",         joinDate: "2025-09-14", lastActive: "2025-10-20", location: "France", actif30j: false, ltv: 291, posts: 0, activityScore: 0 },
   { type: "premium", id: "ac19", nom: "Dimitry Santiago",email: "dimitrymeric@gmail.com",       joinDate: "2025-11-06", lastActive: "2025-12-04", location: "France", actif30j: false, ltv: 194, posts: 0, activityScore: 0 },
-  { type: "premium", id: "ac20", nom: "Said",            email: "said.afroune213@gmail.com",    joinDate: "2026-01-30", lastActive: "2026-03-16", location: "France", actif30j: true,  ltv: 97,  posts: 1, activityScore: 0 },
 ];
 
 const MONTH_FR = ["Jan","Fév","Mar","Avr","Mai","Juin","Juil","Août","Sep","Oct","Nov","Déc"];

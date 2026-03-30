@@ -43,7 +43,7 @@ export const DEFAULT_MONTHLY: MonthEntry[] = [
   { m: "Jan 25", coaching: 0,    academie: 0,    agence: 2200 },
   { m: "Fév 25", coaching: 0,    academie: 0,    agence: 1000 },
   { m: "Mar 25", coaching: 0,    academie: 0,    agence: 1200 },
-  { m: "Avr 25", coaching: 0,    academie: 0,    agence: 0    },
+  { m: "Avr 25", coaching: 0,    academie: 0,    agence: 500  },
   { m: "Mai 25", coaching: 0,    academie: 0,    agence: 1350 },
   { m: "Jun 25", coaching: 0,    academie: 0,    agence: 4690 },
   { m: "Jul 25", coaching: 0,    academie: 0,    agence: 3385 },
@@ -67,10 +67,10 @@ export const COACHING_DEFAULTS: CoachingStats = {
   formationVentes: 0,
   academieCA:      5_820,
   academieMembres: 236,
-  academiePayants: 20,
+  academiePayants: 16,
   academieLives:   14,
   agenceCA:        45_623,
-  agenceNetHugo:   25_846,
+  agenceNetHugo:   26_346,
   monthlyData:     DEFAULT_MONTHLY,
 };
 

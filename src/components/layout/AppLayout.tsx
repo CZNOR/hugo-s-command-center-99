@@ -341,7 +341,7 @@ function AppLayoutInner() {
     : undefined;
 
   return (
-    <div style={{ background: "#07040F", minHeight: "100vh", animation: bgAnimation }}>
+    <div style={{ background: "#07040F", minHeight: "100vh", animation: bgAnimation, overflowX: "hidden", maxWidth: "100vw" }}>
       {showIntro && <WelcomeIntro onDone={() => setShowIntro(false)} />}
       {showOverlay && (
         <BizTransitionOverlay
@@ -358,7 +358,7 @@ function AppLayoutInner() {
         ref={parallaxRef}
         style={{
           position: "fixed",
-          inset: "-20px",
+          inset: 0,
           pointerEvents: "none",
           zIndex: 0,
           background: isCoaching
