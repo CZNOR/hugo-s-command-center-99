@@ -3,7 +3,7 @@ import { Mail, MapPin, Calendar, DollarSign, BookOpen, Trophy, ChevronDown, Chev
 import { useCoachingStats } from "@/lib/coachingStats";
 
 // ─── Types ───────────────────────────────────────────────────
-type ClientType = "ht" | "premium";
+type ClientType = "ht" | "premium" | "agence";
 
 interface ClientHT {
   type: "ht";
@@ -28,7 +28,32 @@ interface ClientPremium {
   activityScore: number;
 }
 
-type Client = ClientHT | ClientPremium;
+interface ClientAgence {
+  type: "agence";
+  id: string;
+  nom: string;
+  ca: number;      // total encaissé (part Hugo)
+  projets: number; // nb transactions
+  derniere: string; // date dernière vente
+}
+
+type Client = ClientHT | ClientPremium | ClientAgence;
+
+// ─── Data agence ─────────────────────────────────────────────
+// CA = part Hugo uniquement (VENTES Notion, triés par CA desc)
+const CLIENTS_AGENCE: ClientAgence[] = [
+  { type: "agence", id: "ag1",  nom: "Alexandre Senek",  ca: 17_800, projets: 26, derniere: "2026-04-01" },
+  { type: "agence", id: "ag2",  nom: "Angello",          ca: 3_000,  projets: 1,  derniere: "2025-11-12" },
+  { type: "agence", id: "ag3",  nom: "Aymane",           ca: 2_190,  projets: 1,  derniere: "2025-07-01" },
+  { type: "agence", id: "ag4",  nom: "Guilan",           ca: 2_000,  projets: 1,  derniere: "2025-06-04" },
+  { type: "agence", id: "ag5",  nom: "Lilo",             ca: 1_490,  projets: 1,  derniere: "2025-06-02" },
+  { type: "agence", id: "ag6",  nom: "sabri bk",         ca: 1_196,  projets: 5,  derniere: "2025-11-30" },
+  { type: "agence", id: "ag7",  nom: "Ines",             ca: 590,    projets: 1,  derniere: "2025-10-19" },
+  { type: "agence", id: "ag8",  nom: "Dimitry Santiago", ca: 390,    projets: 1,  derniere: "2025-11-07" },
+  { type: "agence", id: "ag9",  nom: "Geneviève",        ca: 390,    projets: 1,  derniere: "2025-07-15" },
+  { type: "agence", id: "ag10", nom: "Bryan Ecom",       ca: 350,    projets: 1,  derniere: "2025-05-13" },
+  { type: "agence", id: "ag11", nom: "Sofiane",          ca: 40,     projets: 1,  derniere: "2025-11-30" },
+];
 
 // ─── Data ────────────────────────────────────────────────────
 const CLIENTS: Client[] = [
@@ -199,8 +224,65 @@ function CardPremium({ c }: { c: ClientPremium }) {
   );
 }
 
+// ─── Client Card Agence ───────────────────────────────────────
+function CardAgence({ c }: { c: ClientAgence }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ ...card, borderColor: "rgba(34,211,238,0.2)" }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{ width: "100%", padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, background: "none", border: "none", cursor: "pointer", textAlign: "left" }}
+      >
+        <div style={{
+          width: 40, height: 40, borderRadius: "50%", flexShrink: 0,
+          background: "linear-gradient(135deg, #0891b2, #22d3ee)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 15, fontWeight: 700, color: "#fff",
+        }}>
+          {c.nom[0]}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ color: "rgba(255,255,255,0.9)", fontWeight: 600, fontSize: 14 }}>{c.nom}</p>
+          <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, marginTop: 2 }}>
+            Agence · {c.projets} projet{c.projets > 1 ? "s" : ""}
+          </p>
+        </div>
+        <div style={{ textAlign: "right", flexShrink: 0 }}>
+          <p style={{ color: "#22d3ee", fontWeight: 700, fontSize: 15 }}>{c.ca.toLocaleString("fr-FR")} €</p>
+          <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 11, marginTop: 2 }}>CA total</p>
+        </div>
+        {open
+          ? <ChevronUp style={{ width: 16, height: 16, color: "rgba(255,255,255,0.3)", flexShrink: 0 }} />
+          : <ChevronDown style={{ width: 16, height: 16, color: "rgba(255,255,255,0.3)", flexShrink: 0 }} />
+        }
+      </button>
+      {open && (
+        <div style={{ padding: "0 16px 14px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+          <div className="grid grid-cols-2 gap-3 mt-3">
+            {[
+              { icon: DollarSign, label: "CA encaissé", value: `${c.ca.toLocaleString("fr-FR")} €` },
+              { icon: BookOpen,   label: "Projets",     value: String(c.projets) },
+              { icon: Calendar,   label: "Dernière vente", value: fmtDate(c.derniere) },
+            ].map(item => (
+              <div key={item.label} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                <div style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(34,211,238,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <item.icon style={{ width: 13, height: 13, color: "#22d3ee" }} />
+                </div>
+                <div>
+                  <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 10 }}>{item.label}</p>
+                  <p style={{ color: "rgba(255,255,255,0.85)", fontSize: 12, fontWeight: 600 }}>{item.value}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Page ────────────────────────────────────────────────────
-type Filter = "tous" | "ht" | "premium";
+type Filter = "tous" | "ht" | "premium" | "agence";
 
 export default function ClientsPage() {
   const [filter, setFilter] = useState<Filter>("tous");
@@ -211,10 +293,14 @@ export default function ClientsPage() {
   const premClients = CLIENTS.filter(c => c.type === "premium") as ClientPremium[];
   const caHT       = htClients.reduce((s, c) => s + c.montant, 0);
   const caAcademie = stats.academieCA; // CA réel encaissé (Oct–Déc 25)
+  const caAgence   = stats.agenceNetHugo;
 
-  const filtered = CLIENTS.filter(c => {
-    if (filter === "ht" && c.type !== "ht") return false;
-    if (filter === "premium" && c.type !== "premium") return false;
+  const allClients = [...CLIENTS, ...CLIENTS_AGENCE];
+
+  const filtered = allClients.filter(c => {
+    if (filter === "ht"      && c.type !== "ht")      return false;
+    if (filter === "premium" && c.type !== "premium")  return false;
+    if (filter === "agence"  && c.type !== "agence")   return false;
     const nom = c.nom.toLowerCase();
     const q = search.toLowerCase();
     if (q && !nom.includes(q) && !(c.type === "premium" && c.email.toLowerCase().includes(q))) return false;
@@ -222,9 +308,10 @@ export default function ClientsPage() {
   });
 
   const filters: { key: Filter; label: string; count: number }[] = [
-    { key: "tous",    label: "Tous",          count: CLIENTS.length },
+    { key: "tous",    label: "Tous",          count: allClients.length },
     { key: "ht",      label: "Coaching HT",   count: htClients.length },
     { key: "premium", label: "Académie",       count: premClients.length },
+    { key: "agence",  label: "Agence",         count: CLIENTS_AGENCE.length },
   ];
 
   return (
@@ -233,15 +320,16 @@ export default function ClientsPage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold" style={{ color: "rgba(255,255,255,0.9)" }}>Clients</h1>
-        <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.4)" }}>29 closés · tous produits confondus</p>
+        <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.4)" }}>{allClients.length} clients · tous produits confondus</p>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3">
         {[
-          { label: "Total closés",  value: "29",                                    color: "#a855f7", sub: "9 HT + 20 Premium" },
-          { label: "CA Coaching HT", value: caHT.toLocaleString("fr-FR") + " €",    color: "#a855f7", sub: "9 clients" },
-          { label: "CA Académie",    value: caAcademie.toLocaleString("fr-FR") + " €", color: "#818cf8", sub: "LTV calculée" },
+          { label: "CA Coaching HT", value: caHT.toLocaleString("fr-FR") + " €",       color: "#a855f7", sub: `${htClients.length} clients` },
+          { label: "CA Académie",    value: caAcademie.toLocaleString("fr-FR") + " €",  color: "#818cf8", sub: "Oct–Déc 25" },
+          { label: "CA Agence",      value: caAgence.toLocaleString("fr-FR") + " €",    color: "#22d3ee", sub: `${CLIENTS_AGENCE.length} clients` },
+          { label: "Total encaissé", value: (caHT + caAcademie + caAgence).toLocaleString("fr-FR") + " €", color: "#4ade80", sub: `${allClients.length} clients` },
         ].map(s => (
           <div key={s.label} className="p-3 rounded-2xl" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
             <p style={{ fontSize: 18, fontWeight: 800, color: s.color }}>{s.value}</p>
@@ -292,9 +380,9 @@ export default function ClientsPage() {
           <p style={{ color: "rgba(255,255,255,0.3)", textAlign: "center", padding: "32px 0", fontSize: 13 }}>Aucun client trouvé</p>
         )}
         {filtered.map(c =>
-          c.type === "ht"
-            ? <CardHT key={c.id} c={c as ClientHT} />
-            : <CardPremium key={c.id} c={c as ClientPremium} />
+          c.type === "ht"      ? <CardHT      key={c.id} c={c as ClientHT} />      :
+          c.type === "premium" ? <CardPremium key={c.id} c={c as ClientPremium} /> :
+                                 <CardAgence  key={c.id} c={c as ClientAgence} />
         )}
       </div>
 
