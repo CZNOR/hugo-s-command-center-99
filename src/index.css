@@ -66,7 +66,6 @@
 html {
   overflow-x: clip; /* clip ne bloque pas le scroll vertical (contrairement à hidden) */
   max-width: 100%;
-  overflow-y: auto;
 }
 
 body {
@@ -76,9 +75,7 @@ body {
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
   overflow-x: clip;
-  overflow-y: auto;
   max-width: 100%;
-  overscroll-behavior-y: contain;
 }
 
 #root {

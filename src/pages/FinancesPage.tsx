@@ -138,12 +138,15 @@ async function loadEntries(): Promise<FinanceEntry[]> {
   }
 }
 
-async function saveEntry(entry: Omit<FinanceEntry, "id" | "created_at">): Promise<FinanceEntry> {
-  const rows = await sbFetch<FinanceEntry[]>("finance_entries", {
+async function saveEntry(entry: Omit<FinanceEntry, "id" | "created_at">): Promise<FinanceEntry | null> {
+  const rows = await sbFetch<FinanceEntry[] | { code?: string; message?: string }>("finance_entries", {
     method: "POST",
     body: JSON.stringify(entry),
   });
-  return Array.isArray(rows) ? rows[0] : (rows as unknown as FinanceEntry);
+  // Supabase error object (table missing, etc.) → return null
+  if (!Array.isArray(rows) && (rows as any)?.code) return null;
+  if (!Array.isArray(rows)) return null;
+  return rows[0] ?? null;
 }
 
 async function updateEntry(id: string, updates: Partial<FinanceEntry>): Promise<void> {
@@ -765,9 +768,14 @@ export default function FinancesPage() {
           // First load: persist seed data to Supabase so all future loads are consistent
           try {
             const saved = await Promise.all(SEED_ENTRIES.map(e => saveEntry(e)));
-            setEntries(saved.filter(Boolean));
+            const valid = saved.filter((e): e is FinanceEntry => e !== null && !!e.id);
+            if (valid.length > 0) {
+              setEntries(valid);
+            } else {
+              // Table not created yet → show locally (won't persist)
+              setEntries(SEED_ENTRIES.map((e, i) => ({ ...e, id: `seed_${i}` })));
+            }
           } catch {
-            // Supabase table may not exist yet — show locally
             setEntries(SEED_ENTRIES.map((e, i) => ({ ...e, id: `seed_${i}` })));
           }
         }
@@ -783,7 +791,7 @@ export default function FinancesPage() {
 
   // ── Computed ──────────────────────────────────────────────
   const monthEntries = useMemo(
-    () => entries.filter(e => e.date.startsWith(selectedMonth)),
+    () => entries.filter(e => e.date?.startsWith(selectedMonth)),
     [entries, selectedMonth]
   );
 
@@ -834,7 +842,7 @@ export default function FinancesPage() {
 
   const filteredEntries = useMemo(() => {
     return entries
-      .filter(e => e.date.startsWith(selectedMonth))
+      .filter(e => e.date?.startsWith(selectedMonth))
       .filter(e => filterType     === "all" || e.type     === filterType)
       .filter(e => filterCategory === "all" || e.category === filterCategory)
       .filter(e => filterStatus   === "all" || e.status   === filterStatus);
