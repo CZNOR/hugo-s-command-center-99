@@ -31,6 +31,7 @@ const COACHING_ITEMS: NavItem[] = [
   { path: "/coaching/clients",   label: "Clients",         icon: Users           },
   { path: "/coaching/agence",    label: "Agence",          icon: Building2       },
   { path: "/coaching/paiements", label: "Paiements",       icon: DollarSign      },
+  { path: "/finances",           label: "Finances",        icon: DollarSign      },
   { path: "/content",            label: "Contenu",         icon: Edit2           },
 ];
 
