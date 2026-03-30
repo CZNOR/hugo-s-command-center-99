@@ -24,7 +24,13 @@ async function sbFetch<T = any>(path: string, opts?: RequestInit): Promise<T> {
     },
   });
   const text = await res.text();
-  return text ? JSON.parse(text) : ([] as unknown as T);
+  if (!text) return [] as unknown as T;
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    // Non-JSON response (HTML 502/timeout etc.) — treat as empty
+    return [] as unknown as T;
+  }
 }
 
 // ─── Types ────────────────────────────────────────────────────
@@ -172,9 +178,10 @@ async function loadObjective(month: string): Promise<MonthlyObjective | null> {
 }
 
 async function saveObjective(obj: MonthlyObjective): Promise<void> {
-  await sbFetch("monthly_objectives", {
+  // Upsert on month column — use on_conflict query param + merge-duplicates
+  await sbFetch("monthly_objectives?on_conflict=month", {
     method: "POST",
-    headers: { Prefer: "resolution=merge-duplicates" },
+    headers: { Prefer: "resolution=merge-duplicates,return=representation" },
     body: JSON.stringify(obj),
   });
 }
@@ -520,6 +527,13 @@ function EntryModal({
 }
 
 // ─── Objective Modal ──────────────────────────────────────────
+const OBJ_CATS = [
+  { key: "target_agence"    as const, label: "Agence",    color: CAT_COLORS.agence    },
+  { key: "target_coaching"  as const, label: "Coaching",  color: CAT_COLORS.coaching  },
+  { key: "target_formation" as const, label: "Formation", color: CAT_COLORS.formation },
+  { key: "target_casino"    as const, label: "Casino",    color: CAT_COLORS.casino    },
+];
+
 function ObjectiveModal({
   objective, onSave, onClose,
 }: {
@@ -527,37 +541,35 @@ function ObjectiveModal({
   onSave: (obj: MonthlyObjective) => Promise<void>;
   onClose: () => void;
 }) {
-  const [form, setForm] = useState({ ...objective });
+  const [cats, setCats] = useState({
+    target_agence:    objective.target_agence    ?? 0,
+    target_coaching:  objective.target_coaching  ?? 0,
+    target_formation: objective.target_formation ?? 0,
+    target_casino:    objective.target_casino    ?? 0,
+  });
   const [saving, setSaving] = useState(false);
+
+  // Total auto-calculated from categories
+  const total = cats.target_agence + cats.target_coaching + cats.target_formation + cats.target_casino;
+
+  // Distribute total equally across 4 categories
+  const distributeEqual = (t: number) => {
+    const each = Math.round(t / 4);
+    setCats({ target_agence: each, target_coaching: each, target_formation: each, target_casino: each });
+  };
 
   const inputStyle: React.CSSProperties = {
     display: "block", width: "100%", marginTop: 4,
     background: "rgba(255,255,255,0.06)",
     border: "1px solid rgba(139,92,246,0.25)",
-    borderRadius: 8, padding: "8px 10px",
-    color: "rgba(255,255,255,0.9)", fontSize: 14, outline: "none",
+    borderRadius: 8, padding: "9px 12px",
+    color: "rgba(255,255,255,0.9)", fontSize: 15, fontWeight: 600, outline: "none",
   };
-
-  const labelStyle: React.CSSProperties = {
-    color: "rgba(255,255,255,0.45)", fontSize: 11,
-    fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase",
-  };
-
-  const numField = (key: keyof MonthlyObjective, label: string) => (
-    <div key={String(key)}>
-      <label style={labelStyle}>{label}</label>
-      <input
-        type="number" step="1"
-        value={form[key] as number}
-        onChange={e => setForm(f => ({ ...f, [key]: parseFloat(e.target.value) || 0 }))}
-        style={inputStyle}
-      />
-    </div>
-  );
 
   const handleSave = async () => {
     setSaving(true);
-    try { await onSave(form); onClose(); }
+    const obj: MonthlyObjective = { ...objective, ...cats, target: total };
+    try { await onSave(obj); onClose(); }
     finally { setSaving(false); }
   };
 
@@ -565,43 +577,95 @@ function ObjectiveModal({
     <div
       style={{
         position: "fixed", inset: 0, zIndex: 300,
-        background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)",
+        background: "rgba(0,0,0,0.75)", backdropFilter: "blur(8px)",
         display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
       }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div style={{
         background: "#0d0b1a", border: "1px solid rgba(139,92,246,0.3)",
-        borderRadius: 20, padding: 24,
+        borderRadius: 20, padding: "20px 18px",
         width: "100%", maxWidth: 420,
         boxShadow: "0 0 60px rgba(139,92,246,0.2)",
       }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
           <h2 style={{ color: "rgba(255,255,255,0.9)", fontWeight: 700, fontSize: 16 }}>Objectif du mois</h2>
           <button onClick={onClose} style={{ color: "rgba(255,255,255,0.4)", cursor: "pointer", padding: 4, background: "none", border: "none" }}>
             <X style={{ width: 18, height: 18 }} />
           </button>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          {numField("target",           "Objectif total (€)")}
-          {numField("target_agence",    "Objectif Agence (€)")}
-          {numField("target_coaching",  "Objectif Coaching (€)")}
-          {numField("target_formation", "Objectif Formation (€)")}
-          {numField("target_casino",    "Objectif Casino (€)")}
+
+        {/* Total auto-sum */}
+        <div style={{
+          background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.25)",
+          borderRadius: 12, padding: "12px 14px", marginBottom: 16,
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+        }}>
+          <div>
+            <p style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.45)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Total objectif</p>
+            <p style={{ fontSize: 26, fontWeight: 800, color: "#a855f7", marginTop: 2 }}>
+              {total.toLocaleString("fr-FR")} €
+            </p>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
+            <p style={{ fontSize: 10, color: "rgba(255,255,255,0.3)" }}>Auto-calculé</p>
+            {/* Quick distribute buttons */}
+            {[5000, 10000, 15000, 20000].map(v => (
+              <button
+                key={v} type="button"
+                onClick={() => distributeEqual(v)}
+                style={{
+                  fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 20,
+                  background: total === v ? "rgba(168,85,247,0.25)" : "rgba(255,255,255,0.05)",
+                  border: total === v ? "1px solid rgba(168,85,247,0.4)" : "1px solid rgba(255,255,255,0.08)",
+                  color: total === v ? "#c084fc" : "rgba(255,255,255,0.45)",
+                  cursor: "pointer",
+                }}
+              >
+                {(v / 1000)}k
+              </button>
+            ))}
+          </div>
         </div>
+
+        {/* Category fields */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {OBJ_CATS.map(({ key, label, color }) => {
+            const pct = total > 0 ? Math.round((cats[key] / total) * 100) : 0;
+            return (
+              <div key={key}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                  <label style={{ fontSize: 11, fontWeight: 600, color, letterSpacing: "0.05em", textTransform: "uppercase" }}>
+                    {label}
+                  </label>
+                  <span style={{ fontSize: 11, color: "rgba(255,255,255,0.3)" }}>{pct}%</span>
+                </div>
+                <input
+                  type="number" step="100" min="0"
+                  value={cats[key] || ""}
+                  placeholder="0"
+                  onChange={e => setCats(c => ({ ...c, [key]: parseFloat(e.target.value) || 0 }))}
+                  style={{ ...inputStyle, borderColor: `${color}44` }}
+                />
+              </div>
+            );
+          })}
+        </div>
+
         <button
           onClick={handleSave} disabled={saving}
           style={{
-            marginTop: 20, width: "100%",
+            marginTop: 18, width: "100%",
             background: saving ? "rgba(124,58,237,0.4)" : "linear-gradient(135deg, #7c3aed, #a855f7)",
             color: "#fff", border: "none", borderRadius: 10,
-            padding: "11px 0", fontWeight: 700, fontSize: 14,
+            padding: "12px 0", fontWeight: 700, fontSize: 14,
             cursor: saving ? "not-allowed" : "pointer",
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
           }}
         >
           <Save style={{ width: 15, height: 15 }} />
-          {saving ? "Enregistrement…" : "Enregistrer"}
+          {saving ? "Enregistrement…" : "Enregistrer l'objectif"}
         </button>
       </div>
     </div>
@@ -791,7 +855,7 @@ export default function FinancesPage() {
 
   // ── Computed ──────────────────────────────────────────────
   const monthEntries = useMemo(
-    () => entries.filter(e => e.date?.startsWith(selectedMonth)),
+    () => entries.filter(e => e?.id && e.date?.startsWith(selectedMonth)),
     [entries, selectedMonth]
   );
 
@@ -842,7 +906,7 @@ export default function FinancesPage() {
 
   const filteredEntries = useMemo(() => {
     return entries
-      .filter(e => e.date?.startsWith(selectedMonth))
+      .filter(e => e?.id && e.date?.startsWith(selectedMonth))
       .filter(e => filterType     === "all" || e.type     === filterType)
       .filter(e => filterCategory === "all" || e.category === filterCategory)
       .filter(e => filterStatus   === "all" || e.status   === filterStatus);
@@ -861,16 +925,19 @@ export default function FinancesPage() {
       client_name: data.client_name?.trim() || undefined,
     };
     if (editingEntry) {
-      try { await updateEntry(editingEntry.id, payload); } catch { /* seed data or network */ }
+      try { await updateEntry(editingEntry.id, payload); } catch { /* seed/network → keep local update */ }
       setEntries(prev => prev.map(e => e.id === editingEntry.id ? { ...e, ...payload } : e));
       setEditingEntry(null);
     } else {
+      let newEntry: FinanceEntry;
       try {
         const saved = await saveEntry(payload);
-        setEntries(prev => [saved, ...prev]);
+        // saveEntry returns null if table missing/error — use local fallback
+        newEntry = saved ?? { ...payload, id: `local_${Date.now()}` };
       } catch {
-        setEntries(prev => [{ ...payload, id: `local_${Date.now()}` }, ...prev]);
+        newEntry = { ...payload, id: `local_${Date.now()}` };
       }
+      setEntries(prev => [newEntry, ...prev]);
     }
   };
 
