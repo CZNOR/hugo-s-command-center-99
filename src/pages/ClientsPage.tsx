@@ -43,7 +43,7 @@ type Client = ClientHT | ClientPremium | ClientAgence;
 // CA = part Hugo uniquement (VENTES Notion, triés par CA desc)
 const CLIENTS_AGENCE: ClientAgence[] = [
   { type: "agence", id: "ag1",  nom: "Alexandre Senek",  ca: 17_800, projets: 26, derniere: "2026-04-01" },
-  { type: "agence", id: "ag2",  nom: "Angello",          ca: 3_000,  projets: 1,  derniere: "2025-11-12" },
+  { type: "agence", id: "ag2",  nom: "Angello",          ca: 1_500,  projets: 1,  derniere: "2025-11-12" },
   { type: "agence", id: "ag3",  nom: "Aymane",           ca: 2_190,  projets: 1,  derniere: "2025-07-01" },
   { type: "agence", id: "ag4",  nom: "Guilan",           ca: 2_000,  projets: 1,  derniere: "2025-06-04" },
   { type: "agence", id: "ag5",  nom: "Lilo",             ca: 1_490,  projets: 1,  derniere: "2025-06-02" },

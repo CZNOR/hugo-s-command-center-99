@@ -23,7 +23,7 @@ const VENTES: Vente[] = [
   { id: "MADE-387", date: "2025-11-30", prestation: "Crea novembre", client: "Alexandre Senek", montant: 145, paiement: "En attente", livraison: "Terminé" },
   { id: "MADE-385", date: "2025-11-23", prestation: "PDF keynote x7", client: "sabri bk", montant: 380, paiement: "Payer", livraison: "Terminé" },
   { id: "MADE-384", date: "2025-11-20", prestation: "Créatives x6", client: "sabri bk", montant: 240, paiement: "Payer", livraison: "Terminé" },
-  { id: "MADE-383", date: "2025-11-12", prestation: "Vente de société", client: "Angello", montant: 3000, paiement: "Payer", livraison: "Terminé" },
+  { id: "MADE-383", date: "2025-11-12", prestation: "Vente de société", client: "Angello", montant: 1500, paiement: "Payer", livraison: "Terminé" },
   { id: "MADE-380", date: "2025-11-08", prestation: "Logo", client: "Alexandre Senek", montant: 220, paiement: "Payer", livraison: "Terminé" },
   { id: "MADE-378", date: "2025-11-07", prestation: "2 créa", client: "sabri bk", montant: 76, paiement: "Payer", livraison: "Terminé" },
   { id: "MADE-379", date: "2025-11-07", prestation: "Site testing", client: "Dimitry santiago", montant: 390, paiement: "Acompte Payé", livraison: "Terminé" },
@@ -62,7 +62,7 @@ const VENTES: Vente[] = [
 ];
 
 const NET_HUGO  = VENTES.reduce((s, v) => s + v.montant, 0); // part Hugo (Hugo + CM non-assignés + retainer)
-const TOTAL_CA  = 43_723 + 6_800; // CA global agence tous associés (43 723€ CSV + 6 800€ retainers 2026)
+const TOTAL_CA  = 42_223 + 6_800; // CA global agence tous associés (43 723€ CSV -1500€ Angello + 6 800€ retainers 2026)
 
 // ─── Styles ──────────────────────────────────────────────────
 const card: React.CSSProperties = {
