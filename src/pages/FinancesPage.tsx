@@ -40,8 +40,20 @@ interface FinanceEntry {
   date: string;
   status: "recu" | "en_attente" | "prevu";
   notes?: string;
+  client_name?: string;
   created_at?: string;
 }
+
+// ─── Clients par catégorie (source: ClientsPage + CoachingDashboard) ──
+const CLIENT_SUGGESTIONS: Record<FinanceCategory, string[]> = {
+  agence:    ["Alexandre Senek", "Angello", "Aymane", "Guilan", "Lilo", "sabri bk",
+              "ines", "Dimitry Santiago", "Geneviève", "Bryan Ecom", "Luka Metral", "Sofiane"],
+  coaching:  ["Ayoub", "Amèle", "Yassine", "Shirlie", "Aristote", "Thomas",
+              "Kryz Emile", "Flavio", "Lenny"],
+  formation: ["Académie Premium", "Membre Circle.so"],
+  casino:    ["Affiliation casino"],
+  autre:     [],
+};
 
 interface MonthlyObjective {
   id?: string;
@@ -88,7 +100,7 @@ const card: React.CSSProperties = {
   background: "rgba(255,255,255,0.03)",
   border: "1px solid rgba(139,92,246,0.15)",
   borderRadius: 16,
-  padding: 20,
+  padding: "16px 14px",
 };
 
 const cardGlow: React.CSSProperties = {
@@ -98,13 +110,13 @@ const cardGlow: React.CSSProperties = {
 
 // ─── Seed data ────────────────────────────────────────────────
 const SEED_ENTRIES: Omit<FinanceEntry, "id" | "created_at">[] = [
-  { label: "CA Coaching HT (cumul)",        amount: 25483, type: "entree", category: "coaching", date: "2025-12-31", status: "recu" },
-  { label: "CA Agence Made Solution (cumul)", amount: 45623, type: "entree", category: "agence",   date: "2025-12-31", status: "recu" },
-  { label: "CA Académie (cumul)",            amount: 5820,  type: "entree", category: "formation", date: "2025-12-31", status: "recu" },
-  { label: "Casino affiliation",             amount: 19.56, type: "entree", category: "casino",    date: "2025-12-31", status: "recu" },
-  { label: "Retainer Senek Fév 26",          amount: 1700,  type: "entree", category: "agence",    date: "2026-02-01", status: "recu" },
-  { label: "Retainer Senek Mar 26",          amount: 1700,  type: "entree", category: "agence",    date: "2026-03-01", status: "recu" },
-  { label: "Retainer Senek Avr 26 (prévu)",  amount: 1700,  type: "entree", category: "agence",    date: "2026-04-01", status: "prevu" },
+  { label: "CA Coaching HT (cumul)",         amount: 25483, type: "entree", category: "coaching", date: "2025-12-31", status: "recu",  client_name: "9 clients HT" },
+  { label: "CA Agence Made Solution (cumul)", amount: 45623, type: "entree", category: "agence",   date: "2025-12-31", status: "recu",  client_name: "Multi-clients" },
+  { label: "CA Académie (cumul)",             amount: 5820,  type: "entree", category: "formation", date: "2025-12-31", status: "recu",  client_name: "16 membres premium" },
+  { label: "Casino affiliation",              amount: 19.56, type: "entree", category: "casino",    date: "2025-12-31", status: "recu" },
+  { label: "Retainer Senek Fév 26",           amount: 1700,  type: "entree", category: "agence",    date: "2026-02-01", status: "recu",  client_name: "Alexandre Senek" },
+  { label: "Retainer Senek Mar 26",           amount: 1700,  type: "entree", category: "agence",    date: "2026-03-01", status: "recu",  client_name: "Alexandre Senek" },
+  { label: "Retainer Senek Avr 26 (prévu)",   amount: 1700,  type: "entree", category: "agence",    date: "2026-04-01", status: "prevu", client_name: "Alexandre Senek" },
 ];
 
 const DEFAULT_OBJECTIVE: MonthlyObjective = {
@@ -248,16 +260,17 @@ function FilterPill<T extends string>({
   onChange: (v: T) => void;
 }) {
   return (
-    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+    <div style={{ display: "flex", gap: 5, overflowX: "auto", flexShrink: 0, paddingBottom: 2, scrollbarWidth: "none" }}>
       {options.map(o => (
         <button
           key={o.key}
           onClick={() => onChange(o.key)}
           style={{
-            padding: "4px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, cursor: "pointer",
+            padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer",
+            whiteSpace: "nowrap", flexShrink: 0,
             border: value === o.key ? "1px solid rgba(139,92,246,0.5)" : "1px solid rgba(255,255,255,0.08)",
             background: value === o.key ? "rgba(139,92,246,0.2)" : "rgba(255,255,255,0.03)",
-            color: value === o.key ? "#c084fc" : "rgba(255,255,255,0.4)",
+            color: value === o.key ? "#c084fc" : "rgba(255,255,255,0.55)",
           }}
         >
           {o.label}
@@ -276,16 +289,18 @@ type EntryFormData = {
   date: string;
   status: "recu" | "en_attente" | "prevu";
   notes: string;
+  client_name: string;
 };
 
 const EMPTY_FORM: EntryFormData = {
-  label:    "",
-  amount:   "",
-  type:     "entree",
-  category: "agence",
-  date:     new Date().toISOString().split("T")[0],
-  status:   "recu",
-  notes:    "",
+  label:       "",
+  amount:      "",
+  type:        "entree",
+  category:    "agence",
+  date:        new Date().toISOString().split("T")[0],
+  status:      "recu",
+  notes:       "",
+  client_name: "",
 };
 
 // ─── Entry Modal (Add / Edit) ─────────────────────────────────
@@ -301,16 +316,18 @@ function EntryModal({
   const [form, setForm] = useState<EntryFormData>(
     initial
       ? {
-          label:    initial.label,
-          amount:   String(initial.amount),
-          type:     initial.type,
-          category: initial.category,
-          date:     initial.date,
-          status:   initial.status,
-          notes:    initial.notes ?? "",
+          label:       initial.label,
+          amount:      String(initial.amount),
+          type:        initial.type,
+          category:    initial.category,
+          date:        initial.date,
+          status:      initial.status,
+          notes:       initial.notes ?? "",
+          client_name: initial.client_name ?? "",
         }
       : EMPTY_FORM
   );
+  const clientSuggestions = CLIENT_SUGGESTIONS[form.category] ?? [];
   const [saving, setSaving] = useState(false);
   const isEdit = !!initial;
 
@@ -346,9 +363,9 @@ function EntryModal({
     >
       <div style={{
         background: "#0d0b1a", border: "1px solid rgba(139,92,246,0.3)",
-        borderRadius: 20, padding: 24,
+        borderRadius: 20, padding: "20px 16px",
         width: "100%", maxWidth: 500,
-        maxHeight: "90vh", overflowY: "auto",
+        maxHeight: "92dvh", overflowY: "auto",
         boxShadow: "0 0 60px rgba(139,92,246,0.2)",
       }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
@@ -406,6 +423,44 @@ function EntryModal({
                 { key: "autre"     as FinanceCategory, label: "Autre",     color: CAT_COLORS.autre     },
               ]}
             />
+          </div>
+
+          {/* Client selector — suggestions based on category */}
+          <div>
+            <label style={labelStyle}>Client (optionnel)</label>
+            <div style={{ position: "relative", marginTop: 4 }}>
+              <input
+                type="text"
+                list={`clients-${form.category}`}
+                value={form.client_name}
+                onChange={e => setForm(f => ({ ...f, client_name: e.target.value }))}
+                placeholder={clientSuggestions.length > 0 ? `Ex: ${clientSuggestions[0]}` : "Nom du client…"}
+                style={inputStyle}
+              />
+              <datalist id={`clients-${form.category}`}>
+                {clientSuggestions.map(c => <option key={c} value={c} />)}
+              </datalist>
+            </div>
+            {/* Quick-pick chips */}
+            {clientSuggestions.length > 0 && (
+              <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 6 }}>
+                {clientSuggestions.slice(0, 5).map(c => (
+                  <button
+                    key={c} type="button"
+                    onClick={() => setForm(f => ({ ...f, client_name: c }))}
+                    style={{
+                      padding: "3px 10px", borderRadius: 20, fontSize: 10, fontWeight: 600,
+                      cursor: "pointer", border: "1px solid rgba(255,255,255,0.1)",
+                      background: form.client_name === c
+                        ? `${CAT_COLORS[form.category]}22`
+                        : "rgba(255,255,255,0.04)",
+                      color: form.client_name === c ? CAT_COLORS[form.category] : "rgba(255,255,255,0.5)",
+                      transition: "all 0.1s",
+                    }}
+                  >{c}</button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div>
@@ -594,12 +649,11 @@ function EntryRow({
 
   return (
     <div
-      onClick={onEdit}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        display: "flex", alignItems: "center", gap: 12,
-        padding: "10px 12px", borderRadius: 12, cursor: "pointer",
+        display: "flex", alignItems: "center", gap: 10,
+        padding: "12px 10px", borderRadius: 12,
         background: hovered ? "rgba(139,92,246,0.07)" : "rgba(255,255,255,0.02)",
         border: "1px solid",
         borderColor: hovered ? "rgba(139,92,246,0.2)" : "rgba(255,255,255,0.04)",
@@ -608,19 +662,19 @@ function EntryRow({
     >
       {/* Category dot */}
       <span style={{
-        width: 10, height: 10, borderRadius: "50%",
+        width: 9, height: 9, borderRadius: "50%",
         background: CAT_COLORS[entry.category], flexShrink: 0,
       }} />
 
-      {/* Label + meta */}
-      <div style={{ flex: 1, minWidth: 0 }}>
+      {/* Label + meta — clickable zone */}
+      <div style={{ flex: 1, minWidth: 0, cursor: "pointer" }} onClick={onEdit}>
         <p style={{
           fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.9)",
           whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
         }}>
           {entry.label}
         </p>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 4, flexWrap: "wrap" }}>
           <span style={{
             fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 20,
             background: `${CAT_COLORS[entry.category]}18`, color: CAT_COLORS[entry.category],
@@ -633,34 +687,54 @@ function EntryRow({
           }}>
             {statusCfg.label}
           </span>
-          <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)" }}>
-            {new Date(entry.date).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })}
+          {entry.client_name && (
+            <span style={{
+              fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 20,
+              background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.55)",
+            }}>
+              👤 {entry.client_name}
+            </span>
+          )}
+          <span style={{ fontSize: 10, color: "rgba(255,255,255,0.28)" }}>
+            {new Date(entry.date).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
           </span>
         </div>
       </div>
 
-      {/* Right side */}
+      {/* Right side — amount + actions */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-        {entry.notes && (
-          <span title={entry.notes} style={{ fontSize: 12, opacity: 0.5, cursor: "default" }}>📝</span>
-        )}
         <span style={{ fontSize: 14, fontWeight: 700, color: TYPE_COLORS[entry.type] }}>
           {entry.type === "entree" ? "+" : "−"}
-          {entry.amount.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+          {entry.amount.toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 2 })} €
         </span>
-        {hovered && (
-          <button
-            onClick={e => { e.stopPropagation(); onDelete(); }}
-            style={{
-              background: "rgba(239,68,68,0.12)",
-              border: "1px solid rgba(239,68,68,0.2)",
-              borderRadius: 6, padding: "4px 6px",
-              cursor: "pointer", display: "flex", alignItems: "center",
-            }}
-          >
-            <Trash2 style={{ width: 13, height: 13, color: "#ef4444" }} />
-          </button>
-        )}
+        {/* Edit */}
+        <button
+          onClick={onEdit}
+          style={{
+            background: "rgba(139,92,246,0.1)",
+            border: "1px solid rgba(139,92,246,0.2)",
+            borderRadius: 7, padding: "5px 7px",
+            cursor: "pointer", display: "flex", alignItems: "center",
+            opacity: hovered ? 1 : 0.4,
+            transition: "opacity 0.15s",
+          }}
+        >
+          <Pencil style={{ width: 12, height: 12, color: "#a855f7" }} />
+        </button>
+        {/* Delete */}
+        <button
+          onClick={e => { e.stopPropagation(); onDelete(); }}
+          style={{
+            background: "rgba(239,68,68,0.1)",
+            border: "1px solid rgba(239,68,68,0.2)",
+            borderRadius: 7, padding: "5px 7px",
+            cursor: "pointer", display: "flex", alignItems: "center",
+            opacity: hovered ? 1 : 0.35,
+            transition: "opacity 0.15s",
+          }}
+        >
+          <Trash2 style={{ width: 12, height: 12, color: "#ef4444" }} />
+        </button>
       </div>
     </div>
   );
@@ -684,14 +758,25 @@ export default function FinancesPage() {
   useEffect(() => {
     setLoading(true);
     Promise.all([loadEntries(), loadObjective(selectedMonth)])
-      .then(([ents, obj]) => {
+      .then(async ([ents, obj]) => {
         if (ents.length > 0) {
           setEntries(ents);
         } else {
-          setEntries(SEED_ENTRIES.map((e, i) => ({ ...e, id: `seed_${i}` })));
+          // First load: persist seed data to Supabase so all future loads are consistent
+          try {
+            const saved = await Promise.all(SEED_ENTRIES.map(e => saveEntry(e)));
+            setEntries(saved.filter(Boolean));
+          } catch {
+            // Supabase table may not exist yet — show locally
+            setEntries(SEED_ENTRIES.map((e, i) => ({ ...e, id: `seed_${i}` })));
+          }
         }
         if (obj) setObjective(obj);
-        else setObjective({ ...DEFAULT_OBJECTIVE, month: selectedMonth });
+        else {
+          const defaultObj = { ...DEFAULT_OBJECTIVE, month: selectedMonth };
+          setObjective(defaultObj);
+          saveObjective(defaultObj).catch(() => {}); // persist default objective
+        }
       })
       .finally(() => setLoading(false));
   }, [selectedMonth]);
@@ -758,13 +843,14 @@ export default function FinancesPage() {
   // ── Handlers ─────────────────────────────────────────────
   const handleSaveEntry = async (data: EntryFormData) => {
     const payload = {
-      label:    data.label.trim(),
-      amount:   parseFloat(data.amount),
-      type:     data.type,
-      category: data.category,
-      date:     data.date,
-      status:   data.status,
-      notes:    data.notes.trim() || undefined,
+      label:       data.label.trim(),
+      amount:      parseFloat(data.amount),
+      type:        data.type,
+      category:    data.category,
+      date:        data.date,
+      status:      data.status,
+      notes:       data.notes.trim() || undefined,
+      client_name: data.client_name?.trim() || undefined,
     };
     if (editingEntry) {
       try { await updateEntry(editingEntry.id, payload); } catch { /* seed data or network */ }
@@ -796,28 +882,29 @@ export default function FinancesPage() {
   // ─────────────────────────────────────────────────────────
   return (
     <div
-      className="space-y-6 max-w-6xl mx-auto"
+      className="space-y-4 lg:space-y-6 max-w-6xl mx-auto"
       style={{ filter: hidden ? "blur(10px)" : "none", transition: "filter 0.25s ease", userSelect: hidden ? "none" : "auto" }}
     >
       {/* ── Header ── */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: "rgba(255,255,255,0.9)" }}>Finances</h1>
-          <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.45)" }}>
-            Suivi des revenus, dépenses &amp; objectifs mensuels
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+        <div style={{ minWidth: 0 }}>
+          <h1 style={{ color: "rgba(255,255,255,0.9)", fontWeight: 800, fontSize: 22, letterSpacing: "-0.02em" }}>Finances</h1>
+          <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, marginTop: 2 }}>
+            Revenus · dépenses · objectifs
           </p>
         </div>
         <button
           onClick={openAdd}
           style={{
-            display: "flex", alignItems: "center", gap: 6,
+            display: "flex", alignItems: "center", gap: 6, flexShrink: 0,
             background: "linear-gradient(135deg, #7c3aed, #a855f7)",
-            border: "none", borderRadius: 10, padding: "9px 16px",
+            border: "none", borderRadius: 12, padding: "10px 16px",
             color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer",
+            boxShadow: "0 4px 20px rgba(139,92,246,0.35)",
           }}
         >
           <Plus style={{ width: 15, height: 15 }} />
-          Ajouter
+          <span>Ajouter</span>
         </button>
       </div>
 
@@ -840,14 +927,16 @@ export default function FinancesPage() {
           <button
             onClick={() => setShowObjectiveModal(true)}
             style={{
-              display: "flex", alignItems: "center", gap: 6,
+              display: "flex", alignItems: "center", gap: 5, flexShrink: 0,
               background: "rgba(139,92,246,0.12)", border: "1px solid rgba(139,92,246,0.25)",
-              borderRadius: 8, padding: "6px 12px",
+              borderRadius: 8, padding: "7px 11px",
               color: "#a855f7", fontSize: 12, fontWeight: 600, cursor: "pointer",
+              whiteSpace: "nowrap",
             }}
           >
             <Pencil style={{ width: 12, height: 12 }} />
-            Modifier l'objectif
+            <span className="hidden sm:inline">Modifier l'objectif</span>
+            <span className="sm:hidden">Modifier</span>
           </button>
         </div>
 
@@ -907,70 +996,70 @@ export default function FinancesPage() {
       </div>
 
       {/* ── SECTION 2: KPI Cards ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
         {/* Entrées */}
         <div style={{ ...cardGlow, borderColor: "#22c55e22" }}>
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 12, background: "#22c55e18", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <TrendingUp style={{ width: 16, height: 16, color: "#22c55e" }} />
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 10, background: "#22c55e18", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <TrendingUp style={{ width: 15, height: 15, color: "#22c55e" }} />
             </div>
           </div>
-          <p className="text-2xl font-bold mb-1" style={{ color: "rgba(255,255,255,0.9)" }}>
+          <p style={{ fontSize: 20, fontWeight: 800, color: "rgba(255,255,255,0.9)", marginBottom: 2 }}>
             {loading ? "—" : <><AnimatedNum value={totalEntrees} /> €</>}
           </p>
-          <p className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.55)" }}>Total Entrées</p>
-          <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.28)" }}>
-            {monthEntries.filter(e => e.type === "entree" && e.status === "recu").length} transaction(s)
+          <p style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.55)" }}>Entrées</p>
+          <p style={{ fontSize: 10, marginTop: 2, color: "rgba(255,255,255,0.28)" }}>
+            {monthEntries.filter(e => e.type === "entree" && e.status === "recu").length} txn
           </p>
         </div>
 
         {/* Dépenses */}
         <div style={{ ...cardGlow, borderColor: "#ef444422" }}>
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 12, background: "#ef444418", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <TrendingDown style={{ width: 16, height: 16, color: "#ef4444" }} />
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 10, background: "#ef444418", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <TrendingDown style={{ width: 15, height: 15, color: "#ef4444" }} />
             </div>
           </div>
-          <p className="text-2xl font-bold mb-1" style={{ color: "rgba(255,255,255,0.9)" }}>
+          <p style={{ fontSize: 20, fontWeight: 800, color: "rgba(255,255,255,0.9)", marginBottom: 2 }}>
             {loading ? "—" : <><AnimatedNum value={totalDepenses} /> €</>}
           </p>
-          <p className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.55)" }}>Total Dépenses</p>
-          <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.28)" }}>
-            {monthEntries.filter(e => e.type === "depense" && e.status === "recu").length} transaction(s)
+          <p style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.55)" }}>Dépenses</p>
+          <p style={{ fontSize: 10, marginTop: 2, color: "rgba(255,255,255,0.28)" }}>
+            {monthEntries.filter(e => e.type === "depense" && e.status === "recu").length} txn
           </p>
         </div>
 
         {/* Investissements */}
         <div style={{ ...cardGlow, borderColor: "#f59e0b22" }}>
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 12, background: "#f59e0b18", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <DollarSign style={{ width: 16, height: 16, color: "#f59e0b" }} />
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 10, background: "#f59e0b18", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <DollarSign style={{ width: 15, height: 15, color: "#f59e0b" }} />
             </div>
           </div>
-          <p className="text-2xl font-bold mb-1" style={{ color: "rgba(255,255,255,0.9)" }}>
+          <p style={{ fontSize: 20, fontWeight: 800, color: "rgba(255,255,255,0.9)", marginBottom: 2 }}>
             {loading ? "—" : <><AnimatedNum value={totalInvest} /> €</>}
           </p>
-          <p className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.55)" }}>Investissements</p>
-          <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.28)" }}>
-            {monthEntries.filter(e => e.type === "investissement" && e.status === "recu").length} transaction(s)
+          <p style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.55)" }}>Invest.</p>
+          <p style={{ fontSize: 10, marginTop: 2, color: "rgba(255,255,255,0.28)" }}>
+            {monthEntries.filter(e => e.type === "investissement" && e.status === "recu").length} txn
           </p>
         </div>
 
         {/* Net */}
         <div style={{ ...cardGlow, borderColor: netMois >= 0 ? "#a855f722" : "#ef444422" }}>
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 12, background: netMois >= 0 ? "#a855f718" : "#ef444418", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 10, background: netMois >= 0 ? "#a855f718" : "#ef444418", display: "flex", alignItems: "center", justifyContent: "center" }}>
               {netMois >= 0
-                ? <TrendingUp style={{ width: 16, height: 16, color: "#a855f7" }} />
-                : <TrendingDown style={{ width: 16, height: 16, color: "#ef4444" }} />
+                ? <TrendingUp style={{ width: 15, height: 15, color: "#a855f7" }} />
+                : <TrendingDown style={{ width: 15, height: 15, color: "#ef4444" }} />
               }
             </div>
           </div>
-          <p className="text-2xl font-bold mb-1" style={{ color: netMois >= 0 ? "#a855f7" : "#ef4444" }}>
+          <p style={{ fontSize: 20, fontWeight: 800, color: netMois >= 0 ? "#a855f7" : "#ef4444", marginBottom: 2 }}>
             {loading ? "—" : <>{netMois >= 0 ? "+" : ""}<AnimatedNum value={Math.abs(netMois)} /> €</>}
           </p>
-          <p className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.55)" }}>Net du mois</p>
-          <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.28)" }}>Entrées − Charges</p>
+          <p style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.55)" }}>Net</p>
+          <p style={{ fontSize: 10, marginTop: 2, color: "rgba(255,255,255,0.28)" }}>Entrées − Charges</p>
         </div>
       </div>
 
@@ -1060,12 +1149,16 @@ export default function FinancesPage() {
       {/* ── SECTION 4: Entry list ── */}
       <div style={cardGlow}>
         {/* Filter bar header */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
-            <h2 style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.7)" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
+          {/* Row 1: Title + month picker + add */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+            <h2 style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.8)" }}>
               Transactions
+              <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 500, color: "rgba(255,255,255,0.3)", background: "rgba(255,255,255,0.05)", padding: "1px 7px", borderRadius: 20 }}>
+                {filteredEntries.length}
+              </span>
             </h2>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <input
                 type="month"
                 value={selectedMonth}
@@ -1073,27 +1166,17 @@ export default function FinancesPage() {
                 style={{
                   background: "rgba(255,255,255,0.06)",
                   border: "1px solid rgba(139,92,246,0.2)",
-                  borderRadius: 8, padding: "5px 10px",
+                  borderRadius: 8, padding: "6px 10px",
                   color: "rgba(255,255,255,0.8)", fontSize: 12, outline: "none", cursor: "pointer",
+                  minWidth: 0,
                 }}
               />
-              <button
-                onClick={openAdd}
-                style={{
-                  display: "flex", alignItems: "center", gap: 5,
-                  background: "linear-gradient(135deg, #7c3aed, #a855f7)",
-                  border: "none", borderRadius: 8, padding: "6px 12px",
-                  color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer",
-                }}
-              >
-                <Plus style={{ width: 13, height: 13 }} />
-                Ajouter
-              </button>
             </div>
           </div>
 
-          {/* Filter pills */}
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+          {/* Row 2: Scrollable filter pills */}
+          <div style={{ display: "flex", gap: 6, overflowX: "auto", scrollbarWidth: "none", paddingBottom: 2 }}>
+            {/* Type group */}
             <FilterPill
               value={filterType}
               onChange={v => setFilterType(v)}
@@ -1101,15 +1184,16 @@ export default function FinancesPage() {
                 { key: "all",            label: "Tout" },
                 { key: "entree",         label: "Entrée" },
                 { key: "depense",        label: "Dépense" },
-                { key: "investissement", label: "Investissement" },
+                { key: "investissement", label: "Invest." },
               ]}
             />
-            <div style={{ width: 1, height: 16, background: "rgba(255,255,255,0.08)" }} />
+            <div style={{ width: 1, background: "rgba(255,255,255,0.08)", flexShrink: 0, margin: "4px 2px" }} />
+            {/* Category group */}
             <FilterPill
               value={filterCategory}
               onChange={v => setFilterCategory(v)}
               options={[
-                { key: "all",       label: "Tout" },
+                { key: "all",       label: "Cat." },
                 { key: "agence",    label: "Agence" },
                 { key: "coaching",  label: "Coaching" },
                 { key: "formation", label: "Formation" },
@@ -1117,14 +1201,15 @@ export default function FinancesPage() {
                 { key: "autre",     label: "Autre" },
               ]}
             />
-            <div style={{ width: 1, height: 16, background: "rgba(255,255,255,0.08)" }} />
+            <div style={{ width: 1, background: "rgba(255,255,255,0.08)", flexShrink: 0, margin: "4px 2px" }} />
+            {/* Status group */}
             <FilterPill
               value={filterStatus}
               onChange={v => setFilterStatus(v)}
               options={[
-                { key: "all",        label: "Tout" },
+                { key: "all",        label: "Statut" },
                 { key: "recu",       label: "Reçu" },
-                { key: "en_attente", label: "En attente" },
+                { key: "en_attente", label: "Attente" },
                 { key: "prevu",      label: "Prévu" },
               ]}
             />

@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS finance_entries (
   date date not null,
   status text default 'recu' check (status in ('recu','en_attente','prevu')),
   notes text,
+  client_name text,
   created_at timestamptz default now()
 );
 
