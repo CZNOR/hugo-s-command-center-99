@@ -343,10 +343,12 @@ function DayProgress() {
   const accentDim = activeBusiness.id === "casino" ? "rgba(0,204,68,0.15)" : "rgba(168,85,247,0.15)";
   const accentBorder = activeBusiness.id === "casino" ? "rgba(0,204,68,0.25)" : "rgba(168,85,247,0.25)";
 
-  // Count all tasks (not just today's) so the progress bar reflects real work
-  const total = tasks.length;
-  const done  = tasks.filter(t => t.status === "done").length;
-  const pct   = total === 0 ? 0 : Math.round((done / total) * 100);
+  // Today's tasks only (deadline === today)
+  const today      = new Date().toISOString().split("T")[0];
+  const todayTasks = tasks.filter(t => t.deadline === today);
+  const total      = todayTasks.length;
+  const done       = todayTasks.filter(t => t.status === "done").length;
+  const pct        = total === 0 ? 0 : Math.round((done / total) * 100);
 
   // Status label
   const status = total === 0
