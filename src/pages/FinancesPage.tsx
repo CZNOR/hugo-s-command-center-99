@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import {
   DollarSign, Plus, Pencil, Trash2, X, Save,
-  TrendingUp, TrendingDown, Target,
+  TrendingUp, TrendingDown, Target, RefreshCw,
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -807,13 +807,20 @@ function EntryRow({
   );
 }
 
+// ─── Current month helper ─────────────────────────────────────
+function nowMonth() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
 // ─── Main Page ────────────────────────────────────────────────
 export default function FinancesPage() {
   const { hidden } = usePrivacy();
   const [entries,            setEntries]            = useState<FinanceEntry[]>([]);
-  const [objective,          setObjective]          = useState<MonthlyObjective>(DEFAULT_OBJECTIVE);
+  const [objective,          setObjective]          = useState<MonthlyObjective>({ ...DEFAULT_OBJECTIVE, month: nowMonth() });
   const [loading,            setLoading]            = useState(true);
-  const [selectedMonth,      setSelectedMonth]      = useState("2026-03");
+  const [refreshKey,         setRefreshKey]         = useState(0);
+  const [selectedMonth,      setSelectedMonth]      = useState(nowMonth);
   const [filterType,         setFilterType]         = useState<"all" | FinanceType>("all");
   const [filterCategory,     setFilterCategory]     = useState<"all" | FinanceCategory>("all");
   const [filterStatus,       setFilterStatus]       = useState<"all" | string>("all");
@@ -821,7 +828,20 @@ export default function FinancesPage() {
   const [editingEntry,       setEditingEntry]       = useState<FinanceEntry | null>(null);
   const [showObjectiveModal, setShowObjectiveModal] = useState(false);
 
-  // ── Load on mount / month change ─────────────────────────
+  const refresh = () => setRefreshKey(k => k + 1);
+
+  // ── Auto-refresh quand l'onglet/app redevient visible ────
+  useEffect(() => {
+    const onVisible = () => { if (!document.hidden) setRefreshKey(k => k + 1); };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
+    };
+  }, []);
+
+  // ── Load on mount / month change / refresh ────────────────
   useEffect(() => {
     setLoading(true);
     Promise.all([loadEntries(), loadObjective(selectedMonth)])
@@ -836,7 +856,6 @@ export default function FinancesPage() {
             if (valid.length > 0) {
               setEntries(valid);
             } else {
-              // Table not created yet → show locally (won't persist)
               setEntries(SEED_ENTRIES.map((e, i) => ({ ...e, id: `seed_${i}` })));
             }
           } catch {
@@ -847,11 +866,11 @@ export default function FinancesPage() {
         else {
           const defaultObj = { ...DEFAULT_OBJECTIVE, month: selectedMonth };
           setObjective(defaultObj);
-          saveObjective(defaultObj).catch(() => {}); // persist default objective
+          saveObjective(defaultObj).catch(() => {});
         }
       })
       .finally(() => setLoading(false));
-  }, [selectedMonth]);
+  }, [selectedMonth, refreshKey]);
 
   // ── Computed ──────────────────────────────────────────────
   const monthEntries = useMemo(
@@ -933,24 +952,28 @@ export default function FinancesPage() {
       let newEntry: FinanceEntry;
       try {
         const saved = await saveEntry(payload);
-        // saveEntry returns null if table missing/error — use local fallback
         newEntry = saved ?? { ...payload, id: `local_${Date.now()}` };
       } catch {
         newEntry = { ...payload, id: `local_${Date.now()}` };
       }
       setEntries(prev => [newEntry, ...prev]);
     }
+    // Reload from Supabase to ensure sync across devices
+    setTimeout(() => refresh(), 300);
   };
 
   const handleDelete = async (id: string) => {
     if (!window.confirm("Supprimer cette entrée ?")) return;
     try { await deleteEntry(id); } catch { /* seed/network */ }
     setEntries(prev => prev.filter(e => e.id !== id));
+    setTimeout(() => refresh(), 300);
   };
 
   const handleSaveObjective = async (obj: MonthlyObjective) => {
     try { await saveObjective(obj); } catch { /* ignore */ }
     setObjective(obj);
+    // Reload objective from Supabase to confirm persistence
+    setTimeout(() => refresh(), 500);
   };
 
   const openAdd = () => { setEditingEntry(null); setShowAddModal(true); };
@@ -969,19 +992,36 @@ export default function FinancesPage() {
             Revenus · dépenses · objectifs
           </p>
         </div>
-        <button
-          onClick={openAdd}
-          style={{
-            display: "flex", alignItems: "center", gap: 6, flexShrink: 0,
-            background: "linear-gradient(135deg, #7c3aed, #a855f7)",
-            border: "none", borderRadius: 12, padding: "10px 16px",
-            color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer",
-            boxShadow: "0 4px 20px rgba(139,92,246,0.35)",
-          }}
-        >
-          <Plus style={{ width: 15, height: 15 }} />
-          <span>Ajouter</span>
-        </button>
+        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+          {/* Refresh button */}
+          <button
+            onClick={refresh}
+            title="Actualiser"
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center",
+              width: 40, height: 40,
+              background: "rgba(255,255,255,0.05)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: 10, cursor: "pointer",
+              color: loading ? "#a855f7" : "rgba(255,255,255,0.5)",
+            }}
+          >
+            <RefreshCw style={{ width: 16, height: 16, animation: loading ? "spin 1s linear infinite" : "none" }} />
+          </button>
+          <button
+            onClick={openAdd}
+            style={{
+              display: "flex", alignItems: "center", gap: 6,
+              background: "linear-gradient(135deg, #7c3aed, #a855f7)",
+              border: "none", borderRadius: 12, padding: "10px 16px",
+              color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer",
+              boxShadow: "0 4px 20px rgba(139,92,246,0.35)",
+            }}
+          >
+            <Plus style={{ width: 15, height: 15 }} />
+            <span>Ajouter</span>
+          </button>
+        </div>
       </div>
 
       {/* ── SECTION 1: Objectif du mois ── */}
