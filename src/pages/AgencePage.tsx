@@ -60,7 +60,8 @@ const VENTES: Vente[] = [
   { id: "RET-2026-04", date: "2026-04-01", prestation: "Retainer mensuel", client: "Alexandre Senek", montant: 1700, paiement: "En attente", livraison: "En cours" },
 ];
 
-const TOTAL_CA = VENTES.reduce((s, v) => s + v.montant, 0);
+const NET_HUGO  = VENTES.reduce((s, v) => s + v.montant, 0); // part Hugo (Hugo + CM non-assignés + retainer)
+const TOTAL_CA  = 43_723 + 6_800; // CA global agence tous associés (43 723€ CSV + 6 800€ retainers 2026)
 
 // ─── Styles ──────────────────────────────────────────────────
 const card: React.CSSProperties = {
@@ -200,9 +201,15 @@ export default function AgencePage() {
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        {/* CA card — shows global + net Hugo */}
+        <div className="p-4" style={cardGlow}>
+          <span className="text-xl">💰</span>
+          <p className="text-2xl font-bold mt-2" style={{ color: "#22d3ee" }}>{TOTAL_CA.toLocaleString("fr-FR")} €</p>
+          <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.45)" }}>CA global agence</p>
+          <p className="text-xs font-semibold mt-1" style={{ color: "#4ade80" }}>net Hugo ≈ {NET_HUGO.toLocaleString("fr-FR")} €</p>
+        </div>
         {[
-          { label: "CA total agence", value: TOTAL_CA.toLocaleString("fr-FR") + " €", color: "#22d3ee", icon: "💰" },
-          { label: "Ventes",          value: String(VENTES.length),                    color: "#a855f7", icon: "📦" },
+          { label: "Ventes (Hugo)",   value: String(VENTES.length),                    color: "#a855f7", icon: "📦" },
           { label: "Clients uniques", value: String(new Set(VENTES.map(v => v.client)).size), color: "#4ade80", icon: "👤" },
         ].map(k => (
           <div key={k.label} className="p-4" style={cardGlow}>

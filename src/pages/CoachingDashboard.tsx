@@ -165,7 +165,7 @@ export default function CoachingDashboard() {
   const { stats: rawStats, loading, save } = useCoachingStats();
   const { hidden } = usePrivacy();
   // Ensure new fields have defaults even if Supabase snapshot pre-dates them
-  const c = { academieCA: 8_730, agenceCA: 29_436, ...rawStats };
+  const c = { academieCA: 8_730, agenceCA: 50_523, agenceNetHugo: 29_436, ...rawStats };
   const [showModal, setShowModal] = useState(false);
 
   // Total closés = coaching HT + premium académie (tous closés en call)
@@ -304,7 +304,7 @@ export default function CoachingDashboard() {
           <p className="text-xs font-semibold uppercase tracking-wider mb-4" style={{ color: "rgba(255,255,255,0.3)" }}>
             Revenus — toutes sources
           </p>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
 
             {/* Coaching HT */}
             <div className="p-4 rounded-xl" style={{ background: "rgba(168,85,247,0.07)", border: "1px solid rgba(168,85,247,0.15)" }}>
@@ -373,6 +373,25 @@ export default function CoachingDashboard() {
               </div>
             </div>
 
+            {/* Agence */}
+            <div className="p-4 rounded-xl" style={{ background: "rgba(34,211,238,0.07)", border: "1px solid rgba(34,211,238,0.15)" }}>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-base">🏢</span>
+                <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "#22d3ee" }}>Agence</p>
+              </div>
+              <p className="text-xl font-bold" style={{ color: "rgba(255,255,255,0.9)" }}>
+                <AnimatedNum value={c.agenceCA} /> €
+              </p>
+              <p className="text-xs font-semibold mt-1" style={{ color: "#4ade80" }}>
+                net Hugo ≈ {c.agenceNetHugo.toLocaleString("fr-FR")} €
+              </p>
+              <div className="mt-1.5 space-y-0.5">
+                <p className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
+                  CA global tous associés
+                </p>
+              </div>
+            </div>
+
             {/* Total global */}
             <div className="p-4 rounded-xl" style={{ background: "rgba(245,158,11,0.07)", border: "1px solid rgba(245,158,11,0.2)" }}>
               <div className="flex items-center gap-2 mb-3">
@@ -383,7 +402,7 @@ export default function CoachingDashboard() {
                 <AnimatedNum value={c.caTotal + c.formationPrix * c.formationVentes + c.academieCA + c.agenceCA} /> €
               </p>
               <p className="text-xs font-semibold mt-1" style={{ color: "#4ade80" }}>
-                net Hugo ≈ {(Math.round(c.caTotal / 3) + Math.round(c.academieCA / 3) + c.agenceCA + c.formationPrix * c.formationVentes).toLocaleString("fr-FR")} €
+                net Hugo ≈ {(Math.round(c.caTotal / 3) + Math.round(c.academieCA / 3) + c.agenceNetHugo + c.formationPrix * c.formationVentes).toLocaleString("fr-FR")} €
               </p>
               <div className="mt-1.5 space-y-0.5">
                 <p className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>

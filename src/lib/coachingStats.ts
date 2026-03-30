@@ -17,7 +17,8 @@ export interface CoachingStats {
   academiePayants: number; // membres payants (premium)
   academieLives:   number; // lives organisés
   // Agence (prestations de services)
-  agenceCA:        number; // CA total agence €
+  agenceCA:        number; // CA total agence € (tous associés)
+  agenceNetHugo:   number; // CA agence part Hugo €
 }
 
 export const COACHING_DEFAULTS: CoachingStats = {
@@ -32,7 +33,8 @@ export const COACHING_DEFAULTS: CoachingStats = {
   academieMembres: 236,
   academiePayants: 20,
   academieLives:   14,
-  agenceCA:        29_436, // CA agence (Hugo + CM + retainer Senek 1 700€/mois jan-avr 2026)
+  agenceCA:        50_523, // CA agence global tous associés (43 723€ CSV + 6 800€ retainers 2026)
+  agenceNetHugo:   29_436, // part Hugo (Hugo + CM non-assignés + retainer Senek jan-avr 2026)
 };
 
 // ─── Supabase ─────────────────────────────────────────────────

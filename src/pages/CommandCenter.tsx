@@ -54,13 +54,13 @@ const MONTHLY_DATA = [
 function MobileOverview() {
   const { stats: rawStats } = useCoachingStats();
   const { hidden } = usePrivacy();
-  const c = { academieCA: 8_730, agenceCA: 29_436, ...rawStats };
+  const c = { academieCA: 8_730, agenceCA: 50_523, agenceNetHugo: 29_436, ...rawStats };
 
-  // CA global réel = Coaching HT + Académie + Formation + Agence
+  // CA global réel = Coaching HT + Académie + Formation + Agence (tous associés)
   const caGlobal  = c.caTotal + c.academieCA + c.formationPrix * c.formationVentes + c.agenceCA;
-  // Net Hugo : coaching ÷3, académie ÷3, agence 100%, formation 100%
+  // Net Hugo : coaching ÷3, académie ÷3, agence part Hugo 100%, formation 100%
   const netHugo   = Math.round(c.caTotal / 3) + Math.round(c.academieCA / 3)
-                  + c.agenceCA + c.formationPrix * c.formationVentes;
+                  + c.agenceNetHugo + c.formationPrix * c.formationVentes;
 
   return (
     <div className="md:hidden" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -112,7 +112,7 @@ function MobileOverview() {
           {[
             { label: "Coaching HT", value: c.caTotal,                            net: Math.round(c.caTotal / 3),             color: "#a855f7" },
             { label: "Académie",    value: c.academieCA,                          net: Math.round(c.academieCA / 3),          color: "#818cf8" },
-            { label: "Agence",      value: c.agenceCA,                            net: c.agenceCA,                            color: "#22d3ee" },
+            { label: "Agence",      value: c.agenceCA,                            net: c.agenceNetHugo,                       color: "#22d3ee" },
             { label: "Formation",   value: c.formationPrix * c.formationVentes,   net: c.formationPrix * c.formationVentes,   color: "#ec4899" },
           ].map((m, i, arr) => (
             <div key={i} style={{ padding: "10px 8px", borderRight: i < arr.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
