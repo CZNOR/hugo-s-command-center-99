@@ -53,13 +53,33 @@ export function usePushSubscription() {
     return ok;
   }, []);
 
-  // ── Vérifie si déjà subscrit au montage ──────────────────────
+  // ── Auto-subscribe si permission déjà accordée au montage ────
   useEffect(() => {
-    if (!("serviceWorker" in navigator)) return;
-    navigator.serviceWorker.register("/sw.js", { scope: "/" })
-      .then(reg => reg.pushManager.getSubscription())
-      .then(sub => setSubscribed(!!sub))
-      .catch(() => {});
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+    if (Notification.permission !== "granted") return;
+
+    (async () => {
+      try {
+        const reg = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+        await navigator.serviceWorker.ready;
+        let sub = await reg.pushManager.getSubscription();
+        if (!sub) {
+          sub = await reg.pushManager.subscribe({
+            userVisibleOnly:      true,
+            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+          });
+        }
+        setSubscribed(!!sub);
+        // Envoyer au serveur si pas encore enregistré
+        await fetch("/api/push/subscribe", {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify({ subscription: sub.toJSON() }),
+        });
+      } catch (e) {
+        console.warn("Auto-subscribe failed:", e);
+      }
+    })();
   }, []);
 
   return { permission, subscribed, subscribe };
