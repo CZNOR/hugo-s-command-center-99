@@ -25,12 +25,10 @@ async function sbFetch<T = any>(path: string, opts?: RequestInit): Promise<T> {
   });
   const text = await res.text();
   if (!text) return [] as unknown as T;
-  try {
-    return JSON.parse(text) as T;
-  } catch {
-    // Non-JSON response (HTML 502/timeout etc.) — treat as empty
-    return [] as unknown as T;
-  }
+  let data: unknown;
+  try { data = JSON.parse(text); } catch { return [] as unknown as T; }
+  if (!res.ok) throw new Error((data as any)?.message ?? `HTTP ${res.status}`);
+  return data as T;
 }
 
 // ─── Types ────────────────────────────────────────────────────
