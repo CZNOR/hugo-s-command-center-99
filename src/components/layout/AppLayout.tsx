@@ -13,7 +13,8 @@ import { TaskProvider, useTasks, type TaskBusiness } from "@/lib/taskContext";
 import { PrivacyProvider, usePrivacy } from "@/lib/privacyContext";
 import { initGoogleAuth } from "@/lib/googleCalendar";
 import { useTaskNotifications } from "@/lib/useTaskNotifications";
-import { Bell, BellOff } from "lucide-react";
+import { usePushSubscription } from "@/lib/usePushSubscription";
+import { Bell } from "lucide-react";
 
 const SIDEBAR_W = 220;
 const HEADER_H  = 56;
@@ -329,13 +330,16 @@ function AppLayoutInner() {
   const isFirstMount = useRef(true);
 
   // ── Notifications push ────────────────────────────────────────
+  // Fallback in-browser (tab ouvert)
+  useTaskNotifications(tasks);
+  // Vrai push natif iPhone (Service Worker + VAPID)
+  const { permission, subscribed, subscribe } = usePushSubscription();
   const [showNotifBanner, setShowNotifBanner] = useState(() =>
     "Notification" in window && Notification.permission === "default"
   );
-  const { requestPermission } = useTaskNotifications(tasks);
 
   const handleAllowNotif = async () => {
-    await requestPermission();
+    await subscribe();
     setShowNotifBanner(false);
   };
 
