@@ -6,13 +6,13 @@
 
 @layer base {
   :root {
-    /* ─── HUGOOS Dark Violet Base ─── */
-    --background: 262 58% 4%;
+    /* ─── HUGOOS Ultra Dark Premium ─── */
+    --background: 262 70% 2%;
     --foreground: 213 31% 95%;
-    --card: 262 40% 7%;
+    --card: 262 50% 4%;
     --card-foreground: 213 31% 95%;
-    --card-hover: 262 35% 10%;
-    --popover: 262 40% 7%;
+    --card-hover: 262 40% 6%;
+    --popover: 262 50% 4%;
     --popover-foreground: 213 31% 95%;
     --primary: 272 84% 62%;
     --primary-foreground: 0 0% 100%;
@@ -69,7 +69,7 @@ html {
 }
 
 body {
-  background-color: #07040F;
+  background-color: #030108;
   color: hsl(var(--foreground));
   font-family: 'Poppins', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -279,13 +279,10 @@ select:focus {
    KEYFRAME ANIMATIONS
 ═══════════════════════════════════════════ */
 
-/* Violet glow pulse */
+/* Violet glow — statique, plus premium que pulsé */
 @keyframes glow-pulse {
   0%, 100% {
-    box-shadow: 0 0 20px rgba(124, 58, 237, 0.3), 0 0 40px rgba(124, 58, 237, 0.1);
-  }
-  50% {
-    box-shadow: 0 0 30px rgba(168, 85, 247, 0.5), 0 0 60px rgba(168, 85, 247, 0.2);
+    box-shadow: 0 0 18px rgba(124, 58, 237, 0.18), 0 0 32px rgba(124, 58, 237, 0.06);
   }
 }
 
@@ -358,10 +355,10 @@ select:focus {
 .violet-orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(60px);
+  filter: blur(80px);
   pointer-events: none;
-  opacity: 0.15;
-  animation: orb-drift 12s ease-in-out infinite;
+  opacity: 0.04;
+  animation: none;
 }
 
 .violet-orb-primary {
@@ -520,9 +517,9 @@ select:focus {
 /* casino accent overrides via body attribute */
 [data-biz="casino"] .premium-card:hover { border-color: rgba(0,204,68,0.3) !important; box-shadow: 0 0 24px rgba(0,204,68,0.12); }
 
-/* ─── Background gradient animations ─── */
-@keyframes bg-coaching { 0%,100% { background-color: #0a0008; } 50% { background-color: #120020; } }
-@keyframes bg-casino   { 0%,100% { background-color: #001a0a; } 50% { background-color: #002a10; } }
+/* ─── Background gradient animations — supprimées, fond fixe premium ─── */
+@keyframes bg-coaching { 0%,100% { background-color: #030108; } }
+@keyframes bg-casino   { 0%,100% { background-color: #030108; } }
 
 /* ─── Glass card ─── */
 .glass-card {

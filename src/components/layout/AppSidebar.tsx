@@ -198,8 +198,8 @@ export default function AppSidebar({ open, onClose }: AppSidebarProps) {
     top: 56,
     height: "calc(100vh - 56px)",
     zIndex: 50,
-    background: "#08080f",
-    borderRight: "1px solid rgba(255,255,255,0.06)",
+    background: "#040110",
+    borderRight: "1px solid rgba(255,255,255,0.05)",
   };
 
   return (

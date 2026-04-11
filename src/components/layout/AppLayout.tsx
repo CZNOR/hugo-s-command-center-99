@@ -140,7 +140,7 @@ function AppHeader({ onOpenSidebar }: { onOpenSidebar: () => void }) {
         top: 0, left: 0, right: 0,
         height: HEADER_H,
         zIndex: 100,
-        background: "#08080f",
+        background: "#040110",
         borderBottom: "1px solid rgba(255,255,255,0.06)",
         alignItems: "stretch",
       }}
@@ -341,7 +341,7 @@ function AppLayoutInner() {
     : undefined;
 
   return (
-    <div style={{ background: "#07040F", minHeight: "100vh", animation: bgAnimation, maxWidth: "100vw" }}>
+    <div style={{ background: "#030108", minHeight: "100vh", maxWidth: "100vw" }}>
       {showIntro && <WelcomeIntro onDone={() => setShowIntro(false)} />}
       {showOverlay && (
         <BizTransitionOverlay
@@ -362,8 +362,8 @@ function AppLayoutInner() {
           pointerEvents: "none",
           zIndex: 0,
           background: isCoaching
-            ? "radial-gradient(ellipse 40% 40% at 50% 50%, rgba(168,85,247,0.06) 0%, transparent 70%)"
-            : "radial-gradient(ellipse 40% 40% at 50% 50%, rgba(0,204,68,0.05) 0%, transparent 70%)",
+            ? "radial-gradient(ellipse 40% 40% at 50% 50%, rgba(168,85,247,0.025) 0%, transparent 70%)"
+            : "radial-gradient(ellipse 40% 40% at 50% 50%, rgba(0,204,68,0.02) 0%, transparent 70%)",
           transition: "transform 0.3s ease-out",
         }}
       />
@@ -372,9 +372,9 @@ function AppLayoutInner() {
       <div style={{
         position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0,
         background:
-          "radial-gradient(ellipse 50% 35% at 0% 0%, rgba(0,255,136,0.04) 0%, transparent 60%)," +
-          "radial-gradient(ellipse 50% 35% at 100% 0%, rgba(168,85,247,0.06) 0%, transparent 60%)," +
-          "radial-gradient(ellipse 40% 30% at 80% 100%, rgba(124,58,237,0.04) 0%, transparent 70%)",
+          "radial-gradient(ellipse 50% 35% at 0% 0%, rgba(0,255,136,0.015) 0%, transparent 60%)," +
+          "radial-gradient(ellipse 50% 35% at 100% 0%, rgba(168,85,247,0.02) 0%, transparent 60%)," +
+          "radial-gradient(ellipse 40% 30% at 80% 100%, rgba(124,58,237,0.015) 0%, transparent 70%)",
       }} />
 
       {/* Fixed header */}
