@@ -12,6 +12,8 @@ import { BusinessProvider, useBusiness } from "@/lib/businessContext";
 import { TaskProvider, useTasks, type TaskBusiness } from "@/lib/taskContext";
 import { PrivacyProvider, usePrivacy } from "@/lib/privacyContext";
 import { initGoogleAuth } from "@/lib/googleCalendar";
+import { useTaskNotifications } from "@/lib/useTaskNotifications";
+import { Bell, BellOff } from "lucide-react";
 
 const SIDEBAR_W = 220;
 const HEADER_H  = 56;
@@ -282,12 +284,40 @@ function AppHeader({ onOpenSidebar }: { onOpenSidebar: () => void }) {
   );
 }
 
+// ─── Notification permission banner ───────────────────────────
+function NotifBanner({ onAllow, onDismiss }: { onAllow: () => void; onDismiss: () => void }) {
+  return (
+    <div style={{
+      position: "fixed", bottom: 90, left: "50%", transform: "translateX(-50%)",
+      zIndex: 200, display: "flex", alignItems: "center", gap: 10,
+      background: "rgba(10,4,20,0.96)", border: "1px solid rgba(168,85,247,0.35)",
+      borderRadius: 14, padding: "10px 16px", boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
+      backdropFilter: "blur(20px)", maxWidth: "calc(100vw - 32px)",
+    }}>
+      <Bell style={{ width: 16, height: 16, color: "#a855f7", flexShrink: 0 }} />
+      <span style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", whiteSpace: "nowrap" }}>
+        Activer les rappels 5 min avant les tâches ?
+      </span>
+      <button onClick={onAllow} style={{
+        background: "linear-gradient(135deg,#7c3aed,#a855f7)", color: "#fff",
+        border: "none", borderRadius: 8, padding: "5px 12px", fontSize: 12,
+        fontWeight: 600, cursor: "pointer", flexShrink: 0,
+      }}>Oui</button>
+      <button onClick={onDismiss} style={{
+        background: "transparent", color: "rgba(255,255,255,0.4)",
+        border: "none", cursor: "pointer", padding: 4, flexShrink: 0,
+      }}>✕</button>
+    </div>
+  );
+}
+
 // ─── Inner layout ──────────────────────────────────────────────
 function AppLayoutInner() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
   const { activeBusiness } = useBusiness();
   const { hidden } = usePrivacy();
+  const { tasks } = useTasks();
   const parallaxRef = useRef<HTMLDivElement>(null);
   const [showOverlay, setShowOverlay] = useState(false);
   // Only show intro once per browser session (not on every page refresh)
@@ -297,6 +327,17 @@ function AppLayoutInner() {
     return true;
   });
   const isFirstMount = useRef(true);
+
+  // ── Notifications push ────────────────────────────────────────
+  const [showNotifBanner, setShowNotifBanner] = useState(() =>
+    "Notification" in window && Notification.permission === "default"
+  );
+  const { requestPermission } = useTaskNotifications(tasks);
+
+  const handleAllowNotif = async () => {
+    await requestPermission();
+    setShowNotifBanner(false);
+  };
 
   // Sync data-biz attr on body for CSS card hover theming
   useEffect(() => {
@@ -382,6 +423,14 @@ function AppLayoutInner() {
 
       {/* Fixed sidebar — starts below header */}
       <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
+      {/* Notification permission banner */}
+      {showNotifBanner && (
+        <NotifBanner
+          onAllow={handleAllowNotif}
+          onDismiss={() => setShowNotifBanner(false)}
+        />
+      )}
 
       {/* Mobile bottom nav */}
       <MobileBottomNav onOpenSidebar={() => setSidebarOpen(true)} onCloseSidebar={() => setSidebarOpen(false)} />
