@@ -172,6 +172,19 @@ function AgendaCard() {
   );
 }
 
+// ─── Budget colour ────────────────────────────────────────────
+function budgetColor(budget?: string): string {
+  if (!budget) return "rgba(255,255,255,0.3)";
+  const b = budget.toLowerCase();
+  if (b.includes("moins") || b.includes("100"))    return "#f87171"; // < 100 → rouge
+  if (b.includes("500") && !b.includes("1"))        return "#fb923c"; // ~500 → orange
+  if (b.includes("1 000") || b.includes("1000"))    return "#f59e0b"; // 1k → jaune
+  if (b.includes("3 000") || b.includes("3000"))    return "#4ade80"; // 3k → vert
+  if (b.includes("5 000") || b.includes("5000"))    return "#a855f7"; // 5k → violet
+  if (b.includes("10 000") || b.includes("10000"))  return "#818cf8"; // 10k+ → indigo
+  return "#60a5fa"; // défaut → bleu
+}
+
 // ─── Calls card ───────────────────────────────────────────────
 function CallsCard() {
   const [calls, setCalls] = useState<CalBooking[]>([]);
@@ -199,14 +212,15 @@ function CallsCard() {
 
   const dateLabel = (iso: string) => {
     const d = new Date(iso);
-    const today = new Date(); today.setHours(0,0,0,0);
-    const tom   = new Date(today); tom.setDate(tom.getDate()+1);
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const tom   = new Date(today); tom.setDate(tom.getDate() + 1);
     if (d >= today && d < tom) return fmtTime(iso);
     return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) + " · " + fmtTime(iso);
   };
 
   return (
     <Card accent="#00cc44">
+      {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 14 }}>
         <Phone size={13} style={{ color: "#00cc44" }} />
         <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", color: "rgba(255,255,255,0.35)", textTransform: "uppercase" }}>
@@ -224,24 +238,55 @@ function CallsCard() {
         <p style={{ fontSize: 12, color: "rgba(255,255,255,0.22)", paddingBottom: 4 }}>Aucun call prévu 🎉</p>
       )}
 
-      {calls.map(c => (
-        <div key={c.id} style={{ display: "flex", gap: 10, marginBottom: 10, alignItems: "flex-start" }}>
-          <span style={{ fontSize: 10, fontWeight: 700, color: "#00cc44", minWidth: 40, marginTop: 2, flexShrink: 0 }}>
-            {dateLabel(c.startTime)}
-          </span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.8)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+      {calls.map(c => {
+        const bc = budgetColor(c.budget);
+        return (
+          <div key={c.id} style={{
+            display: "flex", gap: 10, marginBottom: 8, alignItems: "center",
+            padding: "8px 10px", borderRadius: 12,
+            background: "rgba(255,255,255,0.025)",
+            border: "1px solid rgba(255,255,255,0.05)",
+          }}>
+            {/* Time */}
+            <span style={{
+              fontSize: 10, fontWeight: 700, color: "#00cc44",
+              minWidth: 56, flexShrink: 0, lineHeight: 1.3,
+            }}>
+              {dateLabel(c.startTime)}
+            </span>
+            {/* Name */}
+            <p style={{
+              flex: 1, fontSize: 12, fontWeight: 600,
+              color: "rgba(255,255,255,0.85)",
+              whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+              minWidth: 0,
+            }}>
               {c.attendee.name}
             </p>
-            <div style={{ display: "flex", gap: 5, marginTop: 3, flexWrap: "wrap" }}>
-              {c.budget && <Label text={c.budget} color="#00cc44" />}
-              {c.niveau && <Label text={c.niveau} color="rgba(255,255,255,0.4)" />}
+            {/* Tags */}
+            <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+              {c.budget && (
+                <span style={{
+                  fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 99,
+                  background: bc + "20", color: bc,
+                }}>
+                  {c.budget}
+                </span>
+              )}
+              {c.niveau && (
+                <span style={{
+                  fontSize: 9, fontWeight: 600, padding: "2px 7px", borderRadius: 99,
+                  background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.45)",
+                }}>
+                  {c.niveau}
+                </span>
+              )}
             </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
 
-      <Link to="/coaching/appels" style={{ fontSize: 11, color: "#00cc44", display: "flex", alignItems: "center", gap: 3, marginTop: 2 }}>
+      <Link to="/coaching" style={{ fontSize: 11, color: "#00cc44", display: "flex", alignItems: "center", gap: 3, marginTop: 6 }}>
         Tous les calls <ArrowRight size={10} />
       </Link>
     </Card>
