@@ -521,16 +521,6 @@ export default function CommandCenter() {
       {/* Row 2 — Tasks */}
       <TaskSection />
 
-      {/* Row 3 — Business */}
-      <div>
-        <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", color: "rgba(255,255,255,0.18)", textTransform: "uppercase", marginBottom: 10 }}>
-          Mes business
-        </p>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 14 }}>
-          <CoachingCard />
-          <CasinoCard />
-        </div>
-      </div>
 
     </div>
   );
