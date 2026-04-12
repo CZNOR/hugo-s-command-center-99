@@ -5,7 +5,6 @@ import AppSidebar from "./AppSidebar";
 import StarField from "../StarField";
 import RippleCanvas from "../RippleCanvas";
 import PageTransition from "../PageTransition";
-import FloatingObject3D from "../FloatingObject3D";
 import BizTransitionOverlay from "../BizTransitionOverlay";
 import WelcomeIntro from "../WelcomeIntro";
 import { BusinessProvider, useBusiness } from "@/lib/businessContext";
@@ -394,7 +393,6 @@ function AppLayoutInner() {
           onDone={() => setShowOverlay(false)}
         />
       )}
-      <FloatingObject3D mode={activeBusiness.id === "casino" ? "casino" : "coaching"} />
       <StarField />
       <RippleCanvas />
 

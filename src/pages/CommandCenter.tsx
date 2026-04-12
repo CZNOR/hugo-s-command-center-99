@@ -24,9 +24,13 @@ async function sbGet<T>(path: string): Promise<T> {
   const t = await r.text(); try { return JSON.parse(t); } catch { return [] as T; }
 }
 
-const CAT_COLOR: Record<string, string> = {
-  coaching: "#a855f7", casino: "#00cc44", contenu: "#f59e0b",
-  équipe: "#22d3ee", admin: "#94a3b8", equipe: "#22d3ee",
+const BIZ_COLOR: Record<string, string> = {
+  coaching: "#a855f7", casino: "#00cc44", content: "#f59e0b",
+  equipe: "#22d3ee", admin: "#94a3b8",
+};
+const BIZ_LABEL: Record<string, string> = {
+  coaching: "Coaching", casino: "Casino", content: "Contenu",
+  equipe: "Équipe", admin: "Admin",
 };
 
 // ─── Greeting ─────────────────────────────────────────────────
@@ -337,7 +341,9 @@ function TaskSection() {
 
 function Row({ task, done }: { task: any; done?: boolean }) {
   const overdue = isPast(task.deadline) && task.status !== "done";
-  const accent  = CAT_COLOR[task.category?.toLowerCase()] ?? "#a855f7";
+  const biz     = task.business?.toLowerCase() ?? "";
+  const accent  = BIZ_COLOR[biz] ?? "#a855f7";
+  const label   = BIZ_LABEL[biz] ?? task.business ?? "—";
   return (
     <div style={{
       display: "flex", alignItems: "center", gap: 10,
@@ -363,7 +369,7 @@ function Row({ task, done }: { task: any; done?: boolean }) {
             <Clock size={9} />{task.time}
           </span>
         )}
-        <Label text={task.category || "—"} color={accent} />
+        <Label text={label} color={accent} />
       </div>
     </div>
   );
