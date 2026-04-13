@@ -24,7 +24,6 @@ function MobileBottomNav({ onOpenSidebar, onCloseSidebar }: { onOpenSidebar: () 
   const { hidden, toggle } = usePrivacy();
 
   const items = [
-    { path: "/",               icon: LayoutDashboard },
     { path: "/command-center", icon: Flame           },
     { path: "/tasks",          icon: CheckSquare     },
     { path: "/agenda",         icon: Calendar        },

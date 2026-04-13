@@ -19,14 +19,14 @@ interface NavItem {
 
 // ─── Navigation config ────────────────────────────────────────
 const TOP_ITEMS: NavItem[] = [
-  { path: "/",               label: "Dashboard",      icon: LayoutDashboard },
-  { path: "/command-center", label: "Command Center", icon: Flame           },
-  { path: "/agenda",         label: "Agenda",         icon: Calendar        },
-  { path: "/tasks",          label: "Tâches",         icon: CheckSquare     },
+  { path: "/command-center", label: "Command Center", icon: Flame       },
+  { path: "/agenda",         label: "Agenda",         icon: Calendar    },
+  { path: "/tasks",          label: "Tâches",         icon: CheckSquare },
 ];
 
 const COACHING_ITEMS: NavItem[] = [
-  { path: "/coaching",           label: "Dashboard",       icon: LayoutDashboard },
+  { path: "/",                   label: "Dashboard",       icon: LayoutDashboard },
+  { path: "/coaching",           label: "Coaching",        icon: TrendingUp      },
   { path: "/coaching/social",    label: "Réseaux sociaux", icon: TrendingUp      },
   { path: "/coaching/leads",     label: "Leads & Appels",  icon: Phone           },
   { path: "/coaching/clients",   label: "Clients",         icon: Users           },
@@ -37,10 +37,11 @@ const COACHING_ITEMS: NavItem[] = [
 ];
 
 const CASINO_ITEMS: NavItem[] = [
-  { path: "/casino",        label: "Dashboard Casino", icon: LayoutDashboard },
-  { path: "/casino/social", label: "Réseaux sociaux",  icon: TrendingUp      },
-  { path: "__affiliate__",  label: "Lien affiliation", icon: Link2, affiliate: true },
-  { path: "/content",       label: "Contenu",          icon: Edit2           },
+  { path: "/",             label: "Dashboard",        icon: LayoutDashboard },
+  { path: "/casino",       label: "Casino",           icon: TrendingUp      },
+  { path: "/casino/social",label: "Réseaux sociaux",  icon: TrendingUp      },
+  { path: "__affiliate__", label: "Lien affiliation", icon: Link2, affiliate: true },
+  { path: "/content",      label: "Contenu",          icon: Edit2           },
 ];
 
 const BOTTOM_ITEMS: NavItem[] = [
