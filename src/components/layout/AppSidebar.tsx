@@ -19,9 +19,10 @@ interface NavItem {
 
 // ─── Navigation config ────────────────────────────────────────
 const TOP_ITEMS: NavItem[] = [
-  { path: "/",       label: "Command Center", icon: LayoutDashboard },
-  { path: "/agenda", label: "Agenda",         icon: Calendar        },
-  { path: "/tasks",  label: "Tâches",         icon: CheckSquare     },
+  { path: "/",               label: "Dashboard",      icon: LayoutDashboard },
+  { path: "/command-center", label: "Command Center", icon: Flame           },
+  { path: "/agenda",         label: "Agenda",         icon: Calendar        },
+  { path: "/tasks",          label: "Tâches",         icon: CheckSquare     },
 ];
 
 const COACHING_ITEMS: NavItem[] = [

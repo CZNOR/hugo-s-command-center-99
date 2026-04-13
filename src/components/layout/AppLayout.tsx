@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Outlet, useNavigate, useLocation, Link } from "react-router-dom";
-import { Plus, LayoutDashboard, CheckSquare, Calendar, Menu, Eye, EyeOff } from "lucide-react";
+import { Plus, LayoutDashboard, CheckSquare, Calendar, Menu, Eye, EyeOff, Flame } from "lucide-react";
 import AppSidebar from "./AppSidebar";
 import StarField from "../StarField";
 import RippleCanvas from "../RippleCanvas";
@@ -24,9 +24,10 @@ function MobileBottomNav({ onOpenSidebar, onCloseSidebar }: { onOpenSidebar: () 
   const { hidden, toggle } = usePrivacy();
 
   const items = [
-    { path: "/",       icon: LayoutDashboard },
-    { path: "/tasks",  icon: CheckSquare     },
-    { path: "/agenda", icon: Calendar        },
+    { path: "/",               icon: LayoutDashboard },
+    { path: "/command-center", icon: Flame           },
+    { path: "/tasks",          icon: CheckSquare     },
+    { path: "/agenda",         icon: Calendar        },
   ];
 
   return (

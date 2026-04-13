@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import AppLayout from "@/components/layout/AppLayout";
+import DashboardPage from "@/pages/DashboardPage";
 import CommandCenter from "@/pages/CommandCenter";
 import AgentsPage from "@/pages/AgentsPage";
 import BusinessPage from "@/pages/BusinessPage";
@@ -38,7 +39,8 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route element={<AppLayout />}>
-            <Route path="/" element={<CommandCenter />} />
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/command-center" element={<CommandCenter />} />
             <Route path="/agents" element={<AgentsPage />} />
             <Route path="/business" element={<BusinessPage />} />
             <Route path="/content" element={<ContentPage />} />
