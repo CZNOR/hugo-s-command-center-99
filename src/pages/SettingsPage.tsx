@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Bell, Palette, Shield, Globe, Moon } from "lucide-react";
 
 function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
@@ -27,24 +28,54 @@ function Row({ icon: Icon, label, description, children }: {
   );
 }
 
-function Toggle({ defaultOn = false }: { defaultOn?: boolean }) {
+function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
   return (
-    <div
+    <button
+      type="button"
+      onClick={() => onChange(!on)}
+      aria-pressed={on}
       className="relative w-10 h-5 rounded-full cursor-pointer transition-colors"
-      style={{ background: defaultOn ? "#7c3aed" : "rgba(255,255,255,0.1)" }}
+      style={{ background: on ? "#7c3aed" : "rgba(255,255,255,0.1)", border: "none", padding: 0 }}
     >
       <div
-        className="absolute top-0.5 w-4 h-4 rounded-full transition-transform"
+        className="absolute top-0.5 w-4 h-4 rounded-full transition-all"
         style={{
           background: "#fff",
-          left: defaultOn ? "calc(100% - 18px)" : 2,
+          left: on ? "calc(100% - 18px)" : 2,
         }}
       />
-    </div>
+    </button>
   );
 }
 
+type SettingKey = "notif_tasks" | "notif_goals" | "dark_mode";
+const STORAGE_KEY = "czn_settings_v1";
+const DEFAULTS: Record<SettingKey, boolean> = {
+  notif_tasks: true,
+  notif_goals: false,
+  dark_mode: true,
+};
+
+function loadSettings(): Record<SettingKey, boolean> {
+  if (typeof window === "undefined") return { ...DEFAULTS };
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return { ...DEFAULTS };
+    return { ...DEFAULTS, ...JSON.parse(raw) };
+  } catch {
+    return { ...DEFAULTS };
+  }
+}
+
 export default function SettingsPage() {
+  const [settings, setSettings] = useState<Record<SettingKey, boolean>>(loadSettings);
+
+  useEffect(() => {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)); } catch { /* noop */ }
+  }, [settings]);
+
+  const set = (key: SettingKey) => (v: boolean) => setSettings(s => ({ ...s, [key]: v }));
+
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-2xl">
       <div>
@@ -55,17 +86,17 @@ export default function SettingsPage() {
       <Card>
         <h3 className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: "rgba(255,255,255,0.3)" }}>Notifications</h3>
         <Row icon={Bell} label="Rappels de tâches" description="Notifier avant l'heure d'un call planifié">
-          <Toggle defaultOn />
+          <Toggle on={settings.notif_tasks} onChange={set("notif_tasks")} />
         </Row>
         <Row icon={Bell} label="Alertes objectifs" description="Notifier quand un objectif est atteint">
-          <Toggle />
+          <Toggle on={settings.notif_goals} onChange={set("notif_goals")} />
         </Row>
       </Card>
 
       <Card>
         <h3 className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: "rgba(255,255,255,0.3)" }}>Apparence</h3>
         <Row icon={Moon} label="Mode sombre" description="Interface en thème sombre (par défaut)">
-          <Toggle defaultOn />
+          <Toggle on={settings.dark_mode} onChange={set("dark_mode")} />
         </Row>
         <Row icon={Palette} label="Couleur d'accentuation" description="Violet (Coaching) / Vert (Casino)">
           <div className="flex gap-2">

@@ -1,4 +1,4 @@
-const TOKEN = process.env.NOTION_TOKEN;
+const TOKEN = process.env.NOTION_TOKEN ?? process.env.VITE_NOTION_TOKEN;
 const DB_ID = "84280a15-8ae3-4e4c-a4f2-831ac17aa527";
 const BASE = "https://api.notion.com/v1";
 
@@ -38,6 +38,11 @@ export default async function handler(req: any, res: any) {
         const r = await fetch(`${BASE}/databases/${DB_ID}/query`, {
           method: "POST", headers: h(), body: JSON.stringify(body),
         });
+        if (!r.ok) {
+          const text = await r.text();
+          console.error("Notion query failed", r.status, text);
+          return res.status(r.status).json({ error: "Notion query failed", detail: text });
+        }
         const data = await r.json();
         all.push(...(data.results ?? []));
         cursor = data.has_more ? data.next_cursor : undefined;
@@ -66,6 +71,11 @@ export default async function handler(req: any, res: any) {
           },
         }),
       });
+      if (!r.ok) {
+        const text = await r.text();
+        console.error("Notion create failed", r.status, text);
+        return res.status(r.status).json({ error: "Notion create failed", detail: text });
+      }
       const p = await r.json();
       return res.status(200).json({
         id: p.id, title, status: status ?? "todo", deadline,
@@ -79,17 +89,27 @@ export default async function handler(req: any, res: any) {
       if (title !== undefined) properties["Task name"] = { title: [{ text: { content: title } }] };
       if (status !== undefined) properties["Status"] = { status: { name: toNotion(status) } };
       if (deadline !== undefined) properties["Due"] = deadline ? { date: { start: deadline } } : { date: null };
-      await fetch(`${BASE}/pages/${id}`, {
+      const r = await fetch(`${BASE}/pages/${id}`, {
         method: "PATCH", headers: h(), body: JSON.stringify({ properties }),
       });
+      if (!r.ok) {
+        const text = await r.text();
+        console.error("Notion patch failed", r.status, text);
+        return res.status(r.status).json({ error: "Notion patch failed", detail: text });
+      }
       return res.status(200).json({ success: true });
     }
 
     if (req.method === "DELETE") {
       const { id } = req.body;
-      await fetch(`${BASE}/pages/${id}`, {
+      const r = await fetch(`${BASE}/pages/${id}`, {
         method: "PATCH", headers: h(), body: JSON.stringify({ archived: true }),
       });
+      if (!r.ok) {
+        const text = await r.text();
+        console.error("Notion archive failed", r.status, text);
+        return res.status(r.status).json({ error: "Notion archive failed", detail: text });
+      }
       return res.status(200).json({ success: true });
     }
 

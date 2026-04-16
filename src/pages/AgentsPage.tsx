@@ -1,8 +1,12 @@
-import { Bot, Plus, Zap, Play, Pause, Settings } from "lucide-react";
+import { Bot, Plus, Zap, Play } from "lucide-react";
+import { toast } from "sonner";
 import { useBusiness } from "@/lib/businessContext";
 
 export default function AgentsPage() {
   const { activeBusiness } = useBusiness();
+
+  const notifyWip = (label: string) =>
+    toast.info(`${label} — bientôt disponible`, { description: "Module Agents IA en cours d'intégration." });
 
   const agentTypes = [
     { label: "Prospection", desc: "Automatise la recherche de clients" },
@@ -19,6 +23,7 @@ export default function AgentsPage() {
           <p className="text-sm text-white/40 mt-1">Automatisez vos workflows avec l'IA</p>
         </div>
         <button
+          onClick={() => notifyWip("Créer un agent")}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white flex-shrink-0"
           style={{ background: activeBusiness.gradient, boxShadow: `0 4px 12px ${activeBusiness.glow}` }}
         >
@@ -55,6 +60,7 @@ export default function AgentsPage() {
           {agentTypes.map((type) => (
             <div
               key={type.label}
+              onClick={() => notifyWip(`Template ${type.label}`)}
               className="rounded-2xl p-4 cursor-pointer transition-all hover:opacity-80"
               style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${activeBusiness.accent}30` }}
             >
@@ -67,6 +73,7 @@ export default function AgentsPage() {
               <p className="text-sm font-semibold text-white/80">{type.label}</p>
               <p className="text-xs text-white/40 mt-1">{type.desc}</p>
               <button
+                onClick={(e) => { e.stopPropagation(); notifyWip(`Configurer ${type.label}`); }}
                 className="mt-3 text-xs px-3 py-1.5 rounded-lg transition-all"
                 style={{ background: `${activeBusiness.accent}20`, color: activeBusiness.accent }}
               >
@@ -93,6 +100,7 @@ export default function AgentsPage() {
           <p className="text-white/30 text-sm mt-1">Créez votre premier agent pour automatiser vos workflows</p>
         </div>
         <button
+          onClick={() => notifyWip("Créer un agent")}
           className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white mt-1"
           style={{ background: activeBusiness.gradient, boxShadow: `0 4px 12px ${activeBusiness.glow}` }}
         >

@@ -26,6 +26,8 @@ import AgencePage from "@/pages/AgencePage";
 import EquipePage from "@/pages/EquipePage";
 import CasinoDashboard from "@/pages/CasinoDashboard";
 import CasinoSocialPage from "@/pages/CasinoSocialPage";
+import CasinoDepotsPage from "@/pages/CasinoDepotsPage";
+import CasinoRevSharePage from "@/pages/CasinoRevSharePage";
 import SettingsPage from "@/pages/SettingsPage";
 import NotFound from "./pages/NotFound.tsx";
 
@@ -63,6 +65,8 @@ const App = () => (
             {/* Casino */}
             <Route path="/casino" element={<CasinoDashboard />} />
             <Route path="/casino/social" element={<CasinoSocialPage />} />
+            <Route path="/casino/depots" element={<CasinoDepotsPage />} />
+            <Route path="/casino/revshare" element={<CasinoRevSharePage />} />
             {/* Settings */}
             <Route path="/settings" element={<SettingsPage />} />
           </Route>

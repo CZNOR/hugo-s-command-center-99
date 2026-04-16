@@ -1,10 +1,16 @@
 import { useState } from "react";
 import { Target, Plus, TrendingUp, TrendingDown, Minus, ChevronDown } from "lucide-react";
+import { toast } from "sonner";
 import { useBusiness } from "@/lib/businessContext";
 import type { Goal } from "@/lib/mock-data";
 
 // Données vides — à connecter Supabase
 const goals: Goal[] = [];
+
+const notifyGoalWip = () =>
+  toast.info("Créer un objectif — bientôt disponible", {
+    description: "La persistance Supabase des objectifs arrive.",
+  });
 
 const CATEGORIES = [
   { id: "all", label: "Tous" },
@@ -111,6 +117,7 @@ export default function GoalsPage() {
           )}
         </div>
         <button
+          onClick={notifyGoalWip}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-white"
           style={{ background: activeBusiness.gradient, boxShadow: `0 4px 12px ${activeBusiness.glow}` }}
         >
@@ -169,6 +176,7 @@ export default function GoalsPage() {
             </p>
           </div>
           <button
+            onClick={notifyGoalWip}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white mt-1"
             style={{ background: activeBusiness.gradient, boxShadow: `0 4px 16px ${activeBusiness.glow}` }}
           >

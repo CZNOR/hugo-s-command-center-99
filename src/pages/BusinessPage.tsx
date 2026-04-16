@@ -1,10 +1,16 @@
 import { type ReactNode } from "react";
 import { TrendingUp, DollarSign, Handshake, BarChart3, Plus, ArrowUpRight, Layers } from "lucide-react";
+import { toast } from "sonner";
 import { useBusiness, BUSINESSES } from "@/lib/businessContext";
 import type { Deal } from "@/lib/mock-data";
 
 // Données vides — à connecter Supabase
 const deals: Deal[] = [];
+
+const notifyDealWip = () =>
+  toast.info("Ajouter un deal — bientôt disponible", {
+    description: "Le pipeline deals sera connecté à Supabase prochainement.",
+  });
 
 interface MetricCardProps {
   icon: ReactNode;
@@ -62,6 +68,7 @@ function DealPipelineEmpty({ gradient, glow }: { gradient: string; glow: string 
       <Handshake className="w-8 h-8 text-white/15" />
       <p className="text-white/35 text-sm">Aucun deal en cours</p>
       <button
+        onClick={notifyDealWip}
         className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-white"
         style={{ background: gradient, boxShadow: `0 4px 12px ${glow}` }}
       >
@@ -159,7 +166,10 @@ export default function BusinessPage() {
             <Layers className="w-4 h-4" style={{ color: activeBusiness.accent }} />
             <h2 className="text-sm font-semibold text-white/80">Pipeline deals</h2>
           </div>
-          <button className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors">
+          <button
+            onClick={notifyDealWip}
+            className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors"
+          >
             <Plus className="w-3 h-3" /> Deal
           </button>
         </div>

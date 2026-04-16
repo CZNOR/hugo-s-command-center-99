@@ -1,4 +1,4 @@
-const TOKEN = process.env.NOTION_TOKEN;
+const TOKEN = process.env.NOTION_TOKEN ?? process.env.VITE_NOTION_TOKEN;
 const DB_ID = "32b1cbfe-7402-8093-b7d1-f05262cdb768";
 const BASE = "https://api.notion.com/v1";
 
@@ -33,6 +33,11 @@ export default async function handler(req: any, res: any) {
         const r = await fetch(`${BASE}/databases/${DB_ID}/query`, {
           method: "POST", headers: h(), body: JSON.stringify(payload),
         });
+        if (!r.ok) {
+          const text = await r.text();
+          console.error("Notion content query failed", r.status, text);
+          return res.status(r.status).json({ error: "Notion query failed", detail: text });
+        }
         const data = await r.json();
         all.push(...(data.results ?? []));
         cursor = data.has_more ? data.next_cursor : undefined;
@@ -83,9 +88,14 @@ export default async function handler(req: any, res: any) {
       if (format   !== undefined) properties["Format"]   = { select: { name: format } };
       if (date     !== undefined) properties["Date"]     = date ? { date: { start: date } } : { date: null };
       if (business !== undefined) properties["Business"] = { select: { name: business } };
-      await fetch(`${BASE}/pages/${id}`, {
+      const r = await fetch(`${BASE}/pages/${id}`, {
         method: "PATCH", headers: h(), body: JSON.stringify({ properties }),
       });
+      if (!r.ok) {
+        const text = await r.text();
+        console.error("Notion content patch failed", r.status, text);
+        return res.status(r.status).json({ error: "Notion patch failed", detail: text });
+      }
       return res.status(200).json({ success: true });
     }
 
