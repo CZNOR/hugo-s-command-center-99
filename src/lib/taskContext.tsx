@@ -64,7 +64,8 @@ async function saveTasks(tasks: Task[]): Promise<void> {
 }
 
 // ─── Seed : tes 22 tâches actuelles ──────────────────────────
-const TODAY = "2026-03-26";
+// `createdAt` uses today so default tasks keep today's date in any session
+const TODAY = new Date().toISOString().slice(0, 10);
 const SEED_TASKS: Task[] = [
   { id: "t1",  title: "HELIGHT",                          business: "coaching", priority: "normale", status: "todo", createdAt: TODAY },
   { id: "t2",  title: "PACKAGING INES",                   business: "equipe",   priority: "haute",   status: "todo", deadline: "2026-03-30", createdAt: TODAY },

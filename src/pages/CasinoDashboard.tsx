@@ -1,9 +1,17 @@
 import { useState, useEffect, useCallback } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   DollarSign, TrendingUp, Users, RefreshCw,
-  AlertTriangle, Edit3, X, Check,
+  AlertTriangle, Edit3, X, Check, Percent,
 } from "lucide-react";
 import AffiliateCopyButton from "@/components/AffiliateCopyButton";
+
+type Tab = "overview" | "depots" | "revshare";
+const TABS: { id: Tab; label: string; path: string }[] = [
+  { id: "overview", label: "Overview", path: "/casino" },
+  { id: "depots",   label: "Dépôts & CPA", path: "/casino/depots" },
+  { id: "revshare", label: "RevShare",     path: "/casino/revshare" },
+];
 
 const ACCENT = "#00ff44";
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
@@ -164,6 +172,12 @@ export default function CasinoDashboard() {
   const [stats, setStats] = useState<CasinoStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const activeTab: Tab =
+    location.pathname === "/casino/depots" ? "depots"
+    : location.pathname === "/casino/revshare" ? "revshare"
+    : "overview";
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -265,22 +279,65 @@ export default function CasinoDashboard() {
         </div>
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-        <KPI label="Commission ce mois" value={fmtEur(s.commission)} icon={DollarSign} color={ACCENT} />
-        <KPI label="Registrations"       value={String(s.registrations)} icon={Users} color="#60a5fa" />
-        <KPI label="Dépôts validés"      value={String(s.depots)} icon={TrendingUp} color="#a855f7" />
-        <KPI label="CPA encaissé"        value={fmtEur(cpa)} icon={DollarSign} color="#22c55e" />
-        <KPI label="RevShare estimé"     value={fmtEur(s.revshare)} icon={TrendingUp} color="#f59e0b" />
-        <KPI label="CA total"            value={fmtEur(caTotal)} icon={DollarSign} color={ACCENT} />
+      {/* Tabs */}
+      <div className="flex gap-1 p-1 rounded-xl overflow-x-auto"
+        style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+        {TABS.map(t => {
+          const active = activeTab === t.id;
+          return (
+            <button
+              key={t.id}
+              onClick={() => navigate(t.path)}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap"
+              style={
+                active
+                  ? { background: ACCENT, color: "#000" }
+                  : { background: "transparent", color: "rgba(255,255,255,0.5)" }
+              }
+            >
+              {t.label}
+            </button>
+          );
+        })}
       </div>
 
-      {/* Extra metrics */}
-      {(s.impressions > 0 || s.ctr > 0 || s.qftd > 0) && (
-        <div className="grid grid-cols-3 gap-3">
-          <KPI label="Impressions" value={s.impressions.toLocaleString("fr-FR")} icon={TrendingUp} color="rgba(255,255,255,0.4)" />
-          <KPI label="CTR"         value={`${s.ctr}%`} icon={TrendingUp} color="rgba(255,255,255,0.4)" />
-          <KPI label="QFTD"        value={String(s.qftd)} icon={Users} color="rgba(255,255,255,0.4)" />
+      {activeTab === "overview" && (
+        <>
+          {/* KPIs */}
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+            <KPI label="Commission ce mois" value={fmtEur(s.commission)} icon={DollarSign} color={ACCENT} />
+            <KPI label="Registrations"       value={String(s.registrations)} icon={Users} color="#60a5fa" />
+            <KPI label="Dépôts validés"      value={String(s.depots)} icon={TrendingUp} color="#a855f7" />
+            <KPI label="CPA encaissé"        value={fmtEur(cpa)} icon={DollarSign} color="#22c55e" />
+            <KPI label="RevShare estimé"     value={fmtEur(s.revshare)} icon={TrendingUp} color="#f59e0b" />
+            <KPI label="CA total"            value={fmtEur(caTotal)} icon={DollarSign} color={ACCENT} />
+          </div>
+
+          {/* Extra metrics */}
+          {(s.impressions > 0 || s.ctr > 0 || s.qftd > 0) && (
+            <div className="grid grid-cols-3 gap-3">
+              <KPI label="Impressions" value={s.impressions.toLocaleString("fr-FR")} icon={TrendingUp} color="rgba(255,255,255,0.4)" />
+              <KPI label="CTR"         value={`${s.ctr}%`} icon={TrendingUp} color="rgba(255,255,255,0.4)" />
+              <KPI label="QFTD"        value={String(s.qftd)} icon={Users} color="rgba(255,255,255,0.4)" />
+            </div>
+          )}
+        </>
+      )}
+
+      {activeTab === "depots" && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <KPI label="Dépôts validés"  value={String(s.depots)} icon={TrendingUp} color={ACCENT} />
+          <KPI label="CPA encaissé"    value={fmtEur(cpa)} icon={DollarSign} color="#22c55e" />
+          <KPI label="Commission"      value={fmtEur(s.commission)} icon={DollarSign} color="#60a5fa" />
+          <KPI label="Registrations"   value={String(s.registrations)} icon={Users} color="#a855f7" />
+        </div>
+      )}
+
+      {activeTab === "revshare" && (
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+          <KPI label="RevShare cumulé" value={fmtEur(s.revshare)} icon={DollarSign} color={ACCENT} />
+          <KPI label="CA total"        value={fmtEur(caTotal)} icon={TrendingUp} color="#f59e0b" />
+          <KPI label="CTR"             value={`${s.ctr}%`} icon={Percent} color="#a855f7" />
         </div>
       )}
 

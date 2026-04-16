@@ -45,7 +45,7 @@ const CASINO_ITEMS: NavItem[] = [
 ];
 
 const BOTTOM_ITEMS: NavItem[] = [
-  { path: "/coaching/equipe", label: "Équipe",     icon: Users    },
+  // Équipe hidden from nav until a real member management flow exists — route still reachable via URL
   { path: "/settings",        label: "Paramètres", icon: Settings },
 ];
 

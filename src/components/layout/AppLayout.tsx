@@ -320,6 +320,13 @@ function AppLayoutInner() {
   const { tasks } = useTasks();
   const parallaxRef = useRef<HTMLDivElement>(null);
   const [showOverlay, setShowOverlay] = useState(false);
+  // Heavy visual effects (StarField, RippleCanvas, BizTransitionOverlay, mouse parallax)
+  // are skipped on mobile for battery + perf. Honours prefers-reduced-motion.
+  const [heavyFx] = useState(() => {
+    if (typeof window === "undefined") return true;
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    return !reduce && window.innerWidth >= 1024;
+  });
   // Only show intro once per browser session (not on every page refresh)
   const [showIntro, setShowIntro] = useState(() => {
     if (sessionStorage.getItem("intro_seen")) return false;
@@ -350,14 +357,16 @@ function AppLayoutInner() {
   // Business mode transition — full-screen overlay + biz-transition class
   useEffect(() => {
     if (isFirstMount.current) { isFirstMount.current = false; return; }
+    if (!heavyFx) return; // skip overlay on mobile / reduced motion
     setShowOverlay(true);
     document.body.classList.add("biz-transition");
     const t = setTimeout(() => document.body.classList.remove("biz-transition"), 1000);
     return () => clearTimeout(t);
-  }, [activeBusiness.id]);
+  }, [activeBusiness.id, heavyFx]);
 
-  // Mouse parallax
+  // Mouse parallax — desktop only
   useEffect(() => {
+    if (!heavyFx) return;
     const handleMouseMove = (e: MouseEvent) => {
       if (!parallaxRef.current) return;
       const x = ((e.clientX / window.innerWidth) - 0.5) * 40;
@@ -366,7 +375,7 @@ function AppLayoutInner() {
     };
     window.addEventListener("mousemove", handleMouseMove);
     return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
+  }, [heavyFx]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -387,29 +396,31 @@ function AppLayoutInner() {
   return (
     <div style={{ background: "#030108", minHeight: "100vh", maxWidth: "100vw" }}>
       {showIntro && <WelcomeIntro onDone={() => setShowIntro(false)} />}
-      {showOverlay && (
+      {heavyFx && showOverlay && (
         <BizTransitionOverlay
           mode={activeBusiness.id as "coaching" | "casino"}
           onDone={() => setShowOverlay(false)}
         />
       )}
-      <StarField />
-      <RippleCanvas />
+      {heavyFx && <StarField />}
+      {heavyFx && <RippleCanvas />}
 
-      {/* Mouse parallax glow overlay */}
-      <div
-        ref={parallaxRef}
-        style={{
-          position: "fixed",
-          inset: 0,
-          pointerEvents: "none",
-          zIndex: 0,
-          background: isCoaching
-            ? "radial-gradient(ellipse 40% 40% at 50% 50%, rgba(168,85,247,0.025) 0%, transparent 70%)"
-            : "radial-gradient(ellipse 40% 40% at 50% 50%, rgba(0,204,68,0.02) 0%, transparent 70%)",
-          transition: "transform 0.3s ease-out",
-        }}
-      />
+      {/* Mouse parallax glow overlay — desktop only */}
+      {heavyFx && (
+        <div
+          ref={parallaxRef}
+          style={{
+            position: "fixed",
+            inset: 0,
+            pointerEvents: "none",
+            zIndex: 0,
+            background: isCoaching
+              ? "radial-gradient(ellipse 40% 40% at 50% 50%, rgba(168,85,247,0.025) 0%, transparent 70%)"
+              : "radial-gradient(ellipse 40% 40% at 50% 50%, rgba(0,204,68,0.02) 0%, transparent 70%)",
+            transition: "transform 0.3s ease-out",
+          }}
+        />
+      )}
 
       {/* Ambient glow */}
       <div style={{
