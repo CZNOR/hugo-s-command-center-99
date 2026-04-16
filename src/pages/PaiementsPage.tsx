@@ -1,8 +1,34 @@
-import { useState } from "react";
-import { Plus, X, DollarSign, CheckCircle, Clock, AlertCircle, BarChart2, Users } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Plus, X, DollarSign, CheckCircle, Clock, AlertCircle, BarChart2, Users, TrendingUp, TrendingDown, Hourglass } from "lucide-react";
 import {
   BarChart, Bar, ResponsiveContainer, XAxis, CartesianGrid, Tooltip, Cell,
 } from "recharts";
+
+// ─── Supabase (for expenses this month) ───────────────────────
+const SB_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const SB_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+
+async function fetchMonthExpenses(month: string): Promise<number> {
+  if (!SB_URL || !SB_KEY) return 0;
+  try {
+    // finance_entries has `type`, `amount`, `date` (YYYY-MM-DD), `status`
+    // month is YYYY-MM → filter on date.gte=YYYY-MM-01 and date.lt=next-month-01
+    const [y, m] = month.split("-").map(Number);
+    const start = `${y}-${String(m).padStart(2, "0")}-01`;
+    const nextY = m === 12 ? y + 1 : y;
+    const nextM = m === 12 ? 1 : m + 1;
+    const end = `${nextY}-${String(nextM).padStart(2, "0")}-01`;
+    const r = await fetch(
+      `${SB_URL}/rest/v1/finance_entries?type=eq.depense&date=gte.${start}&date=lt.${end}&select=amount,status`,
+      { headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } }
+    );
+    if (!r.ok) return 0;
+    const rows = (await r.json()) as { amount: number }[];
+    return rows.reduce((s, row) => s + (row.amount ?? 0), 0);
+  } catch {
+    return 0;
+  }
+}
 
 // ─── Types ───────────────────────────────────────────────────
 type EcheanceStatut = "payé" | "en attente" | "en retard";
@@ -340,10 +366,39 @@ export default function PaiementsPage() {
   const [clients, setClients] = useState<Client[]>(INITIAL_CLIENTS);
   const [showModal, setShowModal] = useState(false);
   const [view, setView] = useState<"clients" | "monthly">("clients");
+  const [monthExpenses, setMonthExpenses] = useState<number>(0);
 
   const totalCA    = clients.reduce((s, c) => s + c.montantTotal, 0);
   const totalPaye  = clients.reduce((s, c) => s + c.echeances.filter(e => e.statut === "payé").reduce((a, e) => a + e.montant, 0), 0);
   const totalRetard = clients.filter(c => c.echeances.some(e => e.statut === "en retard")).length;
+
+  // ─── Flow-of-money KPIs ───────────────────────────────────
+  const now = new Date();
+  const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+  const { estimatedIncoming, receivedThisMonth, netThisMonth } = useMemo(() => {
+    let incoming = 0;
+    let received = 0;
+    for (const c of clients) {
+      for (const e of c.echeances) {
+        const [y, mo] = e.date.split("-");
+        const monthKey = `${y}-${mo}`;
+        // Incoming = every échéance not yet paid (all-time horizon, forward-looking)
+        if (e.statut !== "payé") incoming += e.montant;
+        // Received this month = paid échéances with date in current month
+        if (e.statut === "payé" && monthKey === currentMonthKey) received += e.montant;
+      }
+    }
+    return {
+      estimatedIncoming: incoming,
+      receivedThisMonth: received,
+      netThisMonth: received - monthExpenses,
+    };
+  }, [clients, currentMonthKey, monthExpenses]);
+
+  useEffect(() => {
+    fetchMonthExpenses(currentMonthKey).then(setMonthExpenses);
+  }, [currentMonthKey]);
 
   const handleEcheanceChange = (clientId: string, idx: number, statut: EcheanceStatut) =>
     setClients(prev => prev.map(c => c.id === clientId ? { ...c, echeances: c.echeances.map((e, i) => i === idx ? { ...e, statut } : e) } : c));
@@ -376,6 +431,50 @@ export default function PaiementsPage() {
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">Nouveau client</span>
           </button>
+        </div>
+      </div>
+
+      {/* Flow KPIs — this month's cash movement */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="p-4" style={cardGlow}>
+          <div className="flex items-center gap-2 mb-1" style={{ color: "#22c55e" }}>
+            <TrendingUp className="w-4 h-4" />
+            <span className="text-[11px] font-bold uppercase tracking-widest">Rentré ce mois</span>
+          </div>
+          <p className="text-2xl font-bold mt-1" style={{ color: "#22c55e" }}>
+            {receivedThisMonth.toLocaleString("fr-FR")} €
+          </p>
+          <p className="text-[11px] mt-1" style={{ color: "rgba(255,255,255,0.4)" }}>
+            Échéances payées · {now.toLocaleDateString("fr-FR", { month: "long", year: "numeric" })}
+          </p>
+        </div>
+
+        <div className="p-4" style={cardGlow}>
+          <div className="flex items-center gap-2 mb-1" style={{ color: "#a855f7" }}>
+            <Hourglass className="w-4 h-4" />
+            <span className="text-[11px] font-bold uppercase tracking-widest">Estimé à venir</span>
+          </div>
+          <p className="text-2xl font-bold mt-1" style={{ color: "#a855f7" }}>
+            {estimatedIncoming.toLocaleString("fr-FR")} €
+          </p>
+          <p className="text-[11px] mt-1" style={{ color: "rgba(255,255,255,0.4)" }}>
+            Toutes échéances en attente / en retard
+          </p>
+        </div>
+
+        <div className="p-4" style={cardGlow}>
+          <div className="flex items-center gap-2 mb-1" style={{ color: "#ef4444" }}>
+            <TrendingDown className="w-4 h-4" />
+            <span className="text-[11px] font-bold uppercase tracking-widest">Dépenses ce mois</span>
+          </div>
+          <p className="text-2xl font-bold mt-1" style={{ color: "#ef4444" }}>
+            {monthExpenses.toLocaleString("fr-FR")} €
+          </p>
+          <p className="text-[11px] mt-1" style={{ color: "rgba(255,255,255,0.4)" }}>
+            Net estimé : <span style={{ color: netThisMonth >= 0 ? "#22c55e" : "#ef4444", fontWeight: 600 }}>
+              {netThisMonth >= 0 ? "+" : ""}{netThisMonth.toLocaleString("fr-FR")} €
+            </span>
+          </p>
         </div>
       </div>
 
