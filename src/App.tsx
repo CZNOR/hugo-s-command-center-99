@@ -15,7 +15,6 @@ import AgendaPage from "@/pages/AgendaPage";
 // Lazy-loaded (split per route)
 const AgentsPage        = lazy(() => import("@/pages/AgentsPage"));
 const BusinessPage      = lazy(() => import("@/pages/BusinessPage"));
-const ContentPage       = lazy(() => import("@/pages/ContentPage"));
 const TeamPage          = lazy(() => import("@/pages/TeamPage"));
 const GoalsPage         = lazy(() => import("@/pages/GoalsPage"));
 const GamificationPage  = lazy(() => import("@/pages/GamificationPage"));
@@ -61,7 +60,6 @@ const App = () => (
               <Route path="/command-center" element={<CommandCenter />} />
               <Route path="/agents" element={<AgentsPage />} />
               <Route path="/business" element={<BusinessPage />} />
-              <Route path="/content" element={<ContentPage />} />
               <Route path="/tasks" element={<TasksPage />} />
               <Route path="/agenda" element={<AgendaPage />} />
               <Route path="/team" element={<TeamPage />} />

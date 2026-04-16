@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation, Link } from "react-router-dom";
 import {
   Calendar, CheckSquare, LayoutDashboard, TrendingUp,
-  Phone, DollarSign, Edit2, Users, Settings, Flame, Link2, Check, X, Building2,
+  Phone, DollarSign, Users, Settings, Flame, Link2, Check, X, Building2,
 } from "lucide-react";
 import { useBusiness, type BusinessId } from "@/lib/businessContext";
 import { useRitual } from "@/lib/dailyRitualContext";
@@ -33,7 +33,6 @@ const COACHING_ITEMS: NavItem[] = [
   { path: "/coaching/agence",    label: "Agence",          icon: Building2       },
   { path: "/coaching/paiements", label: "Paiements",       icon: DollarSign      },
   { path: "/finances",           label: "Finances",        icon: DollarSign      },
-  { path: "/content",            label: "Contenu",         icon: Edit2           },
 ];
 
 const CASINO_ITEMS: NavItem[] = [
@@ -41,7 +40,6 @@ const CASINO_ITEMS: NavItem[] = [
   { path: "/casino",       label: "Casino",           icon: TrendingUp      },
   { path: "/casino/social",label: "Réseaux sociaux",  icon: TrendingUp      },
   { path: "__affiliate__", label: "Lien affiliation", icon: Link2, affiliate: true },
-  { path: "/content",      label: "Contenu",          icon: Edit2           },
 ];
 
 const BOTTOM_ITEMS: NavItem[] = [
