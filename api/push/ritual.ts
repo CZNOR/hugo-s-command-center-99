@@ -42,12 +42,10 @@ async function sendToAll(subs: any[], payload: object): Promise<number> {
 }
 
 function isSunday(): boolean {
-  // Vercel runs UTC; Paris is UTC+1 (winter) or UTC+2 (summer). For the weekly day-off,
-  // we accept a 1h drift either way — only skip if we're clearly on Sunday Paris time.
-  const now = new Date();
-  const parisOffsetHours = 1; // good enough; in summer it's 2 but cron runs at 9h/19h ParisTime
-  const paris = new Date(now.getTime() + parisOffsetHours * 60 * 60 * 1000);
-  return paris.getUTCDay() === 0;
+  // User is in Bangkok (UTC+7, no DST). Convert cron UTC time to local day-of-week.
+  const BKK_OFFSET_HOURS = 7;
+  const bkk = new Date(Date.now() + BKK_OFFSET_HOURS * 60 * 60 * 1000);
+  return bkk.getUTCDay() === 0;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

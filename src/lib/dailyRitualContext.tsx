@@ -49,13 +49,93 @@ const DEFAULT_SETTINGS: RitualSettings = {
 
 const STORAGE_KEY = "czn_ritual_v1";
 
+// ─── Supabase sync ──────────────────────────────────────────
+const SB_URL = (typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_SUPABASE_URL) as string | undefined;
+const SB_KEY = (typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_SUPABASE_ANON_KEY) as string | undefined;
+
+function sbEnabled() { return !!SB_URL && !!SB_KEY; }
+
+async function sbFetchLogs(): Promise<Record<string, DailyLog> | null> {
+  if (!sbEnabled()) return null;
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/daily_rituals?select=*&order=date.desc&limit=120`, {
+      headers: { apikey: SB_KEY!, Authorization: `Bearer ${SB_KEY}` },
+    });
+    if (!r.ok) return null;
+    const rows = (await r.json()) as any[];
+    const logs: Record<string, DailyLog> = {};
+    rows.forEach(row => {
+      const log: DailyLog = { date: row.date };
+      if (row.morning_at) {
+        log.morning = {
+          completedAt: row.morning_at,
+          top3: row.top3 ?? ["", "", ""],
+          intent: row.intent ?? "",
+          energy: (row.morning_energy ?? 3) as 1 | 2 | 3 | 4 | 5,
+        };
+      }
+      if (row.evening_at) {
+        log.evening = {
+          completedAt: row.evening_at,
+          win: row.win ?? "",
+          energy: (row.evening_energy ?? 3) as 1 | 2 | 3 | 4 | 5,
+          tasksDoneIds: row.tasks_done_ids ?? [],
+          tasksDeferredIds: row.tasks_deferred_ids ?? [],
+        };
+      }
+      if (row.skipped) log.skipped = true;
+      logs[row.date] = log;
+    });
+    return logs;
+  } catch { return null; }
+}
+
+async function sbUpsertLog(log: DailyLog): Promise<void> {
+  if (!sbEnabled()) return;
+  try {
+    await fetch(`${SB_URL}/rest/v1/daily_rituals`, {
+      method: "POST",
+      headers: {
+        apikey: SB_KEY!,
+        Authorization: `Bearer ${SB_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "resolution=merge-duplicates",
+      },
+      body: JSON.stringify({
+        date: log.date,
+        morning_at:     log.morning?.completedAt ?? null,
+        top3:           log.morning?.top3 ?? null,
+        intent:         log.morning?.intent ?? null,
+        morning_energy: log.morning?.energy ?? null,
+        evening_at:     log.evening?.completedAt ?? null,
+        win:            log.evening?.win ?? null,
+        evening_energy: log.evening?.energy ?? null,
+        tasks_done_ids:     log.evening?.tasksDoneIds ?? null,
+        tasks_deferred_ids: log.evening?.tasksDeferredIds ?? null,
+        skipped:        log.skipped ?? false,
+        updated_at:     new Date().toISOString(),
+      }),
+    });
+  } catch { /* offline is fine — localStorage still has it */ }
+}
+
 interface StoredState {
   settings: RitualSettings;
   logs: Record<string, DailyLog>;
 }
 
+/**
+ * Returns today's date in the user's LOCAL timezone as YYYY-MM-DD.
+ * We deliberately avoid `toISOString()` because it returns UTC, which would
+ * flip the ritual day at 17:00 Bangkok (= 00:00 UTC). Local date is what
+ * a human means when they say "today".
+ */
 function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${dd}`;
 }
 
 function isSunday(d = new Date()) { return d.getDay() === 0; }
@@ -118,7 +198,10 @@ function computeStreak(logs: Record<string, DailyLog>, settings: RitualSettings)
       cursor.setDate(cursor.getDate() - 1);
       continue;
     }
-    const key = cursor.toISOString().slice(0, 10);
+    const ky = cursor.getFullYear();
+    const km = String(cursor.getMonth() + 1).padStart(2, "0");
+    const kd = String(cursor.getDate()).padStart(2, "0");
+    const key = `${ky}-${km}-${kd}`;
     const log = logs[key];
     const complete = !!(log?.morning?.completedAt && log?.evening?.completedAt);
     if (!complete) break;
@@ -159,6 +242,17 @@ export function RitualProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(id);
   }, []);
 
+  // Hydrate from Supabase on mount. Remote wins on conflict so the iPhone and laptop stay
+  // in sync — localStorage is just a cache for instant render and offline use.
+  useEffect(() => {
+    let cancelled = false;
+    sbFetchLogs().then(remote => {
+      if (cancelled || !remote) return;
+      setState(prev => ({ ...prev, logs: { ...prev.logs, ...remote } }));
+    });
+    return () => { cancelled = true; };
+  }, []);
+
   useEffect(() => { saveState(state); }, [state]);
 
   const today = todayISO();
@@ -188,7 +282,10 @@ export function RitualProvider({ children }: { children: ReactNode }) {
     setState(prev => {
       const key = todayISO();
       const existing = prev.logs[key] ?? { date: key };
-      return { ...prev, logs: { ...prev.logs, [key]: { ...existing, ...patch } } };
+      const merged: DailyLog = { ...existing, ...patch };
+      // fire-and-forget sync — offline still works via localStorage
+      sbUpsertLog(merged);
+      return { ...prev, logs: { ...prev.logs, [key]: merged } };
     });
   }, []);
 

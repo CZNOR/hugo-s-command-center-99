@@ -4,12 +4,26 @@
  * - Evening: pick tasks done / deferred + win + energy → closes the day
  * While visible, the app is locked except for /tasks (allowed path).
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Flame, Moon, Sparkles, CheckSquare, ArrowRight, ListChecks } from "lucide-react";
+import { Flame, Moon, Sparkles, CheckSquare, ArrowRight, ListChecks, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { useRitual } from "@/lib/dailyRitualContext";
 import { useTasks } from "@/lib/taskContext";
+
+// Local YYYY-MM-DD (not UTC)
+function localISODate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+function todayLocal(): string { return localISODate(new Date()); }
+function tomorrowLocal(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return localISODate(d);
+}
 
 // ─── Shell ──────────────────────────────────────────────────
 function Shell({ children, variant }: { children: React.ReactNode; variant: "morning" | "evening" }) {
@@ -63,11 +77,31 @@ function EnergyPicker({ value, onChange }: { value: number; onChange: (n: 1 | 2 
 // ─── Morning gate ───────────────────────────────────────────
 function MorningGate() {
   const { submitMorning, streak } = useRitual();
+  const { tasks } = useTasks();
   const [p1, setP1] = useState("");
   const [p2, setP2] = useState("");
   const [p3, setP3] = useState("");
   const [intent, setIntent] = useState("");
   const [energy, setEnergy] = useState<1 | 2 | 3 | 4 | 5>(3);
+
+  const today = todayLocal();
+  // Suggest overdue + today + "haute" tasks as priority candidates
+  const suggestions = useMemo(() => {
+    return tasks
+      .filter(t => t.status !== "done")
+      .filter(t =>
+        (t.deadline && t.deadline <= today) ||
+        (t.priority === "haute" && (!t.deadline || t.deadline === today))
+      )
+      .slice(0, 6);
+  }, [tasks, today]);
+
+  const fillNextSlot = (title: string) => {
+    if (!p1.trim()) { setP1(title); return; }
+    if (!p2.trim()) { setP2(title); return; }
+    if (!p3.trim()) { setP3(title); return; }
+    toast.info("3 priorités déjà remplies — remplace une case à la main");
+  };
 
   const canSubmit = p1.trim() && p2.trim() && p3.trim() && intent.trim();
 
@@ -147,6 +181,36 @@ function MorningGate() {
             />
           </div>
         ))}
+        {suggestions.length > 0 && (
+          <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+            <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>
+              Tes candidates · clique pour remplir
+            </p>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {suggestions.map(t => {
+                const overdue = !!(t.deadline && t.deadline < today);
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => fillNextSlot(t.title)}
+                    style={{
+                      padding: "5px 10px", borderRadius: 999, fontSize: 11, fontWeight: 600,
+                      background: overdue ? "rgba(245,158,11,0.12)" : "rgba(255,255,255,0.05)",
+                      border: `1px solid ${overdue ? "rgba(245,158,11,0.3)" : "rgba(255,255,255,0.08)"}`,
+                      color: overdue ? "#f59e0b" : "rgba(255,255,255,0.7)",
+                      cursor: "pointer",
+                      maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                    }}
+                    title={t.title + (t.deadline ? ` · ${t.deadline}` : "")}
+                  >
+                    {overdue ? "⚠ " : ""}{t.title}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Intent */}
@@ -217,14 +281,45 @@ function MorningGate() {
 // ─── Evening gate ───────────────────────────────────────────
 function EveningGate() {
   const { submitEvening, streak } = useRitual();
-  const { tasks } = useTasks();
+  const { tasks, setStatus, editTask } = useTasks();
   const [win, setWin] = useState("");
   const [energy, setEnergy] = useState<1 | 2 | 3 | 4 | 5>(3);
   const [doneIds, setDoneIds] = useState<Set<string>>(new Set());
   const [deferredIds, setDeferredIds] = useState<Set<string>>(new Set());
 
-  // Only surface currently-open tasks (status != "done")
-  const openTasks = useMemo(() => tasks.filter(t => t.status !== "done"), [tasks]);
+  const today = todayLocal();
+
+  // Sort open tasks: overdue first, then today, then no-date, then upcoming
+  const { openTasks, overdueCount } = useMemo(() => {
+    const open = tasks.filter(t => t.status !== "done");
+    const rank = (t: typeof open[number]) => {
+      if (t.deadline && t.deadline < today) return 0;   // overdue — top
+      if (t.deadline === today) return 1;               // due today
+      if (!t.deadline) return 2;                        // no date
+      return 3;                                         // future
+    };
+    const sorted = [...open].sort((a, b) => {
+      const ra = rank(a), rb = rank(b);
+      if (ra !== rb) return ra - rb;
+      return (a.deadline ?? "").localeCompare(b.deadline ?? "");
+    });
+    return { openTasks: sorted, overdueCount: open.filter(t => t.deadline && t.deadline < today).length };
+  }, [tasks, today]);
+
+  // Auto-pre-check overdue tasks as "→ Demain" (user's explicit request: "toutes les tâches
+  // en retard tu les mets demain"). They can uncheck any they already did.
+  useEffect(() => {
+    if (overdueCount === 0) return;
+    setDeferredIds(prev => {
+      if (prev.size > 0) return prev; // user already interacted
+      const next = new Set<string>();
+      openTasks.forEach(t => {
+        if (t.deadline && t.deadline < today) next.add(t.id);
+      });
+      return next;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [overdueCount]);
 
   const canSubmit = win.trim();
 
@@ -241,14 +336,19 @@ function EveningGate() {
       toast.error("Écris au moins un win du jour");
       return;
     }
+    // Persist evening entry first
     submitEvening({
       win: win.trim(),
       energy,
       tasksDoneIds: Array.from(doneIds),
       tasksDeferredIds: Array.from(deferredIds),
     });
+    // Actually mutate the tasks: mark done, move deferred to tomorrow
+    const tomorrow = tomorrowLocal();
+    doneIds.forEach(id => setStatus(id, "done"));
+    deferredIds.forEach(id => editTask(id, { deadline: tomorrow }));
     toast.success("Journée bouclée 🌙", {
-      description: `Streak : ${streak + 1} jours · repose-toi bien`,
+      description: `Streak : ${streak + 1}j · ${doneIds.size} faites, ${deferredIds.size} reportées`,
     });
   };
 
@@ -282,17 +382,42 @@ function EveningGate() {
             <ListChecks style={{ width: 14, height: 14 }} />
             Faite aujourd'hui ? ({openTasks.length} ouvertes)
           </label>
-          <div style={{ maxHeight: 240, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6 }}>
-            {openTasks.slice(0, 20).map(t => {
+          {overdueCount > 0 && (
+            <div style={{
+              display: "flex", alignItems: "center", gap: 6, marginBottom: 10,
+              padding: "6px 10px", borderRadius: 8,
+              background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.3)",
+              fontSize: 11, color: "#f59e0b",
+            }}>
+              <AlertTriangle style={{ width: 12, height: 12 }} />
+              <span>{overdueCount} tâche{overdueCount > 1 ? "s" : ""} en retard — auto-reportée{overdueCount > 1 ? "s" : ""} à demain. Décoche si déjà faite.</span>
+            </div>
+          )}
+          <div style={{ maxHeight: 260, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6 }}>
+            {openTasks.slice(0, 30).map(t => {
               const isDone = doneIds.has(t.id);
               const isDeferred = deferredIds.has(t.id);
+              const isOverdue = !!(t.deadline && t.deadline < today);
+              const isToday = t.deadline === today;
               return (
                 <div key={t.id} style={{
                   display: "flex", alignItems: "center", gap: 8,
                   padding: "8px 10px", borderRadius: 8,
-                  background: "rgba(255,255,255,0.03)",
+                  background: isOverdue ? "rgba(245,158,11,0.06)" : "rgba(255,255,255,0.03)",
+                  border: `1px solid ${isOverdue ? "rgba(245,158,11,0.25)" : "transparent"}`,
                 }}>
-                  <span style={{ flex: 1, color: "#fff", fontSize: 13 }}>{t.title}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ color: "#fff", fontSize: 13 }}>{t.title}</span>
+                    {(isOverdue || isToday) && (
+                      <span style={{
+                        marginLeft: 6, fontSize: 10, fontWeight: 700,
+                        color: isOverdue ? "#f59e0b" : "#a855f7",
+                        textTransform: "uppercase", letterSpacing: "0.05em",
+                      }}>
+                        {isOverdue ? `· en retard (${t.deadline})` : "· aujourd'hui"}
+                      </span>
+                    )}
+                  </div>
                   <button
                     type="button"
                     onClick={() => { toggle(setDoneIds)(t.id); if (isDeferred) toggle(setDeferredIds)(t.id); }}
