@@ -4,5 +4,9 @@
   "framework": "vite",
   "rewrites": [
     { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ],
+  "crons": [
+    { "path": "/api/push/ritual?mode=morning", "schedule": "0 8 * * *" },
+    { "path": "/api/push/ritual?mode=evening", "schedule": "0 18 * * *" }
   ]
 }

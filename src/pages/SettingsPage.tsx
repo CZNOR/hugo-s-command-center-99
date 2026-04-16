@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { Bell, Palette, Shield, Globe, Moon } from "lucide-react";
+import { Bell, Palette, Shield, Globe, Moon, Sparkles, Flame, RotateCcw } from "lucide-react";
+import { toast } from "sonner";
+import { useRitual, type WeekendMode } from "@/lib/dailyRitualContext";
 
 function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
   return (
@@ -69,6 +71,7 @@ function loadSettings(): Record<SettingKey, boolean> {
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<Record<SettingKey, boolean>>(loadSettings);
+  const ritual = useRitual();
 
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)); } catch { /* noop */ }
@@ -76,12 +79,70 @@ export default function SettingsPage() {
 
   const set = (key: SettingKey) => (v: boolean) => setSettings(s => ({ ...s, [key]: v }));
 
+  const handleResetToday = () => {
+    ritual.resetToday();
+    toast.success("Rituel d'aujourd'hui réinitialisé");
+  };
+
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-2xl">
       <div>
         <h1 className="text-2xl font-bold" style={{ color: "rgba(255,255,255,0.9)" }}>Paramètres</h1>
         <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.4)" }}>Configuration de votre espace CZN</p>
       </div>
+
+      {/* Daily ritual settings */}
+      <Card>
+        <h3 className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: "rgba(255,255,255,0.3)" }}>Rituel quotidien</h3>
+
+        <Row icon={Sparkles} label="Heure du matin" description="Gate + notification push">
+          <select
+            value={ritual.settings.morningHour}
+            onChange={e => ritual.updateSettings({ morningHour: parseInt(e.target.value, 10) })}
+            style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#fff", borderRadius: 8, padding: "6px 10px", fontSize: 13 }}
+          >
+            {[6, 7, 8, 9, 10, 11].map(h => <option key={h} value={h}>{h}h</option>)}
+          </select>
+        </Row>
+
+        <Row icon={Moon} label="Heure du soir" description="Bilan + notification push">
+          <select
+            value={ritual.settings.eveningHour}
+            onChange={e => ritual.updateSettings({ eveningHour: parseInt(e.target.value, 10) })}
+            style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#fff", borderRadius: 8, padding: "6px 10px", fontSize: 13 }}
+          >
+            {[17, 18, 19, 20, 21, 22].map(h => <option key={h} value={h}>{h}h</option>)}
+          </select>
+        </Row>
+
+        <Row icon={Globe} label="Weekend" description="Jours où le rituel est actif">
+          <select
+            value={ritual.settings.weekendMode}
+            onChange={e => ritual.updateSettings({ weekendMode: e.target.value as WeekendMode })}
+            style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#fff", borderRadius: 8, padding: "6px 10px", fontSize: 13 }}
+          >
+            <option value="saturday">Samedi oui, dimanche off</option>
+            <option value="off">Off samedi et dimanche</option>
+            <option value="full">Actif 7j/7</option>
+          </select>
+        </Row>
+
+        <Row icon={Flame} label="Streak actuel" description="Jours consécutifs complétés">
+          <span className="text-sm font-mono font-bold" style={{ color: ritual.streak > 0 ? "#f97316" : "rgba(255,255,255,0.4)" }}>
+            {ritual.streak}j
+          </span>
+        </Row>
+
+        <Row icon={RotateCcw} label="Réinitialiser aujourd'hui" description="Ré-afficher la gate du matin">
+          <button
+            onClick={handleResetToday}
+            className="text-xs px-3 py-1.5 rounded-lg font-semibold"
+            style={{ background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)", color: "#ef4444", cursor: "pointer" }}
+          >
+            Reset
+          </button>
+        </Row>
+      </Card>
 
       <Card>
         <h3 className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: "rgba(255,255,255,0.3)" }}>Notifications</h3>

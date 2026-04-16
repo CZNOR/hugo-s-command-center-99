@@ -5,7 +5,7 @@ import {
   Phone, DollarSign, Edit2, Users, Settings, Flame, Link2, Check, X, Building2,
 } from "lucide-react";
 import { useBusiness, type BusinessId } from "@/lib/businessContext";
-import { gamificationProfile } from "@/lib/mock-data";
+import { useRitual } from "@/lib/dailyRitualContext";
 
 const AFFILIATE_URL = "https://track.coolaffs.com/visit/?bta=37391&brand=corgibet";
 
@@ -172,12 +172,13 @@ function useIsMobile() {
 export default function AppSidebar({ open, onClose }: AppSidebarProps) {
   const { activeBusiness, setActiveBusiness } = useBusiness();
   const isMobile = useIsMobile();
-  const g = gamificationProfile;
+  const { streak, todayLog } = useRitual();
+  const morningDone = !!todayLog.morning?.completedAt;
+  const eveningDone = !!todayLog.evening?.completedAt;
   const isCoaching  = activeBusiness.id === "coaching";
   const accentColor = isCoaching ? COACHING_ACCENT : CASINO_ACCENT;
   const activeBg    = isCoaching ? COACHING_ACTIVE_BG : CASINO_ACTIVE_BG;
   const contextItems = isCoaching ? COACHING_ITEMS : CASINO_ITEMS;
-  const xpPct = (g.total_xp / g.xp_for_next_level) * 100;
 
   // Lock body scroll when mobile menu is open
   useEffect(() => {
@@ -293,31 +294,37 @@ export default function AppSidebar({ open, onClose }: AppSidebarProps) {
 
           <Sep />
 
-          {/* XP bar */}
+          {/* Daily ritual streak */}
           <div className="px-1 pt-1 space-y-1.5">
             <div className="flex items-center justify-between text-[11px]">
               <div className="flex items-center gap-1.5">
-                <span
-                  className="px-1.5 py-0.5 rounded-md text-[10px] font-bold"
-                  style={{ background: "rgba(139,92,246,0.2)", color: "#a855f7" }}
-                >
-                  Lv.{g.level}
+                <Flame className="w-3.5 h-3.5" style={{ color: streak > 0 ? "#f97316" : "rgba(255,255,255,0.2)" }} />
+                <span className="font-mono font-bold text-[13px]" style={{ color: streak > 0 ? "#f97316" : "rgba(255,255,255,0.35)" }}>
+                  {streak}j
                 </span>
-                <span style={{ color: "rgba(255,255,255,0.35)" }}>{g.level_title}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Flame className="w-3 h-3" style={{ color: "#f97316" }} />
-                <span className="font-mono font-semibold text-[11px]" style={{ color: "#f97316" }}>{g.current_streak}j</span>
+                <span style={{ color: "rgba(255,255,255,0.35)" }}>d'affilée</span>
               </div>
             </div>
-            <div className="h-1 rounded-full" style={{ background: "rgba(255,255,255,0.06)" }}>
+            <div className="flex items-center gap-1.5">
               <div
-                className="h-full rounded-full transition-all duration-700"
-                style={{ width: `${xpPct}%`, background: "linear-gradient(90deg, #7c3aed, #a855f7, #c084fc)" }}
+                title={morningDone ? "Rituel matin fait" : "Rituel matin à faire"}
+                style={{
+                  flex: 1, height: 4, borderRadius: 2,
+                  background: morningDone ? "#a855f7" : "rgba(255,255,255,0.08)",
+                  transition: "background 0.2s",
+                }}
+              />
+              <div
+                title={eveningDone ? "Rituel soir fait" : "Rituel soir à faire"}
+                style={{
+                  flex: 1, height: 4, borderRadius: 2,
+                  background: eveningDone ? "#6366f1" : "rgba(255,255,255,0.08)",
+                  transition: "background 0.2s",
+                }}
               />
             </div>
-            <p className="text-[10px] font-mono" style={{ color: "rgba(255,255,255,0.2)" }}>
-              {g.total_xp.toLocaleString()} / {g.xp_for_next_level.toLocaleString()} XP
+            <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.35)" }}>
+              {morningDone && eveningDone ? "Journée bouclée ✨" : morningDone ? "Matin OK · bilan soir à venir" : "Rituel matin à faire"}
             </p>
           </div>
         </div>
