@@ -25,7 +25,7 @@ const TOP_ITEMS: NavItem[] = [
 ];
 
 const COACHING_ITEMS: NavItem[] = [
-  { path: "/",                   label: "Dashboard",       icon: LayoutDashboard },
+  { path: "/dashboard",          label: "Dashboard",       icon: LayoutDashboard },
   { path: "/coaching",           label: "Coaching",        icon: TrendingUp      },
   { path: "/coaching/social",    label: "Réseaux sociaux", icon: TrendingUp      },
   { path: "/coaching/leads",     label: "Leads & Appels",  icon: Phone           },
@@ -36,7 +36,7 @@ const COACHING_ITEMS: NavItem[] = [
 ];
 
 const CASINO_ITEMS: NavItem[] = [
-  { path: "/",             label: "Dashboard",        icon: LayoutDashboard },
+  { path: "/dashboard",    label: "Dashboard",        icon: LayoutDashboard },
   { path: "/casino",       label: "Casino",           icon: TrendingUp      },
   { path: "/casino/social",label: "Réseaux sociaux",  icon: TrendingUp      },
   { path: "__affiliate__", label: "Lien affiliation", icon: Link2, affiliate: true },

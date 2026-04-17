@@ -1,11 +1,12 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { Outlet, useNavigate, useLocation, Link } from "react-router-dom";
 import { Plus, LayoutDashboard, CheckSquare, Calendar, Menu, Eye, EyeOff, Flame } from "lucide-react";
 import AppSidebar from "./AppSidebar";
 import StarField from "../StarField";
 import RippleCanvas from "../RippleCanvas";
 import PageTransition from "../PageTransition";
-import BizTransitionOverlay from "../BizTransitionOverlay";
+// Three.js is heavy (~80 KB gzipped); only pull it in when the overlay is actually shown.
+const BizTransitionOverlay = lazy(() => import("../BizTransitionOverlay"));
 import WelcomeIntro from "../WelcomeIntro";
 import { BusinessProvider, useBusiness } from "@/lib/businessContext";
 import { TaskProvider, useTasks, type TaskBusiness } from "@/lib/taskContext";
@@ -399,10 +400,12 @@ function AppLayoutInner() {
     <div style={{ background: "#030108", minHeight: "100vh", maxWidth: "100vw" }}>
       {showIntro && <WelcomeIntro onDone={() => setShowIntro(false)} />}
       {heavyFx && showOverlay && (
-        <BizTransitionOverlay
-          mode={activeBusiness.id as "coaching" | "casino"}
-          onDone={() => setShowOverlay(false)}
-        />
+        <Suspense fallback={null}>
+          <BizTransitionOverlay
+            mode={activeBusiness.id as "coaching" | "casino"}
+            onDone={() => setShowOverlay(false)}
+          />
+        </Suspense>
       )}
       {heavyFx && <StarField />}
       {heavyFx && <RippleCanvas />}

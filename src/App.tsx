@@ -1,6 +1,6 @@
 import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -56,7 +56,8 @@ const App = () => (
         <Suspense fallback={<RouteFallback />}>
           <Routes>
             <Route element={<AppLayout />}>
-              <Route path="/" element={<DashboardPage />} />
+              <Route path="/" element={<Navigate to="/command-center" replace />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/command-center" element={<CommandCenter />} />
               <Route path="/agents" element={<AgentsPage />} />
               <Route path="/business" element={<BusinessPage />} />

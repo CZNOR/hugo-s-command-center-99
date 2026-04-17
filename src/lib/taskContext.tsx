@@ -49,6 +49,9 @@ async function loadTasks(): Promise<Task[] | null> {
 }
 
 async function saveTasks(tasks: Task[]): Promise<void> {
+  // Write-through to localStorage first so that a cold reload paints the last-known
+  // state instantly, even before Supabase responds.
+  try { localStorage.setItem(TASKS_CACHE_KEY, JSON.stringify(tasks)); } catch { /* noop */ }
   await sbFetch("task_meta", {
     method: "POST",
     headers: { Prefer: "resolution=merge-duplicates" },
@@ -61,6 +64,17 @@ async function saveTasks(tasks: Task[]): Promise<void> {
       updated_at:   new Date().toISOString(),
     }),
   }).catch(() => {});
+}
+
+const TASKS_CACHE_KEY = "czn_tasks_cache_v1";
+function readTasksCache(): Task[] | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(TASKS_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : null;
+  } catch { return null; }
 }
 
 // ─── Seed : tes 22 tâches actuelles ──────────────────────────
@@ -105,17 +119,24 @@ interface TaskContextType {
 const TaskContext = createContext<TaskContextType | null>(null);
 
 export function TaskProvider({ children }: { children: ReactNode }) {
-  const [tasks,   setTasks]   = useState<Task[]>([]);
+  // Paint instantly with whatever's cached in localStorage (or seed data as a last
+  // resort). Supabase refresh happens in the background below — no blank screen while
+  // the network call is in flight.
+  const [tasks, setTasks] = useState<Task[]>(() => {
+    const cached = readTasksCache();
+    if (cached && cached.length > 0) return cached;
+    return SEED_TASKS;
+  });
   const [loading, setLoading] = useState(true);
 
-  // ── Load from Supabase on mount ──────────────────────────
+  // ── Refresh from Supabase in background; remote wins on conflict ─────
   useEffect(() => {
     loadTasks().then(remote => {
       if (remote && remote.length > 0) {
         setTasks(remote);
-      } else {
-        // First time: seed with the 22 tasks + save to Supabase
-        setTasks(SEED_TASKS);
+        try { localStorage.setItem(TASKS_CACHE_KEY, JSON.stringify(remote)); } catch {}
+      } else if (!readTasksCache()) {
+        // First ever run AND no remote data: persist the seed.
         saveTasks(SEED_TASKS);
       }
     }).finally(() => setLoading(false));
