@@ -12,9 +12,8 @@ export type WeekendMode = "off" | "saturday" | "full";
 export type GateStrictness = "strict" | "medium" | "soft";
 
 export interface MorningEntry {
-  completedAt: string;    // ISO timestamp
-  top3: [string, string, string];
-  intent: string;
+  completedAt: string;                              // ISO timestamp
+  selectedTaskIds: [string, string, string];        // 3 task IDs chosen as today's priorities
   energy: 1 | 2 | 3 | 4 | 5;
 }
 
@@ -23,7 +22,7 @@ export interface EveningEntry {
   win: string;
   energy: 1 | 2 | 3 | 4 | 5;
   tasksDoneIds?: string[];
-  tasksDeferredIds?: string[];
+  tomorrowTaskIds?: [string, string, string];       // 3 task IDs planned for tomorrow
 }
 
 export interface DailyLog {
@@ -67,20 +66,29 @@ async function sbFetchLogs(): Promise<Record<string, DailyLog> | null> {
     rows.forEach(row => {
       const log: DailyLog = { date: row.date };
       if (row.morning_at) {
+        // Column `top3` is reused to store the 3 picked task IDs (v2). Legacy v1 rows
+        // contained freetext titles — those will appear as invalid IDs and simply won't
+        // match any task, which is fine: the day still counts as completed for streak.
         log.morning = {
           completedAt: row.morning_at,
-          top3: row.top3 ?? ["", "", ""],
-          intent: row.intent ?? "",
+          selectedTaskIds: (row.top3 ?? ["", "", ""]) as [string, string, string],
           energy: (row.morning_energy ?? 3) as 1 | 2 | 3 | 4 | 5,
         };
       }
       if (row.evening_at) {
+        // `tasks_deferred_ids` column is reused to store the 3 tomorrow-priority IDs (v2).
+        // Legacy v1 stored an unbounded list of "deferred" IDs there; we only read the
+        // first 3 if we find one — extras are harmless.
+        const td = row.tasks_deferred_ids as string[] | null;
+        const tomorrow3 = td && td.length >= 3
+          ? [td[0], td[1], td[2]] as [string, string, string]
+          : undefined;
         log.evening = {
           completedAt: row.evening_at,
           win: row.win ?? "",
           energy: (row.evening_energy ?? 3) as 1 | 2 | 3 | 4 | 5,
           tasksDoneIds: row.tasks_done_ids ?? [],
-          tasksDeferredIds: row.tasks_deferred_ids ?? [],
+          tomorrowTaskIds: tomorrow3,
         };
       }
       if (row.skipped) log.skipped = true;
@@ -103,17 +111,17 @@ async function sbUpsertLog(log: DailyLog): Promise<void> {
       },
       body: JSON.stringify({
         date: log.date,
-        morning_at:     log.morning?.completedAt ?? null,
-        top3:           log.morning?.top3 ?? null,
-        intent:         log.morning?.intent ?? null,
-        morning_energy: log.morning?.energy ?? null,
-        evening_at:     log.evening?.completedAt ?? null,
-        win:            log.evening?.win ?? null,
-        evening_energy: log.evening?.energy ?? null,
+        morning_at:         log.morning?.completedAt ?? null,
+        top3:               log.morning?.selectedTaskIds ?? null,  // reused col: 3 task IDs
+        intent:             null,                                   // legacy col, unused
+        morning_energy:     log.morning?.energy ?? null,
+        evening_at:         log.evening?.completedAt ?? null,
+        win:                log.evening?.win ?? null,
+        evening_energy:     log.evening?.energy ?? null,
         tasks_done_ids:     log.evening?.tasksDoneIds ?? null,
-        tasks_deferred_ids: log.evening?.tasksDeferredIds ?? null,
-        skipped:        log.skipped ?? false,
-        updated_at:     new Date().toISOString(),
+        tasks_deferred_ids: log.evening?.tomorrowTaskIds ?? null,  // reused col: 3 tomorrow IDs
+        skipped:            log.skipped ?? false,
+        updated_at:         new Date().toISOString(),
       }),
     });
   } catch { /* offline is fine — localStorage still has it */ }
