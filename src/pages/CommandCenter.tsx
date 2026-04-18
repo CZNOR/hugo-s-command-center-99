@@ -8,6 +8,7 @@ import { useTasks } from "@/lib/taskContext";
 import { useCoachingStats } from "@/lib/coachingStats";
 import { listCalendarEvents, isAuthenticated, type GCalEvent } from "@/lib/googleCalendar";
 import { fetchAllBookings, type CalBooking } from "@/lib/calcom";
+import { loadManualCalls, callToLocalDate, type ManualCall } from "@/lib/manualCalls";
 import { usePrivacy } from "@/lib/privacyContext";
 
 // ─── Utils ────────────────────────────────────────────────────
@@ -186,28 +187,53 @@ function budgetColor(budget?: string): string {
 }
 
 // ─── Calls card ───────────────────────────────────────────────
+// A unified row wraps both Cal.com bookings and manual calls. `source` tells the
+// renderer which icon/tag to show (manual calls use the green Phone chip).
+interface UnifiedCallRow {
+  id: string;
+  source: "cal" | "manual";
+  startISO: string;          // ISO of start time (UTC for cal, local-built for manual)
+  label: string;             // display name
+  budget?: string;
+  niveau?: string;
+  business?: string;
+}
+
 function CallsCard() {
-  const [calls, setCalls] = useState<CalBooking[]>([]);
+  const [calls, setCalls] = useState<UnifiedCallRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [isUpcoming, setIsUpcoming] = useState(false);
 
   useEffect(() => {
-    fetchAllBookings()
-      .then(all => {
-        const now = new Date().toISOString();
-        const todayList = all.filter(b => b.status === "accepted" && isToday(b.startTime))
-                             .sort((a, b) => a.startTime.localeCompare(b.startTime));
-        if (todayList.length > 0) {
-          setCalls(todayList); setIsUpcoming(false);
-        } else {
-          const next = all.filter(b => b.status === "accepted" && b.startTime > now)
-                         .sort((a, b) => a.startTime.localeCompare(b.startTime))
-                         .slice(0, 4);
-          setCalls(next); setIsUpcoming(true);
-        }
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+    Promise.all([
+      fetchAllBookings().catch(() => [] as CalBooking[]),
+      loadManualCalls().catch(() => [] as ManualCall[]),
+    ]).then(([bookings, manuals]) => {
+      const calRows: UnifiedCallRow[] = bookings
+        .filter(b => b.status === "accepted")
+        .map(b => ({
+          id: `cal-${b.id}`, source: "cal", startISO: b.startTime,
+          label: b.attendee.name, budget: b.budget, niveau: b.niveau,
+        }));
+      const manualRows: UnifiedCallRow[] = manuals.map(mc => ({
+        id: `mc-${mc.id}`, source: "manual",
+        startISO: callToLocalDate(mc).toISOString(),
+        label: mc.clientName, business: mc.business,
+      }));
+      const all = [...calRows, ...manualRows];
+      const nowISO = new Date().toISOString();
+      const todayList = all.filter(r => isToday(r.startISO))
+                            .sort((a, b) => a.startISO.localeCompare(b.startISO));
+      if (todayList.length > 0) {
+        setCalls(todayList); setIsUpcoming(false);
+      } else {
+        const next = all.filter(r => r.startISO > nowISO)
+                        .sort((a, b) => a.startISO.localeCompare(b.startISO))
+                        .slice(0, 4);
+        setCalls(next); setIsUpcoming(true);
+      }
+      setLoading(false);
+    });
   }, []);
 
   const dateLabel = (iso: string) => {
@@ -252,19 +278,30 @@ function CallsCard() {
               fontSize: 10, fontWeight: 700, color: "#00cc44",
               minWidth: 56, flexShrink: 0, lineHeight: 1.3,
             }}>
-              {dateLabel(c.startTime)}
+              {dateLabel(c.startISO)}
             </span>
             {/* Name */}
             <p style={{
               flex: 1, fontSize: 12, fontWeight: 600,
               color: "rgba(255,255,255,0.85)",
               whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-              minWidth: 0,
+              minWidth: 0, display: "flex", alignItems: "center", gap: 6,
             }}>
-              {c.attendee.name}
+              {c.source === "manual" && (
+                <Phone size={10} style={{ color: "#22c55e", flexShrink: 0 }} />
+              )}
+              {c.label}
             </p>
             {/* Tags */}
             <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+              {c.source === "manual" && c.business && (
+                <span style={{
+                  fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 99,
+                  background: "rgba(34,197,94,0.18)", color: "#86efac", textTransform: "uppercase",
+                }}>
+                  {c.business}
+                </span>
+              )}
               {c.budget && (
                 <span style={{
                   fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 99,
