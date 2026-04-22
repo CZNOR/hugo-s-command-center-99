@@ -2,10 +2,9 @@ import { useState, useEffect } from "react";
 import { useLocation, Link } from "react-router-dom";
 import {
   Calendar, CheckSquare, LayoutDashboard, TrendingUp,
-  Phone, DollarSign, Users, Settings, Flame, Link2, Check, X, Building2,
+  Phone, DollarSign, Users, Settings, Link2, Check, X, Building2,
 } from "lucide-react";
 import { useBusiness, type BusinessId } from "@/lib/businessContext";
-import { useRitual } from "@/lib/dailyRitualContext";
 
 const AFFILIATE_URL = "https://track.coolaffs.com/visit/?bta=37391&brand=corgibet";
 
@@ -170,9 +169,6 @@ function useIsMobile() {
 export default function AppSidebar({ open, onClose }: AppSidebarProps) {
   const { activeBusiness, setActiveBusiness } = useBusiness();
   const isMobile = useIsMobile();
-  const { streak, todayLog } = useRitual();
-  const morningDone = !!todayLog.morning?.completedAt;
-  const eveningDone = !!todayLog.evening?.completedAt;
   const isCoaching  = activeBusiness.id === "coaching";
   const accentColor = isCoaching ? COACHING_ACCENT : CASINO_ACCENT;
   const activeBg    = isCoaching ? COACHING_ACTIVE_BG : CASINO_ACTIVE_BG;
@@ -289,42 +285,6 @@ export default function AppSidebar({ open, onClose }: AppSidebarProps) {
           {BOTTOM_ITEMS.map(item => (
             <NavLink key={item.path} item={item} accentColor={accentColor} activeBg={activeBg} onClick={onClose} />
           ))}
-
-          <Sep />
-
-          {/* Daily ritual streak */}
-          <div className="px-1 pt-1 space-y-1.5">
-            <div className="flex items-center justify-between text-[11px]">
-              <div className="flex items-center gap-1.5">
-                <Flame className="w-3.5 h-3.5" style={{ color: streak > 0 ? "#f97316" : "rgba(255,255,255,0.2)" }} />
-                <span className="font-mono font-bold text-[13px]" style={{ color: streak > 0 ? "#f97316" : "rgba(255,255,255,0.35)" }}>
-                  {streak}j
-                </span>
-                <span style={{ color: "rgba(255,255,255,0.35)" }}>d'affilée</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div
-                title={morningDone ? "Rituel matin fait" : "Rituel matin à faire"}
-                style={{
-                  flex: 1, height: 4, borderRadius: 2,
-                  background: morningDone ? "#a855f7" : "rgba(255,255,255,0.08)",
-                  transition: "background 0.2s",
-                }}
-              />
-              <div
-                title={eveningDone ? "Rituel soir fait" : "Rituel soir à faire"}
-                style={{
-                  flex: 1, height: 4, borderRadius: 2,
-                  background: eveningDone ? "#6366f1" : "rgba(255,255,255,0.08)",
-                  transition: "background 0.2s",
-                }}
-              />
-            </div>
-            <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.35)" }}>
-              {morningDone && eveningDone ? "Journée bouclée ✨" : morningDone ? "Matin OK · bilan soir à venir" : "Rituel matin à faire"}
-            </p>
-          </div>
         </div>
       </aside>
     </>

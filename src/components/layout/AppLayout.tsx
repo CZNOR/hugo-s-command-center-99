@@ -11,11 +11,9 @@ import WelcomeIntro from "../WelcomeIntro";
 import { BusinessProvider, useBusiness } from "@/lib/businessContext";
 import { TaskProvider, useTasks, type TaskBusiness } from "@/lib/taskContext";
 import { PrivacyProvider, usePrivacy } from "@/lib/privacyContext";
-import { RitualProvider } from "@/lib/dailyRitualContext";
 import { initGoogleAuth } from "@/lib/googleCalendar";
 import { useTaskNotifications } from "@/lib/useTaskNotifications";
 import { usePushSubscription } from "@/lib/usePushSubscription";
-import DailyGate from "@/components/DailyGate";
 import { Bell } from "lucide-react";
 
 const SIDEBAR_W = 220;
@@ -470,8 +468,6 @@ function AppLayoutInner() {
         </div>
       </main>
 
-      {/* Daily ritual gate — blocks navigation until morning/evening checkpoints are done */}
-      <DailyGate />
     </div>
   );
 }
@@ -482,9 +478,7 @@ export default function AppLayout() {
     <PrivacyProvider>
       <BusinessProvider>
         <TaskProvider>
-          <RitualProvider>
-            <AppLayoutInner />
-          </RitualProvider>
+          <AppLayoutInner />
         </TaskProvider>
       </BusinessProvider>
     </PrivacyProvider>

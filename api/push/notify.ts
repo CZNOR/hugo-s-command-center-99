@@ -117,13 +117,16 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
         seen?.[0]?.completed_at ? JSON.parse(seen[0].completed_at) : []
       );
 
-      const twoMinsAgo = Date.now() - 2 * 60 * 1000;
       const newIds: number[] = [];
 
+      // Fire the notif on FIRST SIGHT of a booking we haven't already notified
+      // about, provided the call is still upcoming. The old "createdAt within
+      // last 2 min" window lost notifs if the cron was down or the vercel.json
+      // cron wasn't registered yet at booking time.
       for (const b of calBookings) {
         if (seenIds.has(b.id)) { newIds.push(b.id); continue; }
-        const createdAt = new Date(b.createdAt).getTime();
-        if (createdAt >= twoMinsAgo) {
+        const startMs = new Date(b.start).getTime();
+        if (startMs > now) {
           const attendee  = b.attendees?.[0];
           const startDate = new Date(b.start);
           const dateStr   = startDate.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
