@@ -63,11 +63,17 @@ async function sendToAll(subs: any[], payload: object): Promise<number> {
 }
 
 // ── Handler principal ──────────────────────────────────────────────────────
-export default async function handler(_req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Debug trace — opt-in via ?debug=1 so the response shows what the handler saw.
+  // Version stamp lets us verify a deploy is live without relying on logs.
+  const debug = req.query?.debug === "1";
+  const trace: any = { version: "2026-04-22-first-sight", now: new Date().toISOString() };
   try {
-    // Charger les subscriptions push
     const subs = await sbGet<any[]>("push_subscriptions?select=*");
-    if (!subs?.length) return res.status(200).json({ sent: 0, reason: "no subscribers" });
+    trace.subs = subs?.length ?? 0;
+    if (!subs?.length) {
+      return res.status(200).json(debug ? { sent: 0, reason: "no subscribers", trace } : { sent: 0, reason: "no subscribers" });
+    }
 
     let totalSent = 0;
 
@@ -103,6 +109,7 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
 
     // ── 2. CAL.COM : nouveaux calls + rappel 5 min avant ─────────────────
     let calBookings: any[] = [];
+    trace.cal = { status: "start" };
     try {
       const calRes = await fetch(
         "https://api.cal.com/v2/bookings?status=upcoming&limit=10",
@@ -110,6 +117,7 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
       );
       const calJson = await calRes.json();
       calBookings = Array.isArray(calJson?.data) ? calJson.data : [];
+      trace.cal = { status: calRes.status, count: calBookings.length, ids: calBookings.map((b: any) => b.id) };
 
       // Charger les IDs déjà notifiés pour "nouveau booking" (snapshot Supabase)
       const seen = await sbGet<any[]>("task_meta?notion_id=eq.__cal_notified__&limit=1");
@@ -118,13 +126,13 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
       );
 
       const newIds: number[] = [];
+      const calDecisions: any[] = [];
 
-      // Fire the notif on FIRST SIGHT of a booking we haven't already notified
-      // about, provided the call is still upcoming. The old "createdAt within
-      // last 2 min" window lost notifs if the cron was down or the vercel.json
-      // cron wasn't registered yet at booking time.
       for (const b of calBookings) {
-        if (seenIds.has(b.id)) { newIds.push(b.id); continue; }
+        if (seenIds.has(b.id)) {
+          calDecisions.push({ id: b.id, skip: "already-seen" });
+          newIds.push(b.id); continue;
+        }
         const startMs = new Date(b.start).getTime();
         if (startMs > now) {
           const attendee  = b.attendees?.[0];
@@ -134,15 +142,20 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
           const budget    = b.bookingFieldsResponses?.budget?.[0] ?? "";
           const niveau    = b.bookingFieldsResponses?.niveau?.[0] ?? "";
 
-          totalSent += await sendToAll(subs, {
+          const sent = await sendToAll(subs, {
             title: `📞 Nouveau call — ${attendee?.name ?? "Inconnu"}`,
             body:  `${dateStr} à ${timeStr}${budget ? ` · ${budget}` : ""}${niveau ? ` · ${niveau}` : ""}`,
             tag:   `cal-${b.id}`,
             url:   "/coaching/leads",
           });
+          totalSent += sent;
+          calDecisions.push({ id: b.id, notified: sent, attendee: attendee?.name, start: b.start });
+        } else {
+          calDecisions.push({ id: b.id, skip: "in-past", start: b.start });
         }
         newIds.push(b.id);
       }
+      trace.calDecisions = calDecisions;
       await sbPost("task_meta", {
         notion_id: "__cal_notified__", business: "__snapshot__", priority: "normale",
         time: null, completed_at: JSON.stringify(newIds.slice(-100)),
@@ -229,9 +242,9 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
       console.error("Reminder error:", remErr);
     }
 
-    return res.status(200).json({ sent: totalSent });
+    return res.status(200).json(debug ? { sent: totalSent, trace } : { sent: totalSent });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: String(err) });
+    return res.status(500).json({ error: String(err), trace });
   }
 }
