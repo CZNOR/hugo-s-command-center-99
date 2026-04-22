@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation, Link } from "react-router-dom";
 import {
   Calendar, CheckSquare, LayoutDashboard, TrendingUp,
-  Phone, DollarSign, Users, Settings, Link2, Check, X, Building2,
+  Phone, DollarSign, Users, Settings, Flame, Link2, Check, X, Building2,
 } from "lucide-react";
 import { useBusiness, type BusinessId } from "@/lib/businessContext";
 

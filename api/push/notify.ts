@@ -89,7 +89,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const diffMs   = dt.getTime() - now;
       const diffMins = diffMs / 60_000;
 
-      if (diffMins >= 4 && diffMins < 6) {
+      // Same 3-8 min window as the call reminders — the cron runs every 5 min.
+      if (diffMins >= 3 && diffMins < 8) {
         totalSent += await sendToAll(subs, {
           title: `⏰ Dans 5 min — ${task.title}`,
           body:  `${task.time ? `à ${task.time}` : "aujourd'hui"} · ${task.business}`,
@@ -175,14 +176,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // ── 4. RAPPEL 5 MIN AVANT (Cal.com + manuels) ────────────────────────
-    // Dédup via un snapshot des IDs déjà rappelés. Un ID reste dans la liste 24h
-    // max (purge côté post-write en gardant les 200 derniers).
+    // Poll cadence is 5 min (GitHub Actions schedule), so the reminder window
+    // must be at least 5 min wide to avoid missing calls. 3-8 min guarantees
+    // exactly one trigger per call even with a worst-case 5-min drift.
     try {
       const reminded = await sbGet<any[]>("task_meta?notion_id=eq.__cal_reminded__&limit=1");
       const remindedIds: Set<string> = new Set(
         reminded?.[0]?.completed_at ? JSON.parse(reminded[0].completed_at) : []
       );
       const newlyReminded: string[] = [];
+      const REMIND_MIN = 3;   // fire any time 3..8 min before start
+      const REMIND_MAX = 8;
 
       // Cal.com bookings
       for (const b of calBookings) {
@@ -190,7 +194,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (remindedIds.has(key)) { newlyReminded.push(key); continue; }
         const startMs = new Date(b.start).getTime();
         const diffMin = (startMs - now) / 60_000;
-        if (diffMin >= 4 && diffMin < 7) {
+        if (diffMin >= REMIND_MIN && diffMin < REMIND_MAX) {
           const attendee = b.attendees?.[0];
           const timeStr  = new Date(b.start).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
           totalSent += await sendToAll(subs, {
@@ -200,9 +204,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             url:   "/coaching/leads",
           });
           newlyReminded.push(key);
-        } else if (diffMin > 7) {
-          // Keep previously reminded keys alive until the call has passed so we don't
-          // re-send. For upcoming-but-not-yet-due calls, don't add to reminded set yet.
         }
       }
 
@@ -220,7 +221,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // the real UTC ms for a BKK-local datetime.
         const startMs = Date.UTC(y, (mo ?? 1) - 1, d, h ?? 0, mi ?? 0) - BKK_OFFSET_MS;
         const diffMin = (startMs - now) / 60_000;
-        if (diffMin >= 4 && diffMin < 7) {
+        if (diffMin >= REMIND_MIN && diffMin < REMIND_MAX) {
           totalSent += await sendToAll(subs, {
             title: `⏰ Dans 5 min — ${mc.clientName}`,
             body:  `${mc.time} · ${mc.business}${mc.notes ? ` · ${String(mc.notes).slice(0, 60)}` : ""}`,
