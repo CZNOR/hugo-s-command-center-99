@@ -36,14 +36,23 @@ async function sbFetch<T = any>(path: string, opts?: RequestInit): Promise<T> {
   return text ? JSON.parse(text) : ([] as unknown as T);
 }
 
+/**
+ * Returns:
+ * - Task[] — remote snapshot exists (may be empty, which is a valid state)
+ * - null   — no snapshot row at all (first-ever run on this Supabase project)
+ *
+ * The empty-array case is meaningful: it means the user explicitly cleared
+ * their tasks and we must NOT re-seed.
+ */
 async function loadTasks(): Promise<Task[] | null> {
   try {
     const rows = await sbFetch<any[]>(
       `task_meta?notion_id=eq.${SNAPSHOT_ID}&limit=1`
     );
-    if (rows?.[0]?.completed_at) {
-      return JSON.parse(rows[0].completed_at) as Task[];
-    }
+    if (!rows?.[0]) return null;                              // no row at all
+    const raw = rows[0].completed_at;
+    if (raw === null || raw === undefined) return [];         // row exists, snapshot empty
+    try { return JSON.parse(raw) as Task[]; } catch { return null; }
   } catch {}
   return null;
 }
@@ -124,19 +133,20 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   // the network call is in flight.
   const [tasks, setTasks] = useState<Task[]>(() => {
     const cached = readTasksCache();
-    if (cached && cached.length > 0) return cached;
-    return SEED_TASKS;
+    // null cache → first launch; otherwise respect what's there (including []).
+    return cached ?? SEED_TASKS;
   });
   const [loading, setLoading] = useState(true);
 
   // ── Refresh from Supabase in background; remote wins on conflict ─────
   useEffect(() => {
     loadTasks().then(remote => {
-      if (remote && remote.length > 0) {
+      if (remote !== null) {
+        // Remote snapshot exists (possibly empty) — this is the source of truth.
         setTasks(remote);
         try { localStorage.setItem(TASKS_CACHE_KEY, JSON.stringify(remote)); } catch {}
       } else if (!readTasksCache()) {
-        // First ever run AND no remote data: persist the seed.
+        // First-ever run AND no remote data: seed Supabase + cache.
         saveTasks(SEED_TASKS);
       }
     }).finally(() => setLoading(false));
