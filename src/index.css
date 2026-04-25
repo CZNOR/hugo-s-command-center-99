@@ -4,6 +4,32 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Readability boost (2026-04-23) ───
+   The original styling leaned heavily on text-xs (12px) + white/40 (low
+   contrast) which is hard to read on a phone in bright light. These rules
+   bump every "small" Tailwind text size up one notch and lift dim white/30
+   and white/40 colors to white/55 to improve legibility without rewriting
+   every component. */
+@layer utilities {
+  .text-\[10px\] { font-size: 12px !important; line-height: 1.4 !important; }
+  .text-\[11px\] { font-size: 13px !important; line-height: 1.4 !important; }
+  .text-xs       { font-size: 13px !important; line-height: 1.45 !important; }
+  .text-sm       { font-size: 15px !important; line-height: 1.5 !important; }
+  .text-base     { font-size: 16px !important; line-height: 1.55 !important; }
+  /* Subtle "muted" greys lifted toward better contrast */
+  .text-white\/20 { color: rgba(255,255,255,0.5) !important; }
+  .text-white\/25 { color: rgba(255,255,255,0.55) !important; }
+  .text-white\/30 { color: rgba(255,255,255,0.6) !important; }
+  .text-white\/35 { color: rgba(255,255,255,0.62) !important; }
+  .text-white\/40 { color: rgba(255,255,255,0.65) !important; }
+  .text-white\/45 { color: rgba(255,255,255,0.7) !important; }
+  .text-white\/50 { color: rgba(255,255,255,0.72) !important; }
+  /* Card backgrounds slightly more opaque so blocks pop */
+  .border-white\/05 { border-color: rgba(255,255,255,0.12) !important; }
+  .border-white\/07 { border-color: rgba(255,255,255,0.14) !important; }
+  .border-white\/08 { border-color: rgba(255,255,255,0.16) !important; }
+}
+
 @layer base {
   :root {
     /* ─── HUGOOS Ultra Dark Premium ─── */
@@ -76,6 +102,14 @@ body {
   min-height: 100vh;
   overflow-x: clip;
   max-width: 100%;
+  /* Bump base font-size — every inline style using rem/em inherits this. */
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+/* Mobile: keep readable density */
+@media (max-width: 768px) {
+  body { font-size: 15.5px; }
 }
 
 #root {
