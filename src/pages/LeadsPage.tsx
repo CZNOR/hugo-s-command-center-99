@@ -22,6 +22,10 @@ interface Lead {
   statut: LeadStatus;
   budget?: string;
   niveau?: string;
+  objectif?: string;     // objectif-principal
+  blocage?: string;      // blocage-principal
+  historique?: string;   // historique-investissement
+  vision?: string;       // projet-vision (textarea)
   formation?: string;
 }
 
@@ -44,6 +48,10 @@ function toLead(b: CalBooking): Lead {
     statut: toLeadStatus(b),
     budget: b.budget,
     niveau: b.niveau,
+    objectif: b.objectif,
+    blocage: b.blocage,
+    historique: b.historique,
+    vision: b.vision,
     formation: b.formation,
   };
 }
@@ -90,7 +98,7 @@ function LeadRow({ lead }: { lead: Lead }) {
   const dt         = new Date(lead.dateISO);
   const dateLabel  = dt.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
   const timeLabel  = dt.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
-  const hasDetails = !!(lead.budget || lead.niveau || lead.formation || lead.phone || lead.email);
+  const hasDetails = !!(lead.budget || lead.niveau || lead.objectif || lead.blocage || lead.historique || lead.vision || lead.formation || lead.phone || lead.email);
   const potential  = getBudgetPotential(lead.budget);
 
   return (
@@ -163,13 +171,37 @@ function LeadRow({ lead }: { lead: Lead }) {
             )}
             {lead.niveau && (
               <div className="p-3 rounded-xl" style={{ background: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.08)" }}>
-                <p className="text-[11px] font-semibold uppercase tracking-wider mb-1" style={{ color: "#a855f7" }}>Niveau</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wider mb-1" style={{ color: "#a855f7" }}>Niveau actuel</p>
                 <p className="text-sm" style={{ color: "rgba(255,255,255,0.75)" }}>{lead.niveau}</p>
+              </div>
+            )}
+            {lead.objectif && (
+              <div className="p-3 rounded-xl sm:col-span-2" style={{ background: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.08)" }}>
+                <p className="text-[11px] font-semibold uppercase tracking-wider mb-1" style={{ color: "#a855f7" }}>Objectif principal</p>
+                <p className="text-sm" style={{ color: "rgba(255,255,255,0.75)" }}>{lead.objectif}</p>
+              </div>
+            )}
+            {lead.blocage && (
+              <div className="p-3 rounded-xl sm:col-span-2" style={{ background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)" }}>
+                <p className="text-[11px] font-semibold uppercase tracking-wider mb-1" style={{ color: "#f87171" }}>Plus gros blocage</p>
+                <p className="text-sm" style={{ color: "rgba(255,255,255,0.78)" }}>{lead.blocage}</p>
+              </div>
+            )}
+            {lead.historique && (
+              <div className="p-3 rounded-xl sm:col-span-2" style={{ background: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.08)" }}>
+                <p className="text-[11px] font-semibold uppercase tracking-wider mb-1" style={{ color: "#a855f7" }}>Historique d'investissement</p>
+                <p className="text-sm" style={{ color: "rgba(255,255,255,0.75)" }}>{lead.historique}</p>
+              </div>
+            )}
+            {lead.vision && (
+              <div className="p-3 rounded-xl sm:col-span-2" style={{ background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.18)" }}>
+                <p className="text-[11px] font-semibold uppercase tracking-wider mb-1" style={{ color: "#4ade80" }}>Sa vision du projet</p>
+                <p className="text-sm whitespace-pre-wrap" style={{ color: "rgba(255,255,255,0.85)", lineHeight: 1.55 }}>{lead.vision}</p>
               </div>
             )}
             {lead.formation && (
               <div className="p-3 rounded-xl sm:col-span-2" style={{ background: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.08)" }}>
-                <p className="text-[11px] font-semibold uppercase tracking-wider mb-1" style={{ color: "#a855f7" }}>Formation / Objectif</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wider mb-1" style={{ color: "#a855f7" }}>Formation</p>
                 <p className="text-sm" style={{ color: "rgba(255,255,255,0.75)" }}>{lead.formation}</p>
               </div>
             )}

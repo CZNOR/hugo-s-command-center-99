@@ -20,9 +20,16 @@ export interface CalBooking {
     phone?: string;
   };
   closer: string;
+  // Questionnaire (Cal.com booking form custom fields). Updated 2026-04-23 to
+  // match the new "Découverte" funnel — kept legacy fields for back-compat
+  // with old bookings that didn't have these answers.
   budget?: string;
   niveau?: string;
-  formation?: string;
+  objectif?: string;       // objectif-principal
+  blocage?: string;        // blocage-principal
+  historique?: string;     // historique-investissement
+  vision?: string;         // projet-vision (free text)
+  formation?: string;      // legacy
 }
 
 export interface CalStats {
@@ -50,23 +57,38 @@ async function fetchByStatus(
   const json = await res.json();
   const data: any[] = Array.isArray(json.data) ? json.data : [];
 
-  return data.map((b) => ({
-    id: b.id,
-    uid: b.uid,
-    title: b.title,
-    startTime: b.start,
-    endTime: b.end,
-    status: (b.status ?? "pending").toLowerCase() as CalBooking["status"],
-    attendee: {
-      name: b.attendees?.[0]?.name ?? "Inconnu",
-      email: b.attendees?.[0]?.email ?? "",
-      phone: b.attendees?.[0]?.phoneNumber ?? b.bookingFieldsResponses?.attendeePhoneNumber ?? undefined,
-    },
-    closer: b.hosts?.[0]?.name ?? "—",
-    budget: b.bookingFieldsResponses?.budget?.[0] ?? undefined,
-    niveau: b.bookingFieldsResponses?.niveau?.[0] ?? undefined,
-    formation: b.bookingFieldsResponses?.formation ?? undefined,
-  }));
+  // Cal.com returns each "select"-type response as `[value]` (an array with
+  // one entry). Cast helper handles both shape variations defensively.
+  const pickOne = (v: any): string | undefined => {
+    if (!v) return undefined;
+    if (Array.isArray(v)) return typeof v[0] === "string" ? v[0] : undefined;
+    return typeof v === "string" ? v : undefined;
+  };
+
+  return data.map((b) => {
+    const r = b.bookingFieldsResponses ?? {};
+    return {
+      id: b.id,
+      uid: b.uid,
+      title: b.title,
+      startTime: b.start,
+      endTime: b.end,
+      status: (b.status ?? "pending").toLowerCase() as CalBooking["status"],
+      attendee: {
+        name: b.attendees?.[0]?.name ?? "Inconnu",
+        email: b.attendees?.[0]?.email ?? "",
+        phone: b.attendees?.[0]?.phoneNumber ?? r.attendeePhoneNumber ?? undefined,
+      },
+      closer:    b.hosts?.[0]?.name ?? "—",
+      budget:    pickOne(r.budget),
+      niveau:    pickOne(r.niveau),
+      objectif:  pickOne(r["objectif-principal"]),
+      blocage:   pickOne(r["blocage-principal"]),
+      historique: pickOne(r["historique-investissement"]),
+      vision:    typeof r["projet-vision"] === "string" ? r["projet-vision"] : undefined,
+      formation: pickOne(r.formation),
+    };
+  });
 }
 
 // ── Fetch all bookings (past + upcoming + cancelled) ─────────────────────────

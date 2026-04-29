@@ -140,12 +140,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           const startDate = new Date(b.start);
           const dateStr   = startDate.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
           const timeStr   = startDate.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
-          const budget    = b.bookingFieldsResponses?.budget?.[0] ?? "";
-          const niveau    = b.bookingFieldsResponses?.niveau?.[0] ?? "";
+          const r = b.bookingFieldsResponses ?? {};
+          const pick = (v: any) => Array.isArray(v) ? v[0] : v;
+          // Mobile push body has ~3 short tags max — pick the most actionable.
+          const budget    = pick(r.budget) ?? "";
+          const niveau    = pick(r.niveau) ?? "";
+          const objectif  = pick(r["objectif-principal"]) ?? "";
+          const tags = [budget, niveau, objectif].filter(Boolean).map(s => String(s)).join(" · ");
 
           const sent = await sendToAll(subs, {
             title: `📞 Nouveau call — ${attendee?.name ?? "Inconnu"}`,
-            body:  `${dateStr} à ${timeStr}${budget ? ` · ${budget}` : ""}${niveau ? ` · ${niveau}` : ""}`,
+            body:  `${dateStr} à ${timeStr}${tags ? ` · ${tags}` : ""}`,
             tag:   `cal-${b.id}`,
             url:   "/coaching/leads",
           });

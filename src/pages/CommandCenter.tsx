@@ -196,6 +196,7 @@ interface UnifiedCallRow {
   label: string;             // display name
   budget?: string;
   niveau?: string;
+  objectif?: string;         // objectif-principal (Cal funnel)
   business?: string;
 }
 
@@ -213,7 +214,8 @@ function CallsCard() {
         .filter(b => b.status === "accepted")
         .map(b => ({
           id: `cal-${b.id}`, source: "cal", startISO: b.startTime,
-          label: b.attendee.name, budget: b.budget, niveau: b.niveau,
+          label: b.attendee.name,
+          budget: b.budget, niveau: b.niveau, objectif: b.objectif,
         }));
       const manualRows: UnifiedCallRow[] = manuals.map(mc => ({
         id: `mc-${mc.id}`, source: "manual",
@@ -292,8 +294,8 @@ function CallsCard() {
               )}
               {c.label}
             </p>
-            {/* Tags */}
-            <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+            {/* Tags — budget first (most actionable for closing prio) */}
+            <div style={{ display: "flex", gap: 4, flexShrink: 0, flexWrap: "wrap", maxWidth: "60%", justifyContent: "flex-end" }}>
               {c.source === "manual" && c.business && (
                 <span style={{
                   fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 99,
@@ -311,11 +313,21 @@ function CallsCard() {
                 </span>
               )}
               {c.niveau && (
-                <span style={{
+                <span title={c.niveau} style={{
                   fontSize: 9, fontWeight: 600, padding: "2px 7px", borderRadius: 99,
-                  background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.45)",
+                  background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.55)",
+                  maxWidth: 110, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                 }}>
                   {c.niveau}
+                </span>
+              )}
+              {c.objectif && (
+                <span title={c.objectif} style={{
+                  fontSize: 9, fontWeight: 600, padding: "2px 7px", borderRadius: 99,
+                  background: "rgba(168,85,247,0.15)", color: "#c4b5fd",
+                  maxWidth: 130, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                }}>
+                  {c.objectif}
                 </span>
               )}
             </div>
