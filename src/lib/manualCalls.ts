@@ -4,9 +4,9 @@
  * under the `__manual_calls__` key to avoid needing a new table.
  *
  * Dates are stored in the USER'S LOCAL tz as (date, time) pairs rather than a UTC
- * timestamp. This keeps "call scheduled for Saturday 14h Bangkok" intact even if
- * the app is opened from a different machine. The push cron at api/push/notify.ts
- * rebuilds the absolute timestamp assuming Bangkok (UTC+7).
+ * timestamp. This keeps "call scheduled for Saturday 14h" intact even if the app is
+ * opened from a different machine. The push cron at api/push/notify.ts rebuilds the
+ * absolute timestamp in APP_TIMEZONE (Europe/Paris by default, DST-aware).
  */
 
 export interface ManualCall {

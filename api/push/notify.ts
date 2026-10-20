@@ -9,6 +9,9 @@ const VAPID_PUBLIC  = process.env.VAPID_PUBLIC_KEY!;
 const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY!;
 const VAPID_EMAIL   = process.env.VAPID_EMAIL || "mailto:hugo@agencemade.com";
 const CALCOM_KEY    = process.env.VITE_CALCOM_API_KEY!;
+// Fuseau d'Hugo : les serveurs Vercel tournent en UTC, toute heure affichée ou
+// saisie à la main doit être interprétée dans ce fuseau.
+const APP_TZ        = process.env.APP_TIMEZONE || "Europe/Paris";
 
 webpush.setVapidDetails(VAPID_EMAIL, VAPID_PUBLIC, VAPID_PRIVATE);
 
@@ -32,14 +35,31 @@ async function sbPost(path: string, body: object) {
   });
 }
 
+// Décalage (ms) entre APP_TZ et UTC à un instant donné, heure d'été comprise
+function tzOffsetMs(utcMs: number): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: APP_TZ, hourCycle: "h23",
+    year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit",
+  }).formatToParts(new Date(utcMs));
+  const v = (t: string) => Number(parts.find(p => p.type === t)?.value);
+  return Date.UTC(v("year"), v("month") - 1, v("day"), v("hour"), v("minute"), v("second")) - utcMs;
+}
+
+// Heure locale APP_TZ (date + heure saisies à la main) → instant UTC
+function localToUtcMs(y: number, mo: number, d: number, h: number, mi: number): number {
+  const guess = Date.UTC(y, mo - 1, d, h, mi);
+  const first = guess - tzOffsetMs(guess);
+  return guess - tzOffsetMs(first);
+}
+
 function taskDateTime(task: any): Date | null {
   if (!task.deadline) return null;
   const [y, mo, d] = task.deadline.split("-").map(Number);
   if (task.time) {
     const [h, mi] = task.time.split(":").map(Number);
-    return new Date(y, mo - 1, d, h, mi, 0);
+    return new Date(localToUtcMs(y, mo, d, h, mi));
   }
-  return new Date(y, mo - 1, d, 23, 59, 0);
+  return new Date(localToUtcMs(y, mo, d, 23, 59));
 }
 
 async function sendToAll(subs: any[], payload: object): Promise<number> {
@@ -138,8 +158,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (startMs > now) {
           const attendee  = b.attendees?.[0];
           const startDate = new Date(b.start);
-          const dateStr   = startDate.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
-          const timeStr   = startDate.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+          const dateStr   = startDate.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short", timeZone: APP_TZ });
+          const timeStr   = startDate.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: APP_TZ });
           const r = b.bookingFieldsResponses ?? {};
           const pick = (v: any) => Array.isArray(v) ? v[0] : v;
           // Mobile push body has ~3 short tags max — pick the most actionable.
@@ -201,7 +221,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const diffMin = (startMs - now) / 60_000;
         if (diffMin >= REMIND_MIN && diffMin < REMIND_MAX) {
           const attendee = b.attendees?.[0];
-          const timeStr  = new Date(b.start).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+          const timeStr  = new Date(b.start).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: APP_TZ });
           totalSent += await sendToAll(subs, {
             title: `⏰ Dans 5 min — Call ${attendee?.name ?? "Cal.com"}`,
             body:  `Rendez-vous à ${timeStr}`,
@@ -212,19 +232,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
       }
 
-      // Manual calls — (date, time) stored in Bangkok local tz (UTC+7).
-      // Rebuild the absolute UTC ms: BKK local 14:00 = 07:00 UTC, so we subtract 7h
-      // after interpreting the pair as if it were UTC.
-      const BKK_OFFSET_MS = 7 * 60 * 60 * 1000;
+      // Manual calls — (date, time) saisis dans le fuseau APP_TZ (Paris par défaut).
       for (const mc of manualCalls) {
         const key = `mc-${mc.id}`;
         if (remindedIds.has(key)) { newlyReminded.push(key); continue; }
         if (!mc.date || !mc.time) continue;
         const [y, mo, d] = String(mc.date).split("-").map(Number);
         const [h, mi]    = String(mc.time).split(":").map(Number);
-        // Date.UTC(...) treats the args as UTC. We subtract the BKK offset to get
-        // the real UTC ms for a BKK-local datetime.
-        const startMs = Date.UTC(y, (mo ?? 1) - 1, d, h ?? 0, mi ?? 0) - BKK_OFFSET_MS;
+        const startMs = localToUtcMs(y, mo ?? 1, d, h ?? 0, mi ?? 0);
         const diffMin = (startMs - now) / 60_000;
         if (diffMin >= REMIND_MIN && diffMin < REMIND_MAX) {
           totalSent += await sendToAll(subs, {

@@ -15,6 +15,7 @@ const VAPID_PUBLIC  = process.env.VAPID_PUBLIC_KEY!;
 const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY!;
 const VAPID_EMAIL   = process.env.VAPID_EMAIL || "mailto:hugo@agencemade.com";
 const WEBHOOK_TOKEN = process.env.CAL_WEBHOOK_SECRET || "";
+const APP_TZ        = process.env.APP_TIMEZONE || "Europe/Paris";
 
 webpush.setVapidDetails(VAPID_EMAIL, VAPID_PUBLIC, VAPID_PRIVATE);
 
@@ -56,6 +57,27 @@ async function sendToAll(payload: object): Promise<number> {
   return sent;
 }
 
+async function markNotified(id: number) {
+  const r = await fetch(`${SB_URL}/rest/v1/task_meta?notion_id=eq.__cal_notified__&limit=1`, {
+    headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` },
+  });
+  const rows: any[] = await r.json().catch(() => []);
+  const seen: number[] = rows?.[0]?.completed_at ? JSON.parse(rows[0].completed_at) : [];
+  if (seen.includes(id)) return;
+  await fetch(`${SB_URL}/rest/v1/task_meta`, {
+    method: "POST",
+    headers: {
+      apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`,
+      "Content-Type": "application/json", Prefer: "resolution=merge-duplicates",
+    },
+    body: JSON.stringify({
+      notion_id: "__cal_notified__", business: "__snapshot__", priority: "normale",
+      time: null, completed_at: JSON.stringify([...seen, id].slice(-100)),
+      updated_at: new Date().toISOString(),
+    }),
+  });
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Ping de vérification depuis le navigateur
   if (req.method === "GET") return res.status(200).json({ ok: true, endpoint: "cal-webhook" });
@@ -76,10 +98,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const start   = new Date(p.startTime ?? p.start ?? Date.now());
     const dateStr = start.toLocaleDateString("fr-FR", {
-      weekday: "short", day: "numeric", month: "short", timeZone: "Europe/Paris",
+      weekday: "short", day: "numeric", month: "short", timeZone: APP_TZ,
     });
     const timeStr = start.toLocaleTimeString("fr-FR", {
-      hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris",
+      hour: "2-digit", minute: "2-digit", timeZone: APP_TZ,
     });
 
     // Réponses du formulaire de qualification (identifiants du lien
@@ -109,6 +131,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       tag:  `cal-hook-${p.uid ?? p.bookingId ?? start.getTime()}`,
       url:  "/coaching/leads",
     });
+
+    // Marque le call comme déjà notifié pour que le cron api/push/notify.ts
+    // n'envoie pas un 2e « Nouveau call » pour la même réservation.
+    const bookingId = Number(p.bookingId ?? p.id);
+    if (trigger === "BOOKING_CREATED" && Number.isFinite(bookingId)) {
+      await markNotified(bookingId);
+    }
 
     return res.status(200).json({ ok: true, trigger, sent });
   } catch (err) {
