@@ -5,26 +5,26 @@ import type { Fiche, Suivi, Visite } from "@/lib/prospect";
 import { usePushSubscription } from "@/lib/usePushSubscription";
 import AccessGate from "@/components/AccessGate";
 import type { SuiviData } from "@/components/Suivi";
-import { IcCalendar, IcHome, IcLink, IcTag } from "@/components/Icons";
+import { IcCalendar, IcLink, IcSun, IcTag } from "@/components/Icons";
 import Appels from "@/tabs/Appels";
-import Aujourdhui from "@/tabs/Aujourdhui";
+import Point from "@/tabs/Point";
 import Vinted from "@/tabs/Vinted";
 import Liens from "@/tabs/Liens";
 import FicheProspect from "@/tabs/FicheProspect";
 
-type Tab = "aujourdhui" | "appels" | "vinted" | "liens";
+type Tab = "point" | "appels" | "vinted" | "liens";
 const TABS: { id: Tab; label: string; Icon: () => JSX.Element }[] = [
-  { id: "aujourdhui", label: "Aujourd'hui", Icon: IcHome },
+  { id: "point",      label: "Point",       Icon: IcSun },
   { id: "appels",     label: "Appels",      Icon: IcCalendar },
   { id: "vinted",     label: "Vinted",      Icon: IcTag },
   { id: "liens",      label: "Liens",       Icon: IcLink },
 ];
 // Grand titre de chaque onglet
-const TITLES: Record<Tab, string> = { aujourdhui: "Aujourd'hui", appels: "Appels", vinted: "Vinted", liens: "Liens" };
-// Accueil = « Aujourd'hui » (l'ancien #point des notifs y mène aussi)
+const TITLES: Record<Tab, string> = { point: "Point du jour", appels: "Appels", vinted: "Vinted", liens: "Liens" };
+// Accueil = le Point (suivi en direct)
 const tabFromHash = (): Tab => {
   const h = window.location.hash.slice(1) as Tab;
-  return TABS.some((t) => t.id === h) ? h : "aujourdhui";
+  return TABS.some((t) => t.id === h) ? h : "point";
 };
 // Fiche prospect ouverte : #appel-<id de réservation Cal> (aussi le lien des notifs 1 h avant)
 const ficheFromHash = (): number | null => {
@@ -166,7 +166,7 @@ export default function App() {
     const ordre = TABS.map((x) => x.id);
     setSens(ordre.indexOf(t) >= ordre.indexOf(tab) ? "droite" : "gauche");
     setFicheId(null);
-    window.location.hash = t === "aujourdhui" ? "" : t;
+    window.location.hash = t === "point" ? "" : t;
     setTab(t);
     enHaut();
   };
@@ -189,7 +189,7 @@ export default function App() {
   const iTab = TABS.findIndex((t) => t.id === tab);
 
   return (
-    <div className="app">
+    <div className="app" data-page={fiche ? "fiche" : tab}>
       <div className={`mini-bar ${compact ? "visible" : ""}`} aria-hidden={!compact}>{titreCourant}</div>
       <div className="zone" ref={zone} onScroll={(e) => setCompact(e.currentTarget.scrollTop > 56)}>
         <div className="shell">
@@ -213,24 +213,11 @@ export default function App() {
             </header>
           )}
 
-          {!fiche && tab === "aujourdhui" && (
-            <Aujourdhui
-              calls={calls}
-              recents={recents}
-              suivis={suivis}
-              fiches={fiches}
-              suivi={suivi}
-              point={point}
-              now={now}
-              pushStatus={pushStatus}
-              pushError={pushError}
-              onEnableNotif={subscribe}
-              onOpenFiche={openFiche}
-              onGo={go}
-            />
+          {!fiche && tab === "point" && (
+            <Point suivi={suivi} point={point} now={now} recents={recents} suivis={suivis} fiches={fiches} onGo={go} />
           )}
           {!fiche && tab === "appels" && (
-            <Appels calls={calls} error={callsErr} now={now} recents={recents} fiches={fiches} onOpenFiche={openFiche} />
+            <Appels calls={calls} error={callsErr} now={now} recents={recents} suivis={suivis} fiches={fiches} onOpenFiche={openFiche} />
           )}
           {!fiche && tab === "vinted" && <Vinted toast={toast} />}
           {!fiche && tab === "liens" && <Liens toast={toast} />}

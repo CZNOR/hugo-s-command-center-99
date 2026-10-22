@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Sec } from "./Deco";
 import { IcFolder, IcStar } from "./Icons";
 
 // Avancement en direct : envoyé toutes les 20 s par tools/publish_suivi.py depuis le Mac
@@ -14,103 +13,104 @@ export interface SuiviData {
   projets?: Projet[];
 }
 
-const Bar = ({ pct }: { pct: number }) => (
-  <div className="bar"><i style={{ width: `${Math.max(3, Math.min(100, pct))}%` }} /></div>
+export const Barre = ({ pct }: { pct: number }) => (
+  <div className="barre"><i style={{ width: `${Math.max(4, Math.min(100, pct))}%` }} /></div>
 );
 
-// Groupe replié par défaut : une ligne « titre (n) », un tap l'ouvre
+// Groupe replié : une ligne « titre (n) », un tap l'ouvre
 export function Repli({ titre, n, children }: { titre: string; n: number; children: React.ReactNode }) {
   const [ouvert, setOuvert] = useState(false);
   if (!n) return null;
   return (
     <div className={`repli ${ouvert ? "ouvert" : ""}`}>
-      <button className="li repli-tete" onClick={() => setOuvert(!ouvert)}>
-        <span className="li-title">{titre}</span>
-        <span className="li-side">{n}</span>
-        <span className="chev tourne" aria-hidden="true" />
+      <button className="repli-tete" onClick={() => setOuvert(!ouvert)}>
+        <span>{titre}</span><b>{n}</b><i className="fleche" aria-hidden="true" />
       </button>
       {ouvert && <div className="repli-corps">{children}</div>}
     </div>
   );
 }
 
-// Un projet : une ligne compacte, le détail s'ouvre d'un tap
-function LigneProjet({ p }: { p: Projet }) {
+// Un projet : nom, barre épaisse, étape suivante ; le détail s'ouvre d'un tap
+function Projet({ p }: { p: Projet }) {
   const [ouvert, setOuvert] = useState(false);
   const ensuite = p.prochaine || p.etape;
   return (
-    <button className={`li stack projet ${ouvert ? "ouvert" : ""}`} onClick={() => setOuvert(!ouvert)}>
-      <div className="li-row"><span className="li-title">{p.nom}</span><span className="li-side">{p.faites}/{p.total}</span></div>
-      <Bar pct={p.total ? (100 * p.faites) / p.total : 0} />
-      {ensuite && <span className={`li-sub ${ouvert ? "" : "une-ligne"}`}>{ensuite}</span>}
+    <button className={`ligne projet ${ouvert ? "ouvert" : ""}`} onClick={() => setOuvert(!ouvert)}>
+      <span className="ligne-haut"><b>{p.nom}</b><span className="fraction">{p.faites}/{p.total}</span></span>
+      <Barre pct={p.total ? (100 * p.faites) / p.total : 0} />
+      {ensuite && <span className={`ligne-sous ${ouvert ? "" : "une-ligne"}`}>{ensuite}</span>}
       {ouvert && (
         <span className="projet-detail">
-          {p.objectif && <span className="li-text"><b>Objectif.</b> {p.objectif}</span>}
-          {p.fini_quand && <span className="li-text"><b>Fini quand.</b> {p.fini_quand}</span>}
-          {p.attend_hugo && <span className="li-text todo"><b>Pour toi.</b> {p.attend_hugo}</span>}
+          {p.objectif && <span><b>Objectif</b> {p.objectif}</span>}
+          {p.fini_quand && <span><b>Fini quand</b> {p.fini_quand}</span>}
+          {p.attend_hugo && <span className="pour-toi"><b>Pour toi</b> {p.attend_hugo}</span>}
         </span>
       )}
     </button>
   );
 }
 
-// Pour toi, gros projets, puis le reste replié ; « apres » ajoute des groupes repliés en bas
+// Le suivi en direct : ce qui t'attend, les sessions au travail (barres en direct), les projets
 export default function Suivi({ data, now, apres }: { data: SuiviData; now: number; apres?: React.ReactNode }) {
   const [toutVoir, setToutVoir] = useState(false);
-  if (!data.maj) return null;
+  if (!data.maj) return <p className="vide">Le suivi arrive dès que le Mac l'envoie.</p>;
   const ageMin = Math.round((now / 1000 - data.maj) / 60);
   const projets = data.projets ?? [];
   const gros = projets.filter((p) => (p.niveau ?? "projet") === "projet");
   const outils = projets.filter((p) => p.niveau === "outil");
   const finis = projets.filter((p) => p.niveau === "fini");
-  const actives = (data.direct ?? []).filter((s) => s.statut === "travaille" || s.statut === "attend");
+  const sessions = (data.direct ?? []).filter((s) => s.statut === "travaille" || s.statut === "attend");
   const attente = data.attente ?? [];
   const visibles = toutVoir ? attente : attente.slice(0, 3);
 
   return (
     <>
       {attente.length > 0 && (
-        <section id="pour-toi">
-          <Sec icone={IcStar} teinte="jaune" droite={attente.length}>Pour toi</Sec>
-          <div className="list">
-            {visibles.map((a, i) => (
-              <div key={i} className="li">
-                <span className="li-main"><span className="li-sub">{a.qui}</span><span className="li-title wrap">{a.quoi}</span></span>
-              </div>
-            ))}
-            {attente.length > 3 && (
-              <button className="li action" onClick={() => setToutVoir(!toutVoir)}>{toutVoir ? "Voir moins" : `Tout voir (${attente.length})`}</button>
-            )}
-          </div>
-        </section>
-      )}
-
-      {gros.length > 0 && (
-        <section>
-          <Sec icone={IcFolder} teinte="lav" droite={ageMin > 5 ? <span className="late">Mac hors ligne</span> : undefined}>Projets</Sec>
-          <div className="list">{gros.map((p) => <LigneProjet key={p.nom} p={p} />)}</div>
-        </section>
-      )}
-
-      <div className="list replis">
-        <Repli titre="Sous-projets et outils" n={outils.length}>
-          {outils.map((p) => <LigneProjet key={p.nom} p={p} />)}
-        </Repli>
-        <Repli titre="Terminés" n={finis.length}>
-          {finis.map((p) => <div key={p.nom} className="li"><span className="li-title done">✓ {p.nom}</span></div>)}
-        </Repli>
-        <Repli titre="Sessions au travail" n={actives.length}>
-          {actives.map((s, i) => (
-            <div key={i} className="li stack">
-              <div className="li-row">
-                <span className="li-title">{s.nom}</span>
-                <span className={`li-side ${s.statut === "attend" ? "todo" : ""}`}>{s.statut === "attend" ? "t'attend" : s.reste_min ? `~${s.reste_min} min` : "en cours"}</span>
-              </div>
-              {s.etape && <span className="li-sub">{s.etape}</span>}
-              {s.pct != null && <Bar pct={s.pct} />}
+        <section className="bloc jaune">
+          <h2 className="bloc-titre"><IcStar />Pour toi <span className="pastille-n">{attente.length}</span></h2>
+          {visibles.map((a, i) => (
+            <div key={i} className="ligne">
+              <span className="ligne-sur">{a.qui}</span>
+              <b className="ligne-texte">{a.quoi}</b>
             </div>
           ))}
-        </Repli>
+          {attente.length > 3 && (
+            <button className="bloc-plus" onClick={() => setToutVoir(!toutVoir)}>{toutVoir ? "Voir moins" : `Tout voir (${attente.length})`}</button>
+          )}
+        </section>
+      )}
+
+      <section className="bloc lavande">
+        <h2 className="bloc-titre">
+          <span className={`direct ${ageMin > 5 ? "eteint" : ""}`} aria-hidden="true" />
+          En direct
+          <span className="bloc-droite">{ageMin > 5 ? `Mac hors ligne · ${ageMin} min` : "mis à jour à l'instant"}</span>
+        </h2>
+        {sessions.length === 0 && <p className="ligne-sous">Aucune session ne travaille en ce moment.</p>}
+        {sessions.map((s, i) => (
+          <div key={i} className="ligne">
+            <span className="ligne-haut">
+              <b>{s.nom}</b>
+              <span className="fraction">{s.statut === "attend" ? "t'attend" : s.pct != null ? `${s.pct} %` : "en cours"}</span>
+            </span>
+            {s.etape && <span className="ligne-sous">{s.etape}</span>}
+            {s.pct != null && <Barre pct={s.pct} />}
+            {s.statut !== "attend" && !!s.reste_min && <span className="ligne-sous fort">~{s.reste_min} min restantes</span>}
+          </div>
+        ))}
+      </section>
+
+      {gros.length > 0 && (
+        <section className="bloc sombre">
+          <h2 className="bloc-titre"><IcFolder />Projets</h2>
+          {gros.map((p) => <Projet key={p.nom} p={p} />)}
+        </section>
+      )}
+
+      <div className="replis">
+        <Repli titre="Sous-projets et outils" n={outils.length}>{outils.map((p) => <Projet key={p.nom} p={p} />)}</Repli>
+        <Repli titre="Terminés" n={finis.length}>{finis.map((p) => <div key={p.nom} className="ligne"><b>✓ {p.nom}</b></div>)}</Repli>
         {apres}
       </div>
     </>
