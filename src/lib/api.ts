@@ -27,6 +27,6 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
 
 // Vérifie un code avant de l'enregistrer
 export async function checkCode(code: string): Promise<boolean> {
-  const r = await fetch("/api/point", { headers: { "x-app-key": code.trim() } });
+  const r = await fetch("/api/point", { headers: { "x-app-key": encodeURIComponent(code.trim()) } });
   return r.ok;
 }
