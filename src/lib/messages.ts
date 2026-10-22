@@ -138,7 +138,7 @@ export function lireNote(note: string, ref: Date = new Date()): NoteLue {
     : undefined;
 
   // « à supprimer », « pas de relance », « stop », « faux », « laisse tomber » : on ne relance plus
-  const stop = /supprim|pas de relance|ne (pas|plus) relancer|plus de relance|\bstop\b|laisse tomber|abandon|\bfake\b|\bfaux\b|bidon/.test(n) || undefined;
+  const stop = /supprim|pas de relance|pas int[ée]ress[ée]|ne (pas|plus) relancer|plus de relance|\bstop\b|laisse tomber|abandon|\bfake\b|\bfaux\b|bidon/.test(n) || undefined;
 
   return { frein, rappel, produit, modalite, stop };
 }
