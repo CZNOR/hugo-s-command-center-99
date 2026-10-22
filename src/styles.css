@@ -1,8 +1,9 @@
-/* Dring — charte MADE (Baltic Sea, Abstract Grey, Tofu) + lavande du logo Dring.
+/* Dring — couleurs MADE (Baltic Sea, Abstract Grey, Tofu) + lavande du logo Dring, police Poppins (choix d'Hugo, plus lisible).
    Échelle « app iPhone » : texte de base 17 px, grands titres, cibles tactiles de 48 px. */
-@font-face { font-family: Montreal; src: url(/fonts/PPNeueMontreal-Book.ttf) format("truetype"); font-weight: 400; font-display: swap; }
-@font-face { font-family: Montreal; src: url(/fonts/PPNeueMontreal-Medium.ttf) format("truetype"); font-weight: 500; font-display: swap; }
-@font-face { font-family: Formula; src: url(/fonts/PPFormulaCondensed-Bold.ttf) format("truetype"); font-weight: 700; font-display: swap; }
+@font-face { font-family: Poppins; src: url(/fonts/Poppins-Regular.ttf) format("truetype"); font-weight: 400; font-display: swap; }
+@font-face { font-family: Poppins; src: url(/fonts/Poppins-Medium.ttf) format("truetype"); font-weight: 500; font-display: swap; }
+@font-face { font-family: Poppins; src: url(/fonts/Poppins-SemiBold.ttf) format("truetype"); font-weight: 600; font-display: swap; }
+@font-face { font-family: Poppins; src: url(/fonts/Poppins-Bold.ttf) format("truetype"); font-weight: 700; font-display: swap; }
 
 :root {
   --bg: #000; --baltic: #2D232E; --grey: #534B52; --lav: #B19AFF; --tofu: #F1F0EA;
@@ -12,7 +13,7 @@
 }
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html, body { background: var(--bg); color: var(--tofu); }
-body { font: 400 17px/1.45 Montreal, -apple-system, system-ui, sans-serif; letter-spacing: -.01em; -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%; }
+body { font: 400 17px/1.5 Poppins, -apple-system, system-ui, sans-serif; letter-spacing: 0; -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%; }
 button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
 a { color: var(--lav); }
 svg.ic { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex: none; }
@@ -23,29 +24,29 @@ svg.ic { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-wid
 .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
 .top img.icon { width: 40px; height: 40px; border-radius: 10px; }
 .top .date { font-size: 15px; color: var(--muted); text-transform: capitalize; }
-.title { font: 700 46px/1 Formula; text-transform: uppercase; margin: 10px 2px 18px; letter-spacing: .005em; }
+.title { font: 700 34px/1.15 Poppins; margin: 10px 2px 18px; letter-spacing: -.02em; }
 .title em { font-style: normal; color: var(--lav); }
 
-.h { font: 700 40px/.95 Formula; text-transform: uppercase; margin: 2px 0 14px; }
+.h { font: 700 30px/1.15 Poppins; margin: 2px 0 14px; letter-spacing: -.02em; }
 .h em { font-style: normal; color: var(--lav); }
-.lbl { font: 700 15px Formula; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.lbl { font: 600 13px Poppins; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .section { margin: 22px 4px 9px; }
 .card { background: var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 18px; margin-bottom: 12px; }
 .card.hero { background: var(--baltic); border-color: rgba(177, 154, 255, .28); }
 .hero .lbl { color: var(--lav); }
-.big { font: 700 72px/1 Formula; margin: 8px 0 4px; }
-.who { font: 500 22px/1.25 Montreal; letter-spacing: -.02em; }
+.big { font: 700 58px/1.05 Poppins; margin: 8px 0 4px; letter-spacing: -.03em; }
+.who { font: 600 21px/1.3 Poppins; }
 .sub { font-size: 15px; color: var(--muted); }
 .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .tag { font-size: 14px; padding: 5px 11px; border-radius: 20px; background: rgba(241, 240, 234, .08); color: var(--soft); }
-.btn { display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; min-height: 54px; margin-top: 14px; background: var(--lav); color: #000; border-radius: 16px; padding: 14px; font: 500 17px Montreal; text-decoration: none; }
+.btn { display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; min-height: 54px; margin-top: 14px; background: var(--lav); color: #000; border-radius: 16px; padding: 14px; font: 600 17px Poppins; text-decoration: none; }
 .btn.ghost { background: rgba(241, 240, 234, .08); color: var(--tofu); }
 .btns { display: flex; gap: 10px; }
 .btns .btn { flex: 1; }
 
 .row { display: flex; align-items: center; gap: 14px; min-height: 52px; }
-.row .t { font: 700 26px/1.05 Formula; width: 70px; flex: none; text-align: center; }
-.row .t small { display: block; font-size: 15px; color: var(--muted); letter-spacing: .04em; }
+.row .t { font: 700 20px/1.15 Poppins; width: 74px; flex: none; text-align: center; }
+.row .t small { display: block; font-size: 13px; font-weight: 500; color: var(--muted); }
 .row .n { flex: 1; min-width: 0; }
 .row .n b { display: block; font-weight: 500; font-size: 18px; line-height: 1.3; }
 .row .n span { display: block; font-size: 14.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
@@ -74,9 +75,9 @@ svg.ic { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-wid
 
 /* Point du jour (Markdown) */
 .md { font-size: 16.5px; color: var(--soft); }
-.md h1 { font: 700 32px/1 Formula; text-transform: uppercase; color: var(--tofu); margin: 6px 0 10px; }
-.md h2 { font: 700 26px/1.05 Formula; text-transform: uppercase; color: var(--tofu); margin: 28px 0 10px; }
-.md h3, .md h4 { font: 500 17px Montreal; color: var(--tofu); margin: 18px 0 6px; }
+.md h1 { font: 700 24px/1.25 Poppins; color: var(--tofu); margin: 6px 0 10px; }
+.md h2 { font: 700 20px/1.25 Poppins; color: var(--tofu); margin: 28px 0 10px; }
+.md h3, .md h4 { font: 600 17px Poppins; color: var(--tofu); margin: 18px 0 6px; }
 .md p { margin: 8px 0; }
 .md em { color: var(--muted); }
 .md strong { color: var(--tofu); font-weight: 500; }
@@ -87,7 +88,7 @@ svg.ic { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-wid
 .md blockquote { border-left: 3px solid var(--lav); padding-left: 12px; color: var(--muted); margin: 8px 0; }
 .md .tbl { overflow-x: auto; margin: 8px -4px; }
 .md table { border-collapse: collapse; width: 100%; font-size: 15.5px; }
-.md th { text-align: left; font: 700 13px Formula; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); padding: 8px 6px; border-bottom: 1px solid var(--line); }
+.md th { text-align: left; font: 600 12px Poppins; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); padding: 8px 6px; border-bottom: 1px solid var(--line); }
 .md td { padding: 11px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
 .md td:first-child { color: var(--lav); white-space: nowrap; }
 .md .rows { display: grid; gap: 10px; margin: 10px 0; }
@@ -121,7 +122,7 @@ svg.ic { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-wid
 
 .gate { min-height: 100dvh; display: flex; flex-direction: column; justify-content: center; padding: 24px; max-width: 440px; margin: 0 auto; }
 .gate img { width: 88px; height: 88px; border-radius: 21px; margin-bottom: 20px; }
-.gate input { width: 100%; margin-top: 18px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px; color: var(--tofu); font: 400 24px Montreal; letter-spacing: .2em; text-align: center; outline: none; }
+.gate input { width: 100%; margin-top: 18px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px; color: var(--tofu); font: 500 24px Poppins; letter-spacing: .2em; text-align: center; outline: none; }
 .gate input:focus { border-color: var(--lav); }
 .gate .err { color: #FF6B6B; font-size: 15px; margin-top: 10px; }
 .notif { display: flex; align-items: center; gap: 12px; font-size: 16px; }
