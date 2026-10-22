@@ -6,7 +6,7 @@ import { usePushSubscription } from "@/lib/usePushSubscription";
 import AccessGate from "@/components/AccessGate";
 import Notifs from "@/components/Notifs";
 import type { SuiviData } from "@/components/Suivi";
-import { IcCalendar, IcLink, IcSun, IcTag } from "@/components/Icons";
+import { IcCalendar, IcCheck, IcLink, IcRefresh, IcSun, IcTag } from "@/components/Icons";
 import Appels from "@/tabs/Appels";
 import Point from "@/tabs/Point";
 import Vinted from "@/tabs/Vinted";
@@ -96,15 +96,15 @@ export default function App() {
     // Fiches (source + suivi) des appels à venir et des 45 derniers jours
     const depuis = Date.now() - SUIVI_JOURS * 86_400_000;
     const ids = [...(up ?? []), ...pa.filter((c) => c.start.getTime() > depuis)].map((c) => c.id).slice(0, 60);
-    if (ids.length) {
-      apiFetch(`/api/prospect?ids=${ids.join(",")}`).then((r) => (r.ok ? r.json() : null)).then((f) => f && setFiches(f)).catch(() => {});
-    }
-    apiFetch("/api/point").then((r) => (r.ok ? r.json() : null)).then((p) => p && setPoint(p)).catch(() => {});
+    await Promise.all([
+      ids.length && apiFetch(`/api/prospect?ids=${ids.join(",")}`).then((r) => (r.ok ? r.json() : null)).then((f) => f && setFiches(f)).catch(() => {}),
+      apiFetch("/api/point").then((r) => (r.ok ? r.json() : null)).then((p) => p && setPoint(p)).catch(() => {}),
+    ]);
   }, [loadVisites]);
 
-  const loadSuivi = useCallback(() => {
-    apiFetch("/api/suivi").then((r) => (r.ok ? r.json() : null)).then((d) => { if (d) { setSuivi(d); setNow(Date.now()); } }).catch(() => {});
-  }, []);
+  const loadSuivi = useCallback(() =>
+    apiFetch("/api/suivi").then((r) => (r.ok ? r.json() : null)).then((d) => { if (d) { setSuivi(d); setNow(Date.now()); } }).catch(() => {}),
+  []);
 
   useEffect(() => {
     if (locked) return;
@@ -206,6 +206,52 @@ export default function App() {
       .catch(() => toast("Pas enregistré, réessaie"));
   };
 
+  // ── Tirer vers le bas, en haut d'une page : tout est relu tout de suite ──
+  const ptr = useRef<HTMLDivElement>(null);
+  const tire = useRef<{ x: number; y: number; d: number; actif: boolean } | null>(null);
+  const [rafraichi, setRafraichi] = useState<"" | "charge" | "ok">("");
+  const SEUIL = 64;
+  const placer = (d: number, transition = false) => {
+    const el = ptr.current;
+    if (!el) return;
+    el.style.transition = transition ? "transform .3s cubic-bezier(.32,.72,0,1), opacity .3s" : "none";
+    el.style.transform = `translate(-50%, ${d}px) rotate(${d * 4}deg)`;
+    el.style.opacity = String(Math.min(1, d / SEUIL));
+    el.classList.toggle("pret", d >= SEUIL);
+  };
+  const rafraichir = async () => {
+    setRafraichi("charge");
+    placer(SEUIL, true);
+    await Promise.all([load(true), loadSuivi(), new Promise((r) => setTimeout(r, 700))]);
+    setRafraichi("ok");
+    setTimeout(() => { placer(0, true); setRafraichi(""); }, 650);
+  };
+  const tirer = {
+    onTouchStart: (e: React.TouchEvent<HTMLElement>) => {
+      if (e.currentTarget.scrollTop > 0 || rafraichi) return;
+      const t = e.touches[0];
+      tire.current = { x: t.clientX, y: t.clientY, d: 0, actif: false };
+    },
+    onTouchMove: (e: React.TouchEvent<HTMLElement>) => {
+      const g = tire.current;
+      if (!g) return;
+      const t = e.touches[0], dy = t.clientY - g.y, dx = t.clientX - g.x;
+      if (!g.actif) {
+        if (dy > 8 && dy > Math.abs(dx) * 1.3 && e.currentTarget.scrollTop <= 0) g.actif = true;
+        else if (Math.abs(dx) > 8 || dy < -4) { tire.current = null; return; }
+        else return;
+      }
+      g.d = Math.min(110, dy * 0.5);
+      placer(g.d);
+    },
+    onTouchEnd: () => {
+      const g = tire.current;
+      tire.current = null;
+      if (!g?.actif) return;
+      if (g.d >= SEUIL) rafraichir(); else placer(0, true);
+    },
+  };
+
   const toast = (msg: string) => {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(""), 1400);
@@ -240,12 +286,14 @@ export default function App() {
       <div className={`mini-bar ${(fiche ? compactFiche : compact) ? "visible" : ""}`} aria-hidden="true">{fiche ? fiche.name : TABS[indexDe(tab)].titre}</div>
 
       <div className="ecran">
+        <div className={`ptr ${rafraichi}`} ref={ptr} aria-hidden="true">{rafraichi === "ok" ? <IcCheck /> : <IcRefresh />}</div>
         <div className="pager" ref={pager} onScroll={onPager}>
           {TABS.map((t, i) => (
             <section
               key={t.id} className="page" data-tab={t.id} aria-hidden={t.id !== tab}
               ref={(el) => { pages.current[i] = el; }}
               onScroll={(e) => t.id === tabRef.current && setCompact(e.currentTarget.scrollTop > 56)}
+              {...tirer}
             >
               <div className="shell">
                 <header className="head">

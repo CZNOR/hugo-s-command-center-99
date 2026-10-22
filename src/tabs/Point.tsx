@@ -4,7 +4,7 @@ import { aFaire } from "@/lib/afaire";
 import { fmtTime, TZ, type Call } from "@/lib/cal";
 import type { Fiche } from "@/lib/prospect";
 import { Avancement, pctProjet, Repli, type SuiviData } from "@/components/Suivi";
-import { Nombre } from "@/components/Deco";
+import { Anneau, Nombre } from "@/components/Deco";
 import { IcCheck, IcFolder, IcList } from "@/components/Icons";
 
 interface Props {
@@ -103,10 +103,17 @@ export default function Point({ suivi, point, now, callsMaj, calls, recents, sui
           : `En direct · tout est à jour · il y a ${ageS} s`}
       </p>
 
-      <div className="kpis">
-        <div className="kpi accent"><b><Nombre n={faitsAuj.length} /><small>/{faitsAuj.length + aFaireAuj.length}</small></b><span>fait aujourd'hui</span></div>
-        <div className="kpi"><b><Nombre n={sessions.length} /></b><span>session{sessions.length > 1 ? "s" : ""} au travail</span></div>
-        <div className="kpi"><b><Nombre n={appels.length} /></b><span>appel{appels.length > 1 ? "s" : ""} aujourd'hui</span></div>
+      {/* En-tête façon widget Suivi : l'anneau de la journée et le résumé en une ligne */}
+      <div className="resume">
+        <Anneau part={faitsAuj.length / Math.max(1, faitsAuj.length + aFaireAuj.length)}><Nombre n={aFaireAuj.length} /></Anneau>
+        <span className="resume-texte">
+          <b>{aFaireAuj.length ? `${aFaireAuj.length} chose${aFaireAuj.length > 1 ? "s" : ""} à faire aujourd'hui` : "Rien à faire, tout est fait"}</b>
+          <span>
+            {faitsAuj.length} fait{faitsAuj.length > 1 ? "s" : ""}
+            {" · "}{sessions.length} au travail
+            {" · "}{appels.length ? `${appels.length} appel${appels.length > 1 ? "s" : ""}` : "aucun appel"}
+          </span>
+        </span>
       </div>
 
       <section className="bloc">
