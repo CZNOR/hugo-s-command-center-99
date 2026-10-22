@@ -104,3 +104,4 @@ svg.ic { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-wid
 .gate .err { color: #FF6B6B; font-size: 13px; margin-top: 8px; }
 .notif { display: flex; align-items: center; gap: 10px; font-size: 13.5px; }
 .notif .btn { width: auto; margin: 0; padding: 8px 12px; font-size: 13px; flex: none; }
+.amount { font-style: normal; color: var(--lav); font-weight: 500; }
