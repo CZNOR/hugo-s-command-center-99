@@ -11,8 +11,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { subscription } = req.body as { subscription: PushSubscriptionJSON };
   if (!subscription?.endpoint) return res.status(400).json({ error: "no subscription" });
 
-  // Upsert dans Supabase (endpoint est unique)
-  const r = await fetch(`${SB_URL}/rest/v1/push_subscriptions`, {
+  // Upsert dans Supabase : endpoint est unique, on_conflict le désigne comme clé
+  // (sans lui, une 2e inscription du même appareil échouait en 500)
+  const r = await fetch(`${SB_URL}/rest/v1/push_subscriptions?on_conflict=endpoint`, {
     method: "POST",
     headers: sbHeaders({ "Content-Type": "application/json", Prefer: "resolution=merge-duplicates" }),
     body: JSON.stringify({
