@@ -41,6 +41,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (FREINS.has(b.frein)) suivi.frein = b.frein;
     if (b.frein === null) delete suivi.frein;
     if (typeof b.rappel === "string") suivi.rappel = /^\d{4}-\d{2}-\d{2}$/.test(b.rappel) ? b.rappel : undefined;
+    if (typeof b.stop === "boolean") suivi.stop = b.stop;
     if (Array.isArray(b.envoyes)) suivi.envoyes = b.envoyes.filter((x: unknown) => typeof x === "string").slice(0, 20).map((x: string) => x.slice(0, 30));
     if (typeof b.note === "string") {
       const note = b.note.slice(0, 2000);

@@ -14,9 +14,7 @@ export default function Vinted({ toast }: { toast: (msg: string) => void }) {
         ))}
       </div>
       <p className="vinted-text">{item.text}</p>
-      <div className="list actions">
-        <button className="li action" onClick={async () => { if (await copyText(item.text)) toast("Texte copié"); }}>Copier le texte</button>
-      </div>
+      <button className="btn copier-texte" onClick={async () => { if (await copyText(item.text)) toast("Texte copié"); }}>Copier le texte</button>
       <p className="explain">Couleur et taille à remplir dans l'annonce.</p>
     </>
   );

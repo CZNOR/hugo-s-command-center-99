@@ -84,7 +84,7 @@ const plus = (d: Date, jours: number, h = 18, m = 30) => ouvrable(aParis(d, jour
 // pas d'aujourd'hui : une note écrite le 20 qui dit « demain » vise le 21.
 const iso = (y: number, m: number, d: number) => `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 
-export interface NoteLue { frein?: Frein; rappel?: string; produit?: Produit; modalite?: Modalite }
+export interface NoteLue { frein?: Frein; rappel?: string; produit?: Produit; modalite?: Modalite; stop?: boolean }
 
 export function lireNote(note: string, ref: Date = new Date()): NoteLue {
   const n = note.toLowerCase();
@@ -137,7 +137,10 @@ export function lireNote(note: string, ref: Date = new Date()): NoteLue {
     : /1 ?fois|cash|comptant|en une fois/.test(n) ? "1fois"
     : undefined;
 
-  return { frein, rappel, produit, modalite };
+  // « à supprimer », « pas de relance », « stop », « faux », « laisse tomber » : on ne relance plus
+  const stop = /supprim|pas de relance|ne (pas|plus) relancer|plus de relance|\bstop\b|laisse tomber|abandon|\bfake\b|\bfaux\b|bidon/.test(n) || undefined;
+
+  return { frein, rappel, produit, modalite, stop };
 }
 
 // Suivi complété par la note : ce qu'Hugo a coché passe avant, la note comble les trous
@@ -147,6 +150,7 @@ export function suiviEffectif(s: Suivi, ref?: Date): Suivi {
   const produit = s.produit ?? lu.produit;
   return {
     ...s,
+    stop: s.stop ?? lu.stop,
     frein: s.frein ?? lu.frein,
     rappel: s.rappel ?? lu.rappel,
     produit,
@@ -160,7 +164,8 @@ export function suiviEffectif(s: Suivi, ref?: Date): Suivi {
 const COURT: Record<Produit, string> = { academie: "l'Académie", coaching: "le coaching", suivi: "l'Académie avec le suivi", ads: "le coaching ads" };
 
 export function plan(c: Call, s: Suivi): Plan | null {
-  if (!s.venu) return null;
+  if (!s.venu || s.stop) return null;
+  if (s.resultat === "pas-interesse" && s.venu === "absent") return null;
   const p = c.name.trim().split(/\s+/)[0] || "";
   const heure = c.start.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: TZ }).replace(":", "h");
 

@@ -252,3 +252,14 @@ button.li:active, a.li:active { background: rgba(255, 255, 255, .08); }
   .coche-anim::after { transform: rotate(45deg) scale(1); }
 }
 .repli-tete .li-title { flex: 1; min-width: 0; }
+
+/* Titres de section avec tuile d'icône colorée */
+.sec .sec-titre { margin-left: 0; font-size: 22px; font-weight: 700; color: var(--label); }
+.sec .sec-droite { margin-left: auto; }
+.sec span.tuile { margin-left: 0; width: 28px; height: 28px; border-radius: 7px; display: inline-grid; place-items: center; flex: none; align-self: center; animation: pop .4s var(--ressort) both; }
+.tuile svg.ic { width: 18px; height: 18px; color: #fff; stroke-width: 2; }
+.tuile.lav { background: #8E6DFF; } .tuile.orange { background: #FF9F0A; } .tuile.vert { background: #30D158; } .tuile.rouge { background: #FF453A; }
+.tuile.bleu { background: #0A84FF; } .tuile.jaune { background: #FFB800; } .tuile.gris { background: #636366; } .tuile.rose { background: #FF375F; }
+.tuile.sonne svg { transform-origin: 50% 15%; animation: sonne 4s ease-in-out infinite; }
+/* Vinted : gros bouton central */
+.btn.copier-texte { margin: 22px auto 0; width: 100%; font-size: 18px; min-height: 56px; }

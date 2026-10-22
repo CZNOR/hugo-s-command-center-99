@@ -25,6 +25,7 @@ export interface Suivi {
   note?: string;
   noteLe?: string;     // quand la note a été écrite (posé par le serveur) : base des « demain »
   envoyes?: string[];  // identifiants des messages déjà envoyés
+  stop?: boolean;      // « ne plus relancer » (coché, ou lu dans la note : « à supprimer », « pas de relance »)
   maj?: string;
 }
 

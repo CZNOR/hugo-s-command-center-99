@@ -28,6 +28,7 @@ export async function calculerRelances(now = Date.now()): Promise<{ aEnvoyer: Re
   for (const c of appels) {
     const appel = quandLisible(c.start, now);
     const su = fiches[`prospect:${c.id}`]?.suivi;
+    if (su && suiviEffectif(su, c.end).stop) continue; // « ne plus relancer »
     // Appel passé sans rien de noté : à remplir (dans les 7 derniers jours seulement)
     if (!su?.venu || (su.venu === "venu" && !su.resultat)) {
       if (c.start.getTime() > now - 7 * 86_400_000) {

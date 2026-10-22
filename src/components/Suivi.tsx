@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Sec } from "./Deco";
+import { IcFolder, IcStar } from "./Icons";
 
 // Avancement en direct : envoyé toutes les 20 s par tools/publish_suivi.py depuis le Mac
 export interface Projet {
@@ -52,7 +54,8 @@ function LigneProjet({ p }: { p: Projet }) {
   );
 }
 
-export default function Suivi({ data, now }: { data: SuiviData; now: number }) {
+// Pour toi, gros projets, puis le reste replié ; « apres » ajoute des groupes repliés en bas
+export default function Suivi({ data, now, apres }: { data: SuiviData; now: number; apres?: React.ReactNode }) {
   const [toutVoir, setToutVoir] = useState(false);
   if (!data.maj) return null;
   const ageMin = Math.round((now / 1000 - data.maj) / 60);
@@ -66,15 +69,9 @@ export default function Suivi({ data, now }: { data: SuiviData; now: number }) {
 
   return (
     <>
-      <p className="resume">
-        {attente.length ? <><b>{attente.length}</b> chose{attente.length > 1 ? "s" : ""} pour toi</> : "Rien ne t'attend"}
-        {" · "}<b>{gros.length}</b> projet{gros.length > 1 ? "s" : ""} en route
-        {ageMin > 5 && <span className="late"> · Mac hors ligne depuis {ageMin} min</span>}
-      </p>
-
       {attente.length > 0 && (
-        <>
-          <h2 className="sec">Pour toi</h2>
+        <section id="pour-toi">
+          <Sec icone={IcStar} teinte="jaune" droite={attente.length}>Pour toi</Sec>
           <div className="list">
             {visibles.map((a, i) => (
               <div key={i} className="li">
@@ -85,14 +82,14 @@ export default function Suivi({ data, now }: { data: SuiviData; now: number }) {
               <button className="li action" onClick={() => setToutVoir(!toutVoir)}>{toutVoir ? "Voir moins" : `Tout voir (${attente.length})`}</button>
             )}
           </div>
-        </>
+        </section>
       )}
 
       {gros.length > 0 && (
-        <>
-          <h2 className="sec">Projets</h2>
+        <section>
+          <Sec icone={IcFolder} teinte="lav" droite={ageMin > 5 ? <span className="late">Mac hors ligne</span> : undefined}>Projets</Sec>
           <div className="list">{gros.map((p) => <LigneProjet key={p.nom} p={p} />)}</div>
-        </>
+        </section>
       )}
 
       <div className="list replis">
@@ -114,6 +111,7 @@ export default function Suivi({ data, now }: { data: SuiviData; now: number }) {
             </div>
           ))}
         </Repli>
+        {apres}
       </div>
     </>
   );
