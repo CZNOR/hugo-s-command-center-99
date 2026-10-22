@@ -74,6 +74,10 @@ export default function App() {
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
 
+  const loadVisites = useCallback(() => {
+    apiFetch("/api/visite").then((r) => (r.ok ? r.json() : null)).then((v) => v && setVisites(v)).catch(() => {});
+  }, []);
+
   const load = useCallback(async () => {
     setNow(Date.now());
     // Les appels à venir chaque minute ; le reste (lourd, qui bouge peu) toutes les 5 min
@@ -88,7 +92,7 @@ export default function App() {
       pastRef.current = pa;
       setPast(pa);
       fetchCancelledCalls().then(setAnnulees).catch(() => {});
-      apiFetch("/api/visite").then((r) => (r.ok ? r.json() : [])).then(setVisites).catch(() => {});
+      loadVisites();
     }
     // Fiches (source + suivi) des appels à venir et des 7 derniers jours
     const depuis = Date.now() - RECENTS_JOURS * 86_400_000;
@@ -103,7 +107,7 @@ export default function App() {
       .then((r) => (r.ok ? r.json() : null))
       .then((p) => p && setPoint(p))
       .catch(() => {});
-  }, []);
+  }, [loadVisites]);
 
   // Avancement en direct : relu toutes les 20 s, seulement quand l'app est à l'écran
   const loadSuivi = useCallback(() => {
@@ -136,6 +140,7 @@ export default function App() {
     window.location.hash = id ? `appel-${id}` : "";
     setFicheId(id);
     window.scrollTo(0, 0);
+    if (id) loadVisites(); // visite toute fraîche (réservation faite il y a quelques minutes)
   };
 
   // Suivi après l'appel : mis à jour tout de suite à l'écran, puis enregistré
