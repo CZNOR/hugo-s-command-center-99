@@ -1,7 +1,7 @@
 {
-  "name": "CZN Command Center",
-  "short_name": "CZN",
-  "description": "Dashboard personnel Hugo — tâches, finances, agence",
+  "name": "Dring",
+  "short_name": "Dring",
+  "description": "Mes appels, le point du jour, mes textes et mes liens.",
   "start_url": "/command-center",
   "display": "standalone",
   "background_color": "#030108",

@@ -12,15 +12,15 @@ self.addEventListener("activate", (e) => {
 
 // ── Push reçu depuis le serveur ──────────────────────────────────────────────
 self.addEventListener("push", (e) => {
-  let data = { title: "CZN", body: "Rappel de tâche", url: "/tasks" };
+  let data = { title: "Dring", body: "Rappel de tâche", url: "/tasks" };
   try {
     if (e.data) data = { ...data, ...e.data.json() };
   } catch {}
 
   const options = {
     body:    data.body,
-    icon:    "/czn-logo.png",
-    badge:   "/czn-logo.png",
+    icon:    "/icon-192.png",
+    badge:   "/icon-192.png",
     tag:     data.tag || "czn-notif",
     data:    { url: data.url || "/" },
     vibrate: [200, 100, 200],
