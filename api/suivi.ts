@@ -3,12 +3,13 @@
 //   POST → enregistre (envoyé chaque minute par tools/publish_suivi.py depuis le Mac)
 // Stocké dans task_meta (ligne __suivi__), base fermée par RLS.
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { SB_URL, sbHeaders, hasAccess } from "./_lib/server.js";
+import { SB_URL, sbHeaders, hasAccess, grantDevice } from "./_lib/server.js";
 
 const ROW = "__suivi__";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!hasAccess(req)) return res.status(401).json({ error: "code d'accès requis" });
+  grantDevice(req, res);
   res.setHeader("Cache-Control", "no-store");
 
   if (req.method === "GET") {

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { apiFetch, hasCode, NEED_CODE_EVENT } from "@/lib/api";
+import { apiFetch, NEED_CODE_EVENT } from "@/lib/api";
 import { fetchUpcomingCalls, TZ, type Call } from "@/lib/cal";
 import { usePushSubscription } from "@/lib/usePushSubscription";
 import AccessGate from "@/components/AccessGate";
@@ -32,7 +32,9 @@ const REFRESH_MS = 60_000;
 const SUIVI_MS = 20_000; // le Mac envoie l'avancement toutes les 20 s
 
 export default function App() {
-  const [locked, setLocked] = useState(!hasCode());
+  // L'écran de code ne s'affiche que si le serveur refuse vraiment (401) :
+  // le jeton d'appareil (cookie d'un an) suffit, même si le stockage local est vidé.
+  const [locked, setLocked] = useState(false);
   const [tab, setTab] = useState<Tab>(tabFromHash);
   const [calls, setCalls] = useState<Call[] | null>(null);
   const [callsErr, setCallsErr] = useState("");

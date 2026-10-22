@@ -3,12 +3,13 @@
 //   POST { markdown } → enregistre (envoyé par tools/publish_point.py après chaque point)
 // Stocké dans task_meta (ligne __point_du_jour__), base fermée par RLS.
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { SB_URL, sbHeaders, hasAccess } from "./_lib/server.js";
+import { SB_URL, sbHeaders, hasAccess, grantDevice } from "./_lib/server.js";
 
 const ROW = "__point_du_jour__";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!hasAccess(req)) return res.status(401).json({ error: "code d'accès requis" });
+  grantDevice(req, res);
   res.setHeader("Cache-Control", "no-store");
 
   if (req.method === "GET") {

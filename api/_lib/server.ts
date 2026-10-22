@@ -7,8 +7,8 @@
 //   CALCOM_API_KEY             clé API Cal.com
 //   APP_ACCESS_CODE            code saisi une fois dans l'app, envoyé en en-tête x-app-key
 // Les fichiers de api/_lib ne deviennent pas des routes (préfixe _).
-import type { VercelRequest } from "@vercel/node";
-import { timingSafeEqual } from "node:crypto";
+import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { createHmac, timingSafeEqual } from "node:crypto";
 
 // Les en-têtes HTTP ne portent que de l'ASCII : l'app encode le code (encodeURIComponent)
 const decodeHeader = (v: unknown) => {
@@ -38,10 +38,32 @@ const normalize = (s: string) =>
   s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
     .replace(/[\u2010-\u2015\u2212]/g, "-").replace(/\s+/g, "");
 
-// Vrai si la requête porte le bon code d'accès de l'app
+const same = (a: string, b: string) =>
+  a.length === b.length && timingSafeEqual(Buffer.from(a), Buffer.from(b));
+
+// Jeton d'appareil (cookie « dring », 1 an) : dérivé du code, il reste valable à
+// chaque déploiement et tombe seulement si le code change. HttpOnly : le JS n'y a pas accès.
+const COOKIE = "dring";
+const MAX_AGE_S = 365 * 24 * 3600;
+const deviceToken = () =>
+  createHmac("sha256", normalize(process.env.APP_ACCESS_CODE || "")).update("dring-appareil-v1").digest("hex");
+
+function cookieToken(req: VercelRequest): string {
+  const m = String(req.headers.cookie ?? "").match(/(?:^|;\s*)dring=([a-f0-9]{64})/);
+  return m ? m[1] : "";
+}
+
+// Vrai si la requête porte le bon code d'accès (en-tête x-app-key) ou le jeton d'appareil
 export function hasAccess(req: VercelRequest): boolean {
   const expected = normalize(process.env.APP_ACCESS_CODE || "");
-  const given = normalize(decodeHeader(req.headers["x-app-key"]));
-  if (!expected || given.length !== expected.length) return false;
-  return timingSafeEqual(Buffer.from(given), Buffer.from(expected));
+  if (!expected) return false;
+  if (same(normalize(decodeHeader(req.headers["x-app-key"])), expected)) return true;
+  const token = cookieToken(req);
+  return !!token && same(token, deviceToken());
+}
+
+// Pose (ou prolonge d'un an) le jeton d'appareil après une requête autorisée
+export function grantDevice(req: VercelRequest, res: VercelResponse) {
+  if (cookieToken(req) === deviceToken()) return;
+  res.setHeader("Set-Cookie", `${COOKIE}=${deviceToken()}; Max-Age=${MAX_AGE_S}; Path=/; HttpOnly; Secure; SameSite=Lax`);
 }

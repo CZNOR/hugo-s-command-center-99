@@ -1,6 +1,7 @@
 // ─── Appels vers les fonctions serveur de l'app ───────────────────────────────
 // Les clés (Cal, Supabase) restent côté serveur. Le navigateur envoie seulement
-// le code d'accès, saisi une fois par appareil sur l'écran de code.
+// le code d'accès, saisi une fois par appareil sur l'écran de code. Le serveur pose
+// alors un jeton d'appareil d'un an (cookie HttpOnly), envoyé tout seul ensuite.
 
 const CODE_KEY = "app_access_code";
 export const NEED_CODE_EVENT = "dring:need-code";
