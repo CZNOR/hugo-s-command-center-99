@@ -54,6 +54,15 @@ export default function App() {
   const [point, setPoint] = useState<{ markdown: string; updatedAt: string | null }>({ markdown: "", updatedAt: null });
   const [suivi, setSuivi] = useState<SuiviData>({});
   const [now, setNow] = useState(Date.now());
+  // Sens du glissement entre écrans : vers la droite si on avance dans les onglets, fiche = « push »
+  const [sens, setSens] = useState<"droite" | "gauche" | "push" | "pop">("droite");
+  // Le grand titre se réduit en barre fine quand on fait défiler (comme les apps Apple)
+  const [compact, setCompact] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setCompact(window.scrollY > 56);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
   const [toastMsg, setToastMsg] = useState("");
   const { status: pushStatus, error: pushError, subscribe } = usePushSubscription();
 
@@ -133,6 +142,7 @@ export default function App() {
   }, [locked, load]);
 
   const openFiche = (id: number | null) => {
+    setSens(id ? "push" : "pop");
     window.location.hash = id ? `appel-${id}` : "";
     setFicheId(id);
     window.scrollTo(0, 0);
@@ -154,6 +164,8 @@ export default function App() {
 
 
   const go = (t: Tab) => {
+    const ordre = TABS.map((x) => x.id);
+    setSens(ordre.indexOf(t) >= ordre.indexOf(tab) ? "droite" : "gauche");
     setFicheId(null);
     window.location.hash = t === "appels" ? "" : t;
     setTab(t);
@@ -169,10 +181,14 @@ export default function App() {
 
   const fiche = ficheId ? [...(calls ?? []), ...past].find((c) => c.id === ficheId) ?? null : null;
   const date = new Date(now).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: TZ });
+  const heure = Number(new Date(now).toLocaleTimeString("fr-FR", { hour: "2-digit", hour12: false, timeZone: TZ }).slice(0, 2));
+  const salut = heure < 5 ? "Bonne nuit" : heure < 12 ? "Bonjour" : heure < 18 ? "Bon après-midi" : "Bonsoir";
+  const titreCourant = fiche ? fiche.name : TITLES[tab];
 
   return (
     <div className="shell">
-      <main className="view" key={fiche ? `fiche-${fiche.id}` : tab}>
+      <div className={`mini-bar ${compact ? "visible" : ""}`} aria-hidden={!compact}>{titreCourant}</div>
+      <main className={`view ${sens}`} key={fiche ? `fiche-${fiche.id}` : tab}>
       {fiche ? (
         <FicheProspect
           call={fiche}
@@ -187,7 +203,7 @@ export default function App() {
         />
       ) : (
         <header className="head">
-          <p className="eyebrow">{date}</p>
+          <p className="eyebrow">{salut} Hugo · {date}</p>
           <h1 className="title">{TITLES[tab]}</h1>
         </header>
       )}

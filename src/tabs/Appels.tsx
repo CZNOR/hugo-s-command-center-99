@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { fmtCountdown, fmtDay, fmtDayShort, fmtTime, type Call } from "@/lib/cal";
 import { todayRows } from "@/lib/markdown";
 import type { PushStatus } from "@/lib/usePushSubscription";
@@ -50,6 +51,21 @@ export default function Appels({ calls, error, point, now, pushStatus, pushError
     return !su?.venu || (su.venu === "venu" && !su.resultat);
   });
   const aFaire = [...aEnvoyer, ...aNoter.map((c) => ({ c, titre: "Appel à noter dans la fiche", quand: c.start, e: "noter" as const }))];
+
+  // Compte à rebours à la seconde dans la dernière heure avant l'appel
+  const [tic, setTic] = useState(Date.now());
+  useEffect(() => {
+    if (!next) return;
+    const id = setInterval(() => {
+      const reste = next.start.getTime() - Date.now();
+      if (reste < 3600_000 && reste > -1800_000) setTic(Date.now());
+    }, 1000);
+    return () => clearInterval(id);
+  }, [next?.id]);
+  const reste = next ? next.start.getTime() - Math.max(tic, now) : 0;
+  const imminent = !!next && reste < 3600_000;
+  const compte = reste <= 0 ? "C'est maintenant"
+    : `dans ${Math.floor(reste / 60_000)} min ${String(Math.floor((reste % 60_000) / 1000)).padStart(2, "0")} s`;
   const today = todayRows(point);
 
   return (
@@ -63,9 +79,13 @@ export default function Appels({ calls, error, point, now, pushStatus, pushError
         </div>
       )}
 
+      {aFaire.length === 0 && calls !== null && (
+        <p className="tout-bon"><span className="coche-anim" aria-hidden="true" />Personne à relancer, tout est à jour.</p>
+      )}
+
       {aFaire.length > 0 && (
         <>
-          <h2 className="sec">À faire aujourd'hui<span>{aFaire.length}</span></h2>
+          <h2 className="sec"><span className="cloche" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15z" /><path d="M10 20a2 2 0 0 0 4 0" /></svg></span>À faire aujourd'hui<span>{aFaire.length}</span></h2>
           <div className="list">
             {aFaire.map(({ c, titre, quand, e }) => (
               <button key={`${c.id}-${titre}`} className="li" onClick={() => onOpenFiche(c.id)}>
@@ -91,6 +111,12 @@ export default function Appels({ calls, error, point, now, pushStatus, pushError
             <div className="lead-time">{fmtTime(next.start)}</div>
             <div className="lead-name">{next.name}</div>
             <div className="lead-meta">{fmtDay(next.start)}{alertes(next).length > 0 && <span className="todo"> · à confirmer</span>}</div>
+            {imminent && (
+              <>
+                <div className="compte">{compte}</div>
+                <div className="compte-barre"><i style={{ width: `${Math.min(100, Math.max(0, 100 - reste / 36_000))}%` }} /></div>
+              </>
+            )}
           </div>
           {next.answers.length > 0 && (
             <div className="list">

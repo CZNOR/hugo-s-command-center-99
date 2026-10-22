@@ -8,7 +8,7 @@ export default function Vinted({ toast }: { toast: (msg: string) => void }) {
 
   return (
     <>
-      <div className="segmented top-gap">
+      <div className="segmented glisse top-gap" style={{ "--n": VINTED.length, "--i": VINTED.findIndex((v) => v.id === id) } as React.CSSProperties}>
         {VINTED.map((v) => (
           <button key={v.id} className={v.id === id ? "on" : ""} onClick={() => setId(v.id)}>{v.label}</button>
         ))}

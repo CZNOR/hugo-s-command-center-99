@@ -80,7 +80,7 @@ export default function FicheProspect({ call: c, autres, annulees, visites, fich
   );
 
   const Segment = <T extends string>({ items, choisi, onPick }: { items: { id: T; label: string }[]; choisi?: T; onPick: (id: T) => void }) => (
-    <div className="segmented">
+    <div className={`segmented glisse ${choisi ? "" : "vide"}`} style={{ "--n": items.length, "--i": Math.max(0, items.findIndex((x) => x.id === choisi)) } as React.CSSProperties}>
       {items.map((x) => (
         <button key={x.id} className={choisi === x.id ? "on" : ""} onClick={() => onPick(x.id)}>{x.label}</button>
       ))}

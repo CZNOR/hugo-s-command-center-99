@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { markdownSections } from "@/lib/markdown";
-import Suivi, { type SuiviData } from "@/components/Suivi";
+import Suivi, { Repli, type SuiviData } from "@/components/Suivi";
 
 interface Props { markdown: string; updatedAt: string | null; suivi: SuiviData; now: number }
 
@@ -14,16 +14,17 @@ export default function Point({ markdown, updatedAt, suivi, now }: Props) {
     <>
       <Suivi data={suivi} now={now} />
 
-      <h2 className="sec">Le point complet{when && <span>{when}</span>}</h2>
       {!sections.length && <p className="empty">Pas encore de point aujourd'hui.</p>}
       {sections.length > 0 && (
-        <div className="list">
-          {sections.map((s, i) => (
-            <details key={s.title} className="acc" open={i === 0}>
-              <summary>{s.title}</summary>
-              <div className="md" dangerouslySetInnerHTML={{ __html: s.html }} />
-            </details>
-          ))}
+        <div className="list replis">
+          <Repli titre={`Le point complet${when ? ` · ${when}` : ""}`} n={sections.length}>
+            {sections.map((s) => (
+              <details key={s.title} className="acc">
+                <summary>{s.title}</summary>
+                <div className="md" dangerouslySetInnerHTML={{ __html: s.html }} />
+              </details>
+            ))}
+          </Repli>
         </div>
       )}
     </>

@@ -23,7 +23,7 @@ a { color: inherit; text-decoration: none; }
 svg.ic { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 
 /* ── Page ───────────────────────────────────────────────── */
-.shell { width: 100%; max-width: 640px; margin: 0 auto; padding: calc(var(--safe-top) + 8px) var(--gutter) calc(var(--safe-bottom) + var(--tabbar) + 32px); }
+.shell { width: 100%; max-width: 640px; margin: 0 auto; overflow-x: clip; padding: calc(var(--safe-top) + 8px) var(--gutter) calc(var(--safe-bottom) + var(--tabbar) + 32px); }
 .view { animation: apparait .12s ease-out both; }
 @keyframes apparait { from { opacity: 0; } }
 .head { padding-top: 6px; }
@@ -164,3 +164,91 @@ button.li:active, a.li:active { background: rgba(255, 255, 255, .08); }
 .btn { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 50px; margin-top: 22px; background: var(--accent); color: #000; border-radius: 10px; font-size: 17px; font-weight: 600; }
 
 @media (prefers-reduced-motion: reduce) { .view { animation: none; } }
+
+/* ══ Un peu d'âme ══════════════════════════════════════════
+   Mouvements courts et doux (courbe « ressort » d'iOS), jamais décoratifs :
+   ils disent ce qui se passe (on avance, on revient, c'est coché, c'est envoyé). */
+:root { --ressort: cubic-bezier(.32, .72, 0, 1); }
+
+/* Transitions entre écrans : glisse dans le sens du geste, la fiche arrive par la droite */
+.view { animation: none; }
+.view.droite { animation: entreDroite .38s var(--ressort) both; }
+.view.gauche { animation: entreGauche .38s var(--ressort) both; }
+.view.push { animation: entrePush .42s var(--ressort) both; }
+.view.pop { animation: entreGauche .38s var(--ressort) both; }
+@keyframes entreDroite { from { opacity: 0; transform: translateX(28px); } }
+@keyframes entreGauche { from { opacity: 0; transform: translateX(-28px); } }
+@keyframes entrePush { from { opacity: .4; transform: translateX(70%); } }
+
+/* Les lignes arrivent en cascade */
+.view .list > * { animation: monte .45s var(--ressort) both; }
+.view .list > *:nth-child(2) { animation-delay: .03s; } .view .list > *:nth-child(3) { animation-delay: .06s; }
+.view .list > *:nth-child(4) { animation-delay: .09s; } .view .list > *:nth-child(5) { animation-delay: .12s; }
+.view .list > *:nth-child(n+6) { animation-delay: .15s; }
+@keyframes monte { from { opacity: 0; transform: translateY(8px); } }
+
+/* Barre de titre compacte au défilement */
+.mini-bar { position: fixed; top: 0; left: 0; right: 0; z-index: 40; padding: calc(var(--safe-top) + 10px) 60px 10px; text-align: center; font-size: 17px; font-weight: 600; background: #000; border-bottom: .5px solid var(--sep); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0; transform: translateY(-6px); pointer-events: none; transition: opacity .2s ease, transform .25s var(--ressort); }
+.mini-bar.visible { opacity: 1; transform: none; }
+
+/* Salut + résumé */
+.resume { font-size: 17px; color: var(--label2); margin-top: 10px; line-height: 1.4; }
+.resume b { color: var(--label); font-weight: 600; }
+.tout-bon { display: flex; align-items: center; gap: 10px; font-size: 17px; color: var(--label2); margin-top: 22px; }
+.coche-anim { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--green); position: relative; flex: none; animation: rond .5s var(--ressort) both; }
+.coche-anim::after { content: ""; position: absolute; left: 6px; top: 2px; width: 5px; height: 10px; border-right: 2px solid var(--green); border-bottom: 2px solid var(--green); transform: rotate(45deg) scale(0); transform-origin: bottom left; animation: coche .35s .35s var(--ressort) forwards; }
+@keyframes rond { from { transform: scale(.4); opacity: 0; } }
+@keyframes coche { to { transform: rotate(45deg) scale(1); } }
+
+/* La cloche Dring sonne quand il y a des choses à faire */
+.cloche { width: 22px; height: 22px; color: var(--accent); flex: none; margin: 0 -2px 0 0; align-self: center; transform-origin: 50% 10%; animation: sonne 4s ease-in-out infinite; }
+.cloche svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.sec span.cloche { margin-left: 0; }
+@keyframes sonne { 0%, 70%, 100% { transform: rotate(0); } 74% { transform: rotate(16deg); } 78% { transform: rotate(-14deg); } 82% { transform: rotate(10deg); } 86% { transform: rotate(-6deg); } 90% { transform: rotate(3deg); } }
+
+/* Compte à rebours de la dernière heure */
+.compte { font-size: 17px; font-weight: 600; color: var(--accent); margin-top: 12px; font-variant-numeric: tabular-nums; }
+.compte-barre { height: 3px; background: var(--fill); margin-top: 8px; overflow: hidden; }
+.compte-barre i { display: block; height: 100%; background: var(--accent); transition: width 1s linear; }
+
+/* Sélecteur à deux choix : le curseur glisse */
+.segmented.glisse { position: relative; isolation: isolate; }
+.segmented.glisse::before { content: ""; position: absolute; z-index: -1; top: 2px; bottom: 2px; left: 2px; width: calc((100% - 4px) / var(--n)); border-radius: 7px; background: var(--fill-on); transform: translateX(calc(100% * var(--i))); transition: transform .32s var(--ressort); }
+.segmented.glisse.vide::before { opacity: 0; }
+.segmented.glisse button.on { background: transparent; }
+
+/* Coche, copié, envoyé : un petit rebond */
+.tick.on { animation: pop .3s var(--ressort); }
+.copy.done { animation: pop .3s var(--ressort); }
+.li.message.envoye .message-top span:last-child { animation: pop .35s var(--ressort); }
+.li.message .message-text { transition: color .3s ease; }
+@keyframes pop { 0% { transform: scale(.6); opacity: 0; } 60% { transform: scale(1.12); } 100% { transform: scale(1); opacity: 1; } }
+
+/* Groupes repliés : le chevron tourne, le contenu descend */
+.replis { margin-top: 30px; }
+.repli + .repli .repli-tete::before { content: ""; position: absolute; top: 0; left: var(--gutter); right: 0; border-top: .5px solid var(--sep); }
+.chev.tourne { transform: rotate(135deg); transition: transform .3s var(--ressort); margin-top: -4px; }
+.repli.ouvert .chev.tourne { transform: rotate(-45deg); margin-top: 4px; }
+.repli-corps { border-top: .5px solid var(--sep); animation: descend .35s var(--ressort) both; }
+@keyframes descend { from { opacity: 0; transform: translateY(-6px); } }
+
+/* Projets : une ligne, le détail s'ouvre */
+.li.projet { text-align: left; }
+.li-sub.une-ligne { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.projet-detail { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; animation: descend .3s var(--ressort) both; }
+.projet-detail b { font-weight: 600; }
+.bar i { transform-origin: left; transition: width .8s var(--ressort); animation: remplit .9s var(--ressort) both; }
+@keyframes remplit { from { transform: scaleX(0); } }
+
+/* Toast : monte avec un ressort */
+.toast { animation: toast .4s var(--ressort) both; }
+@keyframes toast { from { opacity: 0; transform: translate(-50%, 14px) scale(.96); } }
+
+/* Onglet actif : l'icône rebondit */
+.nav button.on svg { animation: pop .35s var(--ressort); }
+
+@media (prefers-reduced-motion: reduce) {
+  .view, .view .list > *, .cloche, .coche-anim, .coche-anim::after, .bar i, .toast, .repli-corps, .projet-detail { animation: none !important; }
+  .coche-anim::after { transform: rotate(45deg) scale(1); }
+}
+.repli-tete .li-title { flex: 1; min-width: 0; }
