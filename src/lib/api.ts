@@ -21,7 +21,7 @@ function askForCode() {
 
 export async function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {
   const headers = new Headers(init.headers);
-  headers.set("x-app-key", accessCode());
+  headers.set("x-app-key", encodeURIComponent(accessCode()));
   const res = await fetch(path, { ...init, headers });
   if (res.status === 401) askForCode();
   return res;
