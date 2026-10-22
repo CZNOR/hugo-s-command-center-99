@@ -115,3 +115,5 @@ svg.ic { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-wid
 .st.travaille { color: var(--lav); }
 .st.attend { color: #F2C14E; }
 .pt li > span.full { display: block; -webkit-line-clamp: unset; }
+.fiche { font-size: 13px; color: var(--soft); margin-top: 4px; line-height: 1.4; }
+.fiche.ambre { color: #F2C14E; }

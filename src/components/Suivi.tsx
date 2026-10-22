@@ -3,7 +3,10 @@ export interface SuiviData {
   maj?: number;
   attente?: { qui: string; quoi: string }[];
   direct?: { nom: string; statut: string; etape: string; pct: number | null; reste_min: number | null }[];
-  projets?: { nom: string; faites: number; total: number; etape: string }[];
+  projets?: {
+    nom: string; faites: number; total: number; etape: string;
+    objectif?: string; fini_quand?: string; prochaine?: string; attend_hugo?: string;
+  }[];
 }
 
 const STATUT: Record<string, string> = { travaille: "travaille", attend: "attend ta réponse", pause: "en pause", fini: "fini" };
@@ -58,7 +61,9 @@ export default function Suivi({ data, now }: { data: SuiviData; now: number }) {
             <div key={i} className="live">
               <div className="live-top"><b>{p.nom}</b><span className="sub">{p.faites}/{p.total}</span></div>
               <Bar pct={p.total ? (100 * p.faites) / p.total : 0} />
-              {p.etape && <div className="sub">{p.etape}</div>}
+              {p.objectif && <div className="fiche">🎯 {p.objectif}</div>}
+              {(p.prochaine || p.etape) && <div className="fiche">→ {p.prochaine || p.etape}</div>}
+              {p.attend_hugo && <div className="fiche ambre">👉 {p.attend_hugo}</div>}
             </div>
           ))}
         </div>
