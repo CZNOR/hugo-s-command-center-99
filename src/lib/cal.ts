@@ -12,6 +12,8 @@ export interface Call {
   phone?: string;
   meetingUrl?: string;
   status: string;
+  createdAt?: Date;
+  raw: Record<string, string>; // réponses brutes du formulaire, par identifiant
   answers: { label: string; value: string }[];
 }
 
@@ -35,38 +37,51 @@ function pick(v: any): string {
   return "";
 }
 
-export async function fetchUpcomingCalls(): Promise<Call[]> {
-  const res = await apiFetch("/api/cal/bookings?status=upcoming&limit=50");
+function toCall(b: any): Call {
+  const r = b.bookingFieldsResponses ?? {};
+  const seen = new Set<string>();
+  const answers = FIELDS.flatMap(([key, label]) => {
+    const value = pick(r[key]);
+    if (!value || seen.has(label)) return [];
+    seen.add(label);
+    return [{ label, value }];
+  });
+  const raw: Record<string, string> = {};
+  for (const [k, v] of Object.entries(r)) raw[k] = pick(v);
+  const url = b.meetingUrl || (String(b.location ?? "").startsWith("http") ? b.location : undefined);
+  return {
+    id: b.id,
+    start: new Date(b.start),
+    end: new Date(b.end),
+    name: b.attendees?.[0]?.name || pick(r.name) || "Inconnu",
+    email: b.attendees?.[0]?.email || pick(r.email) || "",
+    phone: b.attendees?.[0]?.phoneNumber || pick(r.attendeePhoneNumber) || undefined,
+    meetingUrl: url,
+    status: b.status,
+    createdAt: b.createdAt ? new Date(b.createdAt) : undefined,
+    raw,
+    answers,
+  };
+}
+
+async function fetchCalls(status: "upcoming" | "past", limit: number): Promise<Call[]> {
+  const res = await apiFetch(`/api/cal/bookings?status=${status}&limit=${limit}`);
   if (!res.ok) throw new Error(`Cal ${res.status}`);
   const json = await res.json();
   const data: any[] = Array.isArray(json?.data) ? json.data : [];
+  return data.filter((b) => b.status !== "cancelled" && b.status !== "rejected").map(toCall);
+}
+
+export async function fetchUpcomingCalls(): Promise<Call[]> {
   const now = Date.now();
-  return data
-    .filter((b) => b.status !== "cancelled" && b.status !== "rejected")
-    .map((b): Call => {
-      const r = b.bookingFieldsResponses ?? {};
-      const seen = new Set<string>();
-      const answers = FIELDS.flatMap(([key, label]) => {
-        const value = pick(r[key]);
-        if (!value || seen.has(label)) return [];
-        seen.add(label);
-        return [{ label, value }];
-      });
-      const url = b.meetingUrl || (String(b.location ?? "").startsWith("http") ? b.location : undefined);
-      return {
-        id: b.id,
-        start: new Date(b.start),
-        end: new Date(b.end),
-        name: b.attendees?.[0]?.name || pick(r.name) || "Inconnu",
-        email: b.attendees?.[0]?.email || "",
-        phone: b.attendees?.[0]?.phoneNumber || pick(r.attendeePhoneNumber) || undefined,
-        meetingUrl: url,
-        status: b.status,
-        answers,
-      };
-    })
+  return (await fetchCalls("upcoming", 50))
     .filter((c) => c.end.getTime() > now)
     .sort((a, b) => a.start.getTime() - b.start.getTime());
+}
+
+// Appels passés, les plus récents d'abord (après l'appel + historique par prospect)
+export async function fetchPastCalls(): Promise<Call[]> {
+  return (await fetchCalls("past", 150)).sort((a, b) => b.start.getTime() - a.start.getTime());
 }
 
 // ── Formats en heure de Paris ─────────────────────────────────

@@ -8,6 +8,7 @@
 //   https://<domaine>/api/cal/webhook?token=<CAL_WEBHOOK_SECRET>
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { SB_URL, APP_TZ, sbHeaders } from "../_lib/server.js";
+import { metaGet, metaSet } from "../_lib/push.js";
 import webpush from "web-push";
 
 const VAPID_PUBLIC  = process.env.VAPID_PUBLIC_KEY!;
@@ -53,6 +54,17 @@ async function sendToAll(payload: object): Promise<number> {
     }
   }
   return sent;
+}
+
+// Cherche les paramètres utm_* où que Cal les range (tracking, metadata, responses…)
+function findUtm(obj: any, out: Record<string, string> = {}, depth = 0): Record<string, string> {
+  if (!obj || typeof obj !== "object" || depth > 4) return out;
+  for (const [k, v] of Object.entries(obj)) {
+    const key = k.toLowerCase().replace(/^utm/, "utm_").replace("utm__", "utm_");
+    if (/^utm_(source|medium|campaign|content|term)$/.test(key) && typeof v === "string" && v) out[key] = v.slice(0, 120);
+    else if (v && typeof v === "object") findUtm(v, out, depth + 1);
+  }
+  return out;
 }
 
 async function markNotified(id: number) {
@@ -132,6 +144,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const bookingId = Number(p.bookingId ?? p.id);
     if (trigger === "BOOKING_CREATED" && Number.isFinite(bookingId)) {
       await markNotified(bookingId);
+      // Source de la réservation, pour la fiche prospect
+      const utm = findUtm(p);
+      const fiche: any = (await metaGet(`prospect:${bookingId}`)) ?? {};
+      await metaSet(`prospect:${bookingId}`, { ...fiche, source: { ...utm, capte: new Date().toISOString() } });
     }
 
     return res.status(200).json({ ok: true, trigger, sent });

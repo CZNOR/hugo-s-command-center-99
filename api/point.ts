@@ -3,7 +3,8 @@
 //   POST { markdown } → enregistre (envoyé par tools/publish_point.py après chaque point)
 // Stocké dans task_meta (ligne __point_du_jour__), base fermée par RLS.
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { SB_URL, sbHeaders, hasAccess, grantDevice } from "./_lib/server.js";
+import { SB_URL, APP_TZ, sbHeaders, hasAccess, grantDevice } from "./_lib/server.js";
+import { metaGet, metaSet, pushAll } from "./_lib/push.js";
 
 const ROW = "__point_du_jour__";
 
@@ -35,7 +36,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         completed_at: markdown, updated_at: new Date().toISOString(),
       }),
     });
-    return res.status(r.ok ? 200 : 500).json({ ok: r.ok });
+    // Notif silencieuse « point du jour prêt » : une seule par jour, au point du matin (heure de Paris)
+    let notifie = false;
+    if (r.ok) {
+      const jour = new Date().toLocaleDateString("fr-CA", { timeZone: APP_TZ });
+      const heure = Number(new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", hour12: false, timeZone: APP_TZ }).slice(0, 2));
+      const deja = await metaGet<string>("__point_notif__");
+      // Seulement le point du matin (5 h - 13 h) : pas de notif pour la mise à jour du soir
+      if (deja !== jour && heure >= 5 && heure < 13) {
+        await pushAll({ title: "Ton point du jour est prêt", body: "Ouvre Dring pour le lire.", tag: `point-${jour}`, url: "/#point", silent: true });
+        await metaSet("__point_notif__", jour);
+        notifie = true;
+      }
+    }
+    return res.status(r.ok ? 200 : 500).json({ ok: r.ok, notifie });
   }
 
   return res.status(405).end();

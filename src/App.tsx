@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { apiFetch, NEED_CODE_EVENT } from "@/lib/api";
-import { fetchUpcomingCalls, TZ, type Call } from "@/lib/cal";
+import { fetchPastCalls, fetchUpcomingCalls, TZ, type Call } from "@/lib/cal";
+import type { Fiche } from "@/lib/prospect";
 import { usePushSubscription } from "@/lib/usePushSubscription";
 import AccessGate from "@/components/AccessGate";
 import type { SuiviData } from "@/components/Suivi";
@@ -9,6 +10,7 @@ import Appels from "@/tabs/Appels";
 import Point from "@/tabs/Point";
 import Vinted from "@/tabs/Vinted";
 import Liens from "@/tabs/Liens";
+import FicheProspect from "@/tabs/FicheProspect";
 
 type Tab = "appels" | "point" | "vinted" | "liens";
 const TABS: { id: Tab; label: string; Icon: () => JSX.Element }[] = [
@@ -28,6 +30,12 @@ const tabFromHash = (): Tab => {
   const h = window.location.hash.slice(1) as Tab;
   return TABS.some((t) => t.id === h) ? h : "appels";
 };
+// Fiche prospect ouverte : #appel-<id de réservation Cal> (aussi le lien des notifs 1 h avant)
+const ficheFromHash = (): number | null => {
+  const m = window.location.hash.match(/^#appel-(\d+)$/);
+  return m ? Number(m[1]) : null;
+};
+const RECENTS_JOURS = 7;
 const REFRESH_MS = 60_000;
 const SUIVI_MS = 20_000; // le Mac envoie l'avancement toutes les 20 s
 
@@ -38,6 +46,10 @@ export default function App() {
   const [tab, setTab] = useState<Tab>(tabFromHash);
   const [calls, setCalls] = useState<Call[] | null>(null);
   const [callsErr, setCallsErr] = useState("");
+  const [past, setPast] = useState<Call[]>([]);
+  const [fiches, setFiches] = useState<Record<number, Fiche>>({});
+  const [ficheId, setFicheId] = useState<number | null>(ficheFromHash);
+  const saveQueue = useRef<Promise<unknown>>(Promise.resolve());
   const [point, setPoint] = useState<{ markdown: string; updatedAt: string | null }>({ markdown: "", updatedAt: null });
   const [suivi, setSuivi] = useState<SuiviData>({});
   const [now, setNow] = useState(Date.now());
@@ -52,16 +64,28 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const onHash = () => setTab(tabFromHash());
+    const onHash = () => { setTab(tabFromHash()); setFicheId(ficheFromHash()); };
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
 
   const load = useCallback(async () => {
     setNow(Date.now());
-    fetchUpcomingCalls()
-      .then((c) => { setCalls(c); setCallsErr(""); })
-      .catch((e) => setCallsErr(String(e.message ?? e)));
+    const [up, pa] = await Promise.all([
+      fetchUpcomingCalls().catch((e) => { setCallsErr(String(e.message ?? e)); return null; }),
+      fetchPastCalls().catch(() => [] as Call[]),
+    ]);
+    if (up) { setCalls(up); setCallsErr(""); }
+    setPast(pa);
+    // Fiches (source + suivi) des appels à venir et des 7 derniers jours
+    const depuis = Date.now() - RECENTS_JOURS * 86_400_000;
+    const ids = [...(up ?? []), ...pa.filter((c) => c.start.getTime() > depuis)].map((c) => c.id);
+    if (ids.length) {
+      apiFetch(`/api/prospect?ids=${ids.join(",")}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((f) => f && setFiches(f))
+        .catch(() => {});
+    }
     apiFetch("/api/point")
       .then((r) => (r.ok ? r.json() : null))
       .then((p) => p && setPoint(p))
@@ -95,7 +119,28 @@ export default function App() {
     return () => { clearInterval(id); document.removeEventListener("visibilitychange", onVisible); };
   }, [locked, load]);
 
+  const openFiche = (id: number | null) => {
+    window.location.hash = id ? `appel-${id}` : "";
+    setFicheId(id);
+    window.scrollTo(0, 0);
+  };
+
+  // Suivi après l'appel : mis à jour tout de suite à l'écran, puis enregistré
+  // On envoie tout le suivi à chaque fois : deux taps rapides ne s'écrasent pas côté serveur.
+  const saveFiche = (id: number, patch: { venu?: string; resultat?: string; note?: string }) => {
+    const suivi = { ...fiches[id]?.suivi, ...patch } as NonNullable<Fiche["suivi"]>;
+    setFiches((f) => ({ ...f, [id]: { ...f[id], suivi } }));
+    // Enregistrements à la file : le serveur lit puis réécrit la fiche, deux envois simultanés se perdraient
+    saveQueue.current = saveQueue.current.catch(() => {}).then(() => apiFetch("/api/prospect", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, venu: suivi.venu, resultat: suivi.resultat, note: suivi.note }) }))
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setFiches((f) => ({ ...f, [id]: { ...f[id], suivi: d.suivi, historique: d.historique } })))
+      .then(() => toast("Enregistré"))
+      .catch(() => toast("Pas enregistré, réessaie"));
+  };
+
+
   const go = (t: Tab) => {
+    setFicheId(null);
     window.location.hash = t === "appels" ? "" : t;
     setTab(t);
     window.scrollTo(0, 0);
@@ -108,6 +153,7 @@ export default function App() {
 
   if (locked) return <AccessGate onDone={() => { setLocked(false); window.location.reload(); }} />;
 
+  const fiche = ficheId ? [...(calls ?? []), ...past].find((c) => c.id === ficheId) ?? null : null;
   const date = new Date(now).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: TZ });
 
   return (
@@ -116,9 +162,19 @@ export default function App() {
         <img className="icon" src="/icon-192.png" alt="Dring" />
         <span className="date">{date}</span>
       </header>
-      <h1 className="title">{TITLES[tab][0]} <em>{TITLES[tab][1]}</em></h1>
+      {fiche ? (
+        <FicheProspect
+          call={fiche}
+          autres={[...(calls ?? []), ...past]}
+          fiche={fiches[fiche.id] ?? {}}
+          now={now}
+          onBack={() => openFiche(null)}
+          onSave={(patch) => saveFiche(fiche.id, patch)}
+          toast={toast}
+        />
+      ) : <h1 className="title">{TITLES[tab][0]} <em>{TITLES[tab][1]}</em></h1>}
 
-      {tab === "appels" && (
+      {!fiche && tab === "appels" && (
         <Appels
           calls={calls}
           error={callsErr}
@@ -128,11 +184,14 @@ export default function App() {
           pushError={pushError}
           onEnableNotif={subscribe}
           onOpenPoint={() => go("point")}
+          recents={past.filter((c) => c.start.getTime() > now - RECENTS_JOURS * 86_400_000)}
+          fiches={fiches}
+          onOpenFiche={openFiche}
         />
       )}
-      {tab === "point" && <Point markdown={point.markdown} updatedAt={point.updatedAt} suivi={suivi} now={now} />}
-      {tab === "vinted" && <Vinted toast={toast} />}
-      {tab === "liens" && <Liens toast={toast} />}
+      {!fiche && tab === "point" && <Point markdown={point.markdown} updatedAt={point.updatedAt} suivi={suivi} now={now} />}
+      {!fiche && tab === "vinted" && <Vinted toast={toast} />}
+      {!fiche && tab === "liens" && <Liens toast={toast} />}
 
       {toastMsg && <div className="toast">{toastMsg}</div>}
 

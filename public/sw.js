@@ -65,6 +65,7 @@ self.addEventListener("push", (e) => {
     data:    { url: data.url || "/" },
     vibrate: [200, 100, 200],
     requireInteraction: false,
+    silent:  !!data.silent, // fiche 1 h avant et point du jour : sans son
   };
 
   e.waitUntil(self.registration.showNotification(data.title, options));

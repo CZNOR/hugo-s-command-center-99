@@ -126,7 +126,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     trace.cal = { status: "start" };
     try {
       const calRes = await fetch(
-        "https://api.cal.com/v2/bookings?status=upcoming&limit=10",
+        "https://api.cal.com/v2/bookings?status=upcoming&limit=20",
         { headers: calHeaders }
       );
       const calJson = await calRes.json();
@@ -205,6 +205,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const newlyReminded: string[] = [];
       const REMIND_MIN = 3;   // fire any time 3..8 min before start
       const REMIND_MAX = 8;
+
+      // Fiche prospect 1 h avant (57-63 min : le cron passe chaque minute)
+      for (const b of calBookings) {
+        const key = `fiche-${b.id}`;
+        if (remindedIds.has(key)) { newlyReminded.push(key); continue; }
+        const diffMin = (new Date(b.start).getTime() - now) / 60_000;
+        if (diffMin >= 57 && diffMin < 63) {
+          const r = b.bookingFieldsResponses ?? {};
+          const budget = Array.isArray(r.budget) ? r.budget[0] : r.budget;
+          const timeStr = new Date(b.start).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: APP_TZ });
+          totalSent += await sendToAll(subs, {
+            title:  `Dring · appel à ${timeStr}`,
+            body:   `${b.attendees?.[0]?.name ?? "Prospect"}${budget ? ` · ${budget}` : ""} · ta fiche est prête`,
+            tag:    `fiche-${b.id}`,
+            url:    `/#appel-${b.id}`,
+            silent: true,
+          });
+          newlyReminded.push(key);
+        }
+      }
 
       // Cal.com bookings
       for (const b of calBookings) {

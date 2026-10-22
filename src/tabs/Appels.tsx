@@ -2,6 +2,7 @@ import { fmtCountdown, fmtDay, fmtDayShort, fmtTime, type Call } from "@/lib/cal
 import { todayRows } from "@/lib/markdown";
 import { IcBell, IcPhone, IcVideo } from "@/components/Icons";
 import type { PushStatus } from "@/lib/usePushSubscription";
+import { alertes, RESULTATS, type Fiche } from "@/lib/prospect";
 
 // Bandeau visible tant que cet appareil n'a pas d'abonnement enregistré côté serveur
 const NOTIF_TEXT: Partial<Record<PushStatus, string>> = {
@@ -21,9 +22,19 @@ interface Props {
   pushError: string;
   onEnableNotif: () => void;
   onOpenPoint: () => void;
+  recents: Call[];
+  fiches: Record<number, Fiche>;
+  onOpenFiche: (id: number) => void;
 }
 
-export default function Appels({ calls, error, point, now, pushStatus, pushError, onEnableNotif, onOpenPoint }: Props) {
+// Étiquette du suivi après l'appel, pour la liste « Récents »
+function etat(f?: Fiche): string {
+  if (!f?.suivi) return "À noter";
+  const r = RESULTATS.find((x) => x.id === f.suivi?.resultat)?.label;
+  return r ?? (f.suivi.venu === "absent" ? "Pas venu" : f.suivi.venu === "venu" ? "Venu" : "À noter");
+}
+
+export default function Appels({ calls, error, point, now, pushStatus, pushError, onEnableNotif, onOpenPoint, recents, fiches, onOpenFiche }: Props) {
   const [next, ...rest] = calls ?? [];
   const today = todayRows(point);
 
@@ -54,7 +65,7 @@ export default function Appels({ calls, error, point, now, pushStatus, pushError
       {next && (
         <div className="hero">
           <div className="big">{fmtTime(next.start)}</div>
-          <div className="who">{next.name}</div>
+          <div className="who">{next.name}{alertes(next).length > 0 && <span className="hero-flag">à confirmer</span>}</div>
           <div className="when-day">{fmtDay(next.start)}</div>
           {next.answers.length > 0 && (
             <dl className="answers">
@@ -63,6 +74,7 @@ export default function Appels({ calls, error, point, now, pushStatus, pushError
               ))}
             </dl>
           )}
+          <button className="btn fiche-btn" onClick={() => onOpenFiche(next.id)}>Voir sa fiche</button>
           <div className="btns">
             {next.meetingUrl && (
               <a className="btn" href={next.meetingUrl} target="_blank" rel="noreferrer"><IcVideo />Rejoindre</a>
@@ -79,13 +91,29 @@ export default function Appels({ calls, error, point, now, pushStatus, pushError
           <h2 className="sh">Ensuite</h2>
           <div className="group">
             {rest.map((c) => (
-              <div key={c.id} className="item row">
+              <button key={c.id} className="item row" onClick={() => onOpenFiche(c.id)}>
                 <div className="t"><small>{fmtDayShort(c.start)}</small>{fmtTime(c.start)}</div>
                 <div className="n">
                   <b>{c.name}</b>
                   <span>{c.answers.map((a) => a.value).slice(0, 2).join(" · ") || c.email}</span>
                 </div>
-              </div>
+                <span className="chev">›</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      {recents.length > 0 && (
+        <>
+          <h2 className="sh">Appels récents</h2>
+          <div className="group">
+            {recents.slice(0, 8).map((c) => (
+              <button key={c.id} className="item row" onClick={() => onOpenFiche(c.id)}>
+                <div className="t"><small>{fmtDayShort(c.start)}</small>{fmtTime(c.start)}</div>
+                <div className="n"><b>{c.name}</b><span>{c.answers[0]?.value ?? c.email}</span></div>
+                <span className={`etat ${etat(fiches[c.id]) === "À noter" ? "todo" : ""}`}>{etat(fiches[c.id])}</span>
+              </button>
             ))}
           </div>
         </>

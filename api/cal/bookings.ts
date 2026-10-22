@@ -15,7 +15,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!STATUSES.has(status)) return res.status(400).json({ error: "bad status" });
   const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 250);
 
-  const r = await fetch(`https://api.cal.com/v2/bookings?status=${status}&limit=${limit}`, {
+  // Appels passés : les plus récents d'abord (fiche « après l'appel », nombre d'appels déjà pris)
+  const sort = status === "past" ? "&sortStart=desc" : "";
+  const r = await fetch(`https://api.cal.com/v2/bookings?status=${status}&limit=${limit}${sort}`, {
     headers: calHeaders,
   });
   res.setHeader("Cache-Control", "no-store");
