@@ -4,6 +4,7 @@
 //   POST suivi     → enregistre (envoyé toutes les 20 s par tools/publish_suivi.py depuis le Mac)
 //   POST { fait: { qui, quoi } } → Hugo coche une chose « faite » dans l'app
 //   POST { ackFaits: [clé…] }    → le Mac a reporté ces « fait » dans ETAT.json
+//   POST { diag } / GET ?diag=1  → mesures d'écran envoyées par l'app (réglage du menu du bas sur l'iPhone)
 // Stocké dans task_meta (lignes __suivi__ et __faits__), base fermée par RLS.
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { SB_URL, sbHeaders, hasAccess, grantDevice } from "./_lib/server.js";
@@ -22,6 +23,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === "GET") {
     const faits = (await metaGet<Fait[]>(FAITS)) ?? [];
     if (req.query.faits) return res.status(200).json(faits);
+    if (req.query.diag) return res.status(200).json((await metaGet("__diag__")) ?? []);
     const r = await fetch(`${SB_URL}/rest/v1/task_meta?notion_id=eq.${ROW}&select=completed_at&limit=1`, {
       headers: sbHeaders(),
     });
@@ -45,6 +47,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const faits = (await metaGet<Fait[]>(FAITS)) ?? [];
       if (!faits.some((f) => cle(f) === cle(fait))) faits.push(fait);
       return res.status(200).json({ ok: await metaSet(FAITS, faits.slice(-100)) });
+    }
+
+    if (body.diag && typeof body.diag === "object") {
+      const diags = (await metaGet<unknown[]>("__diag__")) ?? [];
+      const d = JSON.stringify(body.diag).slice(0, 3000);
+      return res.status(200).json({ ok: await metaSet("__diag__", [...diags, { ...JSON.parse(d), le: new Date().toISOString() }].slice(-8)) });
     }
 
     if (Array.isArray(body.ackFaits)) {
