@@ -32,6 +32,19 @@ export function renderMarkdown(md: string): string {
         i++;
       }
       const [head, ...body] = rows;
+      // Au-delà de 3 colonnes, un tableau est illisible sur iPhone : une fiche par ligne
+      if (head.length > 3) {
+        out.push(
+          '<div class="rows">' +
+            body.map((r) =>
+              `<div class="rowcard"><b>${inline(r[0] ?? "")}</b>` +
+              r.slice(1).map((c, k) => (c && c !== "—" ? `<div><span>${inline(head[k + 1] ?? "")}</span>${inline(c)}</div>` : "")).join("") +
+              "</div>",
+            ).join("") +
+            "</div>",
+        );
+        continue;
+      }
       out.push(
         `<div class="tbl"><table><thead><tr>${head.map((c) => `<th>${inline(c)}</th>`).join("")}</tr></thead><tbody>` +
           body.map((r) => `<tr>${r.map((c) => `<td>${inline(c)}</td>`).join("")}</tr>`).join("") +

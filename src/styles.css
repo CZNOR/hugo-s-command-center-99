@@ -83,6 +83,12 @@ svg.ic { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-wid
 .md th { text-align: left; font: 700 11.5px Formula; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); padding: 6px 6px; border-bottom: 1px solid var(--line); }
 .md td { padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
 .md td:first-child { color: var(--lav); white-space: nowrap; }
+.md .rows { display: grid; gap: 8px; margin: 8px 0; }
+.md .rowcard { background: var(--card); border: 1px solid var(--line); border-radius: 13px; padding: 10px 12px; }
+.md .rowcard b { display: block; color: var(--tofu); font-weight: 500; margin-bottom: 4px; }
+.md .rowcard div { display: flex; gap: 10px; font-size: 13px; padding: 2px 0; }
+.md .rowcard span { color: var(--muted); width: 96px; flex: none; }
+.pt li > span:last-child { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; vertical-align: middle; }
 .dot.ok { background: #6BD69A; } .dot.mid { background: #F2C14E; } .dot.bad { background: #FF6B6B; } .dot.none { background: var(--grey); }
 

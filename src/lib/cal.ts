@@ -83,6 +83,14 @@ export function fmtDay(d: Date): string {
   return d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short", timeZone: TZ });
 }
 
+// Version courte pour la colonne étroite de la liste « Ensuite »
+export function fmtDayShort(d: Date): string {
+  const long = fmtDay(d);
+  if (long === "Aujourd'hui") return "Auj.";
+  if (long === "Demain") return long;
+  return d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", timeZone: TZ });
+}
+
 export function fmtCountdown(d: Date, now = Date.now()): string {
   const min = Math.round((d.getTime() - now) / 60_000);
   if (min <= 0) return "en cours";

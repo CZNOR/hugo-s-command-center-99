@@ -1,4 +1,4 @@
-import { fmtCountdown, fmtDay, fmtTime, type Call } from "@/lib/cal";
+import { fmtCountdown, fmtDay, fmtDayShort, fmtTime, type Call } from "@/lib/cal";
 import { todayRows } from "@/lib/markdown";
 import { IcBell, IcPhone, IcVideo } from "@/components/Icons";
 
@@ -66,7 +66,7 @@ export default function Appels({ calls, error, point, now, notifOn, onEnableNoti
             <div key={c.id}>
               {i > 0 && <div className="sep" />}
               <div className="row" style={{ marginTop: i === 0 ? 10 : 0 }}>
-                <div className="t"><small>{fmtDay(c.start)}</small>{fmtTime(c.start)}</div>
+                <div className="t"><small>{fmtDayShort(c.start)}</small>{fmtTime(c.start)}</div>
                 <div className="n">
                   <b>{c.name}</b>
                   <span>{c.answers.map((a) => a.value).slice(0, 2).join(" · ") || c.email}</span>
