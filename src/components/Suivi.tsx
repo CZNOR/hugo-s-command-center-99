@@ -6,9 +6,11 @@ export interface Projet {
   nom: string; faites: number; total: number; etape: string; niveau?: "projet" | "outil" | "fini";
   objectif?: string; fini_quand?: string; prochaine?: string; attend_hugo?: string;
 }
+export interface Attente { qui: string; quoi: string; quand?: string; src?: "etat" | "session" }
 export interface SuiviData {
   maj?: number;
-  attente?: { qui: string; quoi: string }[];
+  // src « etat » : à cocher quand c'est fait ; « session » : une session attend ta réponse
+  attente?: Attente[];
   direct?: { nom: string; statut: string; etape: string; pct: number | null; reste_min: number | null }[];
   projets?: Projet[];
 }
@@ -52,7 +54,8 @@ function Projet({ p }: { p: Projet }) {
 }
 
 // Le suivi en direct : ce qui t'attend, les sessions au travail (barres en direct), les projets
-export default function Suivi({ data, now, apres }: { data: SuiviData; now: number; apres?: React.ReactNode }) {
+// « Pour toi » : un tap sur la case = c'est fait, retiré partout (app, ETAT.json, panneau Suivi, widget)
+export default function Suivi({ data, now, apres, onFait }: { data: SuiviData; now: number; apres?: React.ReactNode; onFait: (a: Attente) => void }) {
   const [toutVoir, setToutVoir] = useState(false);
   if (!data.maj) return <p className="vide">Le suivi arrive dès que le Mac l'envoie.</p>;
   const ageMin = Math.round((now / 1000 - data.maj) / 60);
@@ -69,10 +72,16 @@ export default function Suivi({ data, now, apres }: { data: SuiviData; now: numb
       {attente.length > 0 && (
         <section className="bloc jaune">
           <h2 className="bloc-titre"><IcStar />Pour toi <span className="pastille-n">{attente.length}</span></h2>
-          {visibles.map((a, i) => (
-            <div key={i} className="ligne">
-              <span className="ligne-sur">{a.qui}</span>
-              <b className="ligne-texte">{a.quoi}</b>
+          {visibles.map((a) => (
+            <div key={`${a.qui}|${a.quoi}`} className="ligne a-cocher">
+              <span className="a-cocher-texte">
+                <span className="ligne-sur">{a.qui}{a.quand ? ` · ${a.quand}` : ""}</span>
+                <b className="ligne-texte">{a.quoi}</b>
+                {a.src === "session" && <span className="ligne-sous">Réponds-lui dans sa session</span>}
+              </span>
+              {a.src !== "session" && (
+                <button className="tick" aria-label="C'est fait" onClick={() => onFait(a)}>✓</button>
+              )}
             </div>
           ))}
           {attente.length > 3 && (

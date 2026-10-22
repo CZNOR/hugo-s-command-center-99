@@ -4,7 +4,7 @@ import { fetchCancelledCalls, fetchPastCalls, fetchUpcomingCalls, TZ, type Call 
 import type { Fiche, Suivi, Visite } from "@/lib/prospect";
 import { usePushSubscription } from "@/lib/usePushSubscription";
 import AccessGate from "@/components/AccessGate";
-import type { SuiviData } from "@/components/Suivi";
+import type { Attente, SuiviData } from "@/components/Suivi";
 import { IcCalendar, IcLink, IcSun, IcTag } from "@/components/Icons";
 import Appels from "@/tabs/Appels";
 import Point from "@/tabs/Point";
@@ -54,6 +54,7 @@ export default function App() {
   const pastRef = useRef<Call[]>([]);
   const [point, setPoint] = useState<{ markdown: string; updatedAt: string | null }>({ markdown: "", updatedAt: null });
   const [suivi, setSuivi] = useState<SuiviData>({});
+  const faitsLocaux = useRef(new Set<string>()); // cochés ici : ne reviennent pas, même si une lecture était en route
   const [now, setNow] = useState(Date.now());
   // Sens du glissement entre écrans : vers la droite si on avance dans les onglets, fiche = « push »
   const [sens, setSens] = useState<"droite" | "gauche" | "push" | "pop">("droite");
@@ -118,7 +119,11 @@ export default function App() {
     if (document.visibilityState !== "visible") return;
     apiFetch("/api/suivi")
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (d) { setSuivi(d); setNow(Date.now()); } })
+      .then((d: SuiviData | null) => {
+        if (!d) return;
+        setSuivi({ ...d, attente: d.attente?.filter((x) => !faitsLocaux.current.has(`${x.qui}|${x.quoi}`)) });
+        setNow(Date.now());
+      })
       .catch(() => {});
   }, []);
 
@@ -161,6 +166,14 @@ export default function App() {
       .catch(() => toast("Pas enregistré, réessaie"));
   };
 
+  // « C'est fait » : retiré de l'écran tout de suite ; le Mac le retire de ETAT.json au passage suivant (20 s)
+  const fait = (a: Attente) => {
+    faitsLocaux.current.add(`${a.qui}|${a.quoi}`);
+    setSuivi((s) => ({ ...s, attente: (s.attente ?? []).filter((x) => x.qui !== a.qui || x.quoi !== a.quoi) }));
+    apiFetch("/api/suivi", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fait: { qui: a.qui, quoi: a.quoi } }) })
+      .then((r) => toast(r.ok ? "C'est noté, bravo" : "Pas enregistré, réessaie"))
+      .catch(() => toast("Pas enregistré, réessaie"));
+  };
 
   const go = (t: Tab) => {
     const ordre = TABS.map((x) => x.id);
@@ -214,7 +227,7 @@ export default function App() {
           )}
 
           {!fiche && tab === "point" && (
-            <Point suivi={suivi} point={point} now={now} recents={recents} suivis={suivis} fiches={fiches} onGo={go} />
+            <Point suivi={suivi} point={point} now={now} recents={recents} suivis={suivis} fiches={fiches} onGo={go} onFait={fait} />
           )}
           {!fiche && tab === "appels" && (
             <Appels calls={calls} error={callsErr} now={now} recents={recents} suivis={suivis} fiches={fiches} onOpenFiche={openFiche} />
