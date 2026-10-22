@@ -36,19 +36,21 @@ export default function FicheProspect({ call: c, autres, annulees, visites, fich
   const src = sourceLisible(fiche.source);
   const passe = c.start.getTime() <= now;
   const su: Suivi = fiche.suivi ?? {};
-  const pl = plan(c, suiviEffectif(su));
-  const deduit = suiviEffectif(su);
+  const deduit = suiviEffectif(su, c.end);   // note lue par rapport au jour de l'appel
+  const pl = plan(c, deduit);
   const produitConseille = of?.nom === "Coaching +" ? "coaching" : "academie";
   const avecProduit = su.resultat === "interesse" || su.resultat === "relancer" || su.resultat === "signe";
   const avecFrein = su.resultat === "interesse" || su.resultat === "relancer" || su.resultat === "pas-interesse";
-  const produit = su.produit ?? produitConseille;
+  const produit = deduit.produit ?? produitConseille;
 
   // À la sortie du champ note : on enregistre, et on devine frein et jour de rappel s'ils manquent
   const finNote = () => {
     if (note === (su.note ?? "")) return;
-    const lu = lireNote(note);
+    const lu = lireNote(note, c.end);
     const patch: Partial<Suivi> = { note };
     const vus: string[] = [];
+    if (lu.produit && !su.produit) { patch.produit = lu.produit; vus.push(PRODUITS.find((x) => x.id === lu.produit)?.label ?? ""); }
+    if (lu.modalite && !su.modalite) { patch.modalite = lu.modalite; vus.push(lu.modalite === "3fois" ? "en 3 fois" : "en 1 fois"); }
     if (lu.frein && !su.frein) { patch.frein = lu.frein; vus.push(`frein « ${FREINS.find((f) => f.id === lu.frein)?.label.toLowerCase()} »`); }
     if (lu.rappel && !su.rappel) { patch.rappel = lu.rappel; vus.push(`rappel le ${new Date(lu.rappel + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric" })}`); }
     onSave(patch);
@@ -101,7 +103,7 @@ export default function FicheProspect({ call: c, autres, annulees, visites, fich
 
           {su.venu === "venu" && avecProduit && (
             <>
-              <h2 className="sh">Pour quel produit{!su.produit && <span>conseillé : {PRODUITS.find((x) => x.id === produitConseille)?.label}</span>}</h2>
+              <h2 className="sh">Pour quel produit{!su.produit && <span>{deduit.produit ? "lu dans ta note" : `conseillé : ${PRODUITS.find((x) => x.id === produitConseille)?.label}`}</span>}</h2>
               <div className="choices">
                 {PRODUITS.map((x) => (
                   <button key={x.id} className={produit === x.id ? (su.produit ? "on" : "on soft") : ""}
@@ -111,7 +113,7 @@ export default function FicheProspect({ call: c, autres, annulees, visites, fich
               <h2 className="sh">Paiement</h2>
               <div className="choices">
                 {MODALITES.filter((m) => (produit === "suivi") === (m.id === "echeances")).map((m) => (
-                  <button key={m.id} className={(su.modalite ?? (produit === "suivi" ? "echeances" : "1fois")) === m.id ? "on" : ""} onClick={() => onSave({ modalite: m.id })}>{m.label}</button>
+                  <button key={m.id} className={(su.modalite ?? deduit.modalite ?? (produit === "suivi" ? "echeances" : "1fois")) === m.id ? (su.modalite ? "on" : "on soft") : ""} onClick={() => onSave({ modalite: m.id })}>{m.label}</button>
                 ))}
               </div>
             </>

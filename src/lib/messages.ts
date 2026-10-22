@@ -22,20 +22,25 @@ export interface Plan {
 const CAL = "https://cal.com/team/made-academie/appel-coaching-academie";
 const ESPACE = "https://made-academie.vercel.app/login";
 
-const NOMS: Record<Produit, string> = { academie: "l'Académie", coaching: "le Coaching +", suivi: "l'Académie + suivi MADE" };
+const NOMS: Record<Produit, string> = { academie: "l'Académie", coaching: "le Coaching +", suivi: "l'Académie + suivi MADE", ads: "le coaching ads" };
 const PRIX: Record<Produit, Partial<Record<Modalite, string>>> = {
   academie: { "1fois": "1 497 €", "3fois": "3 × 499 €" },
   coaching: { "1fois": "4 998 €", "3fois": "3 × 1 665 €" },
   suivi: { echeances: "3 500 € en échéances" },
+  ads: { "1fois": "3 000 €", "3fois": "3 × 1 000 €/mois" },
 };
 
 // ── Lien de paiement selon le produit et la modalité ─────────────────────
 function lien(produit: Produit, modalite: Modalite): string {
+  if (produit === "ads") return ""; // pas de lien GoCardless pour le coaching ads : Hugo l'envoie à part
   const titre = produit === "academie" ? "Paiement · Académie" : produit === "coaching" ? "Paiement · Coaching +" : "Paiement · Académie + suivi MADE";
   const liens = GROUPES.find((g) => g.title === titre)?.liens ?? [];
   const cible = modalite === "3fois" ? "En 3 fois" : modalite === "echeances" ? "En échéances" : "En 1 fois";
   return (liens.find((l) => l.label === cible) ?? liens[0])?.url ?? "";
 }
+
+// « : <lien> », ou la promesse d'envoyer le lien quand il n'existe pas encore (coaching ads)
+const avecLien = (url: string) => (url ? ` : ${url}` : ", je t'envoie le lien de paiement dès que tu me dis go");
 
 // ── Dates en heure de Paris ──────────────────────────────────────────────
 // Créneaux qui marchent pour un message perso : 12h15 (pause déj) et 18h30 (sortie du travail)
@@ -79,50 +84,78 @@ function dateRappel(s: Suivi): Date | null {
 
 const plus = (d: Date, jours: number, h = 18, m = 30) => ouvrable(aParis(d, jours, h, m));
 
-// ── Lecture de la note : frein et jour de rappel devinés ─────────────────
-export function lireNote(note: string): { frein?: Frein; rappel?: string } {
+// ── Lecture de la note : frein, date de rappel, produit et paiement devinés ──
+// Les dates relatives (« demain », « jeudi », « le 27 ») partent du jour de l'appel,
+// pas d'aujourd'hui : une note écrite le 20 qui dit « demain » vise le 21.
+const iso = (y: number, m: number, d: number) => `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+
+export interface NoteLue { frein?: Frein; rappel?: string; produit?: Produit; modalite?: Modalite }
+
+export function lireNote(note: string, ref: Date = new Date()): NoteLue {
   const n = note.toLowerCase();
+  const [ry, rm, rd] = ref.toLocaleDateString("fr-CA", { timeZone: TZ }).split("-").map(Number);
+  const refJour = new Date(Date.UTC(ry, rm - 1, rd));
+  const decale = (j: number) => { const x = new Date(refJour.getTime() + j * 86_400_000); return iso(x.getUTCFullYear(), x.getUTCMonth() + 1, x.getUTCDate()); };
+
+  // Date de rappel : jour de la semaine, « demain », « le 27 » ou « le 3/11 », puis « début de mois »
+  let rappel: string | undefined;
+  const verbe = "(rappeler|relancer|recontacter|revenir|reprendre|rappel|relance)";
+  const jours = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
+  const j = n.match(new RegExp(verbe + ".{0,20}?\\b(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|demain|après-demain)\\b"));
+  if (j) {
+    if (j[2] === "demain") rappel = decale(1);
+    else if (j[2] === "après-demain") rappel = decale(2);
+    else rappel = decale(((jours.indexOf(j[2]) - refJour.getUTCDay() + 7) % 7) || 7);
+  }
+  const d = !rappel && n.match(new RegExp(verbe + ".{0,15}?\\ble (\\d{1,2})(?:\\/(\\d{1,2}))?\\b"));
+  if (d) {
+    const jour = Number(d[2]);
+    let mois = d[3] ? Number(d[3]) : rm;
+    let an = ry;
+    if (!d[3] && jour < rd) mois += 1;          // « le 3 » écrit le 20 : le 3 du mois suivant
+    if (d[3] && mois < rm) an += 1;
+    if (mois > 12) { mois -= 12; an += 1; }
+    if (jour >= 1 && jour <= 31) rappel = iso(an, mois, jour);
+  }
+  if (!rappel && /début (de|du) mois/.test(n)) rappel = rm === 12 ? iso(ry + 1, 1, 1) : iso(ry, rm + 1, 1);
+
+  // Frein
   const frein: Frein | undefined =
-    /cher|prix|budget|argent|moyens|financ/.test(n) ? "prix"
+    /début (de|du) mois|fin du mois|salaire|paie|virement/.test(n) ? "date-paiement"
+    : /cher|prix|budget|argent|moyens|financ/.test(n) ? "prix"
     : /copine|copain|femme|mari|conjoint|associ|parents|famille|en parler/.test(n) ? "entourage"
     : /temps|dispo|boulot|travail|charg/.test(n) ? "temps"
     : /réfléchir|reflechir|hésite|hesite|penser/.test(n) ? "reflechir"
     : /pas le moment|plus tard|mois prochain|rentrée|janvier|après les fêtes/.test(n) ? "moment"
     : /confiance|arnaque|preuve|avis|résultats/.test(n) ? "confiance"
     : undefined;
-  const jours = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
-  let rappel: string | undefined;
-  const m = n.match(/(rappeler|relancer|recontacter|revenir).{0,20}?(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|demain)/);
-  if (m) {
-    const auj = new Date();
-    const cible = m[2] === "demain" ? (auj.getDay() + 1) % 7 : jours.indexOf(m[2]);
-    const ecart = ((cible - auj.getDay() + 7) % 7) || 7;
-    rappel = new Date(auj.getTime() + ecart * 86_400_000).toLocaleDateString("fr-CA", { timeZone: TZ });
-  }
-  // « relancer le 27 », « rappeler le 3/11 »
-  const d = !rappel && n.match(/(rappeler|relancer|recontacter|revenir|reprendre).{0,15}?\ble (\d{1,2})(?:\/(\d{1,2}))?\b/);
-  if (d) {
-    const auj = new Date();
-    const jour = Number(d[2]);
-    let mois = d[3] ? Number(d[3]) - 1 : auj.getMonth();
-    let an = auj.getFullYear();
-    if (!d[3] && jour < auj.getDate()) mois += 1;
-    if (mois > 11) { mois -= 12; an += 1; }
-    if (jour >= 1 && jour <= 31) rappel = `${an}-${String(mois + 1).padStart(2, "0")}-${String(jour).padStart(2, "0")}`;
-  }
-  // « début de mois » : le 1er du mois prochain
-  if (!rappel && /début (de|du) mois/.test(n)) {
-    const auj = new Date();
-    const x = new Date(auj.getFullYear(), auj.getMonth() + 1, 1);
-    rappel = `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-01`;
-  }
-  return { frein: frein ?? (/début (de|du) mois|fin du mois|salaire|paie/.test(n) ? "moment" : undefined), rappel };
+
+  // Produit et paiement
+  const produit: Produit | undefined =
+    /\bads\b|pub|meta ads|facebook ads/.test(n) ? "ads"
+    : /suivi/.test(n) ? "suivi"
+    : /coaching/.test(n) ? "coaching"
+    : /formation|académie|academie/.test(n) ? "academie"
+    : undefined;
+  const modalite: Modalite | undefined =
+    /3 ?(fois|x)|par mois|\/ ?mois|mensualit/.test(n) ? "3fois"
+    : /1 ?fois|cash|comptant|en une fois/.test(n) ? "1fois"
+    : undefined;
+
+  return { frein, rappel, produit, modalite };
 }
 
 // Suivi complété par la note : ce qu'Hugo a coché passe avant, la note comble les trous
-export function suiviEffectif(s: Suivi): Suivi {
-  const lu = s.note ? lireNote(s.note) : {};
-  return { ...s, frein: s.frein ?? lu.frein, rappel: s.rappel ?? lu.rappel };
+export function suiviEffectif(s: Suivi, ref?: Date): Suivi {
+  const lu = s.note ? lireNote(s.note, ref) : {};
+  const produit = s.produit ?? lu.produit;
+  return {
+    ...s,
+    frein: s.frein ?? lu.frein,
+    rappel: s.rappel ?? lu.rappel,
+    produit,
+    modalite: s.modalite ?? (produit === "suivi" ? "echeances" : lu.modalite),
+  };
 }
 
 // ── Les scénarios ────────────────────────────────────────────────────────
@@ -193,23 +226,40 @@ export function plan(c: Call, s: Suivi): Plan | null {
   }
 
   // Intéressé : il a dit oui sur le principe, on envoie le lien et on lève le dernier doute
+  if (s.resultat === "interesse" && rappel) {
+    // Date de reprise convenue (« relancer le 27 », « début de mois ») : rien avant, puis on lance
+    return {
+      resume: `Intéressé par ${nom} (${prix}), reprise convenue le ${quandLisible(rappel).toLowerCase()} : 1er message ce jour-là, puis 2 relances.`,
+      messages: [
+        { id: "oui-r1", quand: rappel, titre: "Reprise à la date convenue",
+          texte: leverFrein(p, s.frein === "date-paiement" ? "date-paiement" : undefined, nom, produit, temps, prix, url)
+            ?? `Hello ${p} ! Comme convenu, je reviens vers toi aujourd'hui 🙂 On lance ${nom} (${prix})${avecLien(url)}` },
+        { id: "oui-r2", quand: plus(rappel, 2, 12, 15), titre: s.frein && s.frein !== "date-paiement" ? `Lever le frein : ${libelleFrein(s.frein)}` : "Petite relance",
+          texte: (s.frein && s.frein !== "date-paiement" ? leverFrein(p, s.frein, nom, produit, temps, prix, url) : null)
+            ?? `Re ${p}, tu as vu mon message ? Si tu as une question avant de te lancer, réponds juste ici.` },
+        { id: "oui-r3", quand: plus(rappel, 5), titre: "Dernière relance",
+          texte: `${p}, je reviens vers toi une dernière fois pour ${nom}. ${url ? `Si c'est le bon moment, le lien est ici : ${url}.` : "Si c'est le bon moment, dis-moi go et je t'envoie le lien."} Sinon dis-le-moi simplement, aucun souci 🙂` },
+      ],
+    };
+  }
+
   if (s.resultat === "interesse") {
-    const t1 = rappel ?? base;
+    const t1 = base;
     return {
       resume: `Intéressé par ${nom} (${prix}) : lien de paiement tout de suite, puis 2 relances pour lever le dernier frein.`,
       messages: [
         { id: "oui-1", quand: t1, titre: "Récap + lien de paiement",
-          texte: `Merci pour l'appel ${p} ! Comme on a dit, ${nom} ${modalite === "3fois" ? "en 3 fois" : modalite === "echeances" ? "en échéances" : ""} (${prix}) : ${url}\nDès que c'est réglé, je t'envoie ton accès.`.replace("  ", " ") },
+          texte: `Merci pour l'appel ${p} ! Comme on a dit, ${nom} (${prix})${avecLien(url)}.\nDès que c'est réglé, on démarre.` },
         { id: "oui-2", quand: midi(t1, 1), titre: s.frein ? `Lever le frein : ${libelleFrein(s.frein)}` : "Répondre à ses questions",
-          texte: leverFrein(p, s.frein, nom, produit, temps) ?? `Hello ${p}, tu as pu regarder ? Si tu as la moindre question avant de te lancer, je suis là.` },
+          texte: leverFrein(p, s.frein, nom, produit, temps, prix, url) ?? `Hello ${p}, tu as pu regarder ? Si tu as la moindre question avant de te lancer, je suis là.` },
         { id: "oui-3", quand: plus(t1, 3), titre: "Dernière relance sur le lien",
-          texte: `${p}, je reviens vers toi une dernière fois pour ${nom}. Si c'est le bon moment, le lien est ici : ${url}. Sinon dis-le-moi simplement, aucun souci 🙂` },
+          texte: `${p}, je reviens vers toi une dernière fois pour ${nom}. ${url ? `Si c'est le bon moment, le lien est ici : ${url}.` : "Si c'est le bon moment, dis-moi go et je t'envoie le lien."} Sinon dis-le-moi simplement, aucun souci 🙂` },
       ],
     };
   }
 
   // À relancer : on attaque le frein, au bon moment
-  const ecart: Record<Frein, number> = { prix: 1, temps: 1, entourage: 2, reflechir: 1, moment: 14, confiance: 1, autre: 2 };
+  const ecart: Record<Frein, number> = { prix: 1, "date-paiement": 7, temps: 1, entourage: 2, reflechir: 1, moment: 14, confiance: 1, autre: 2 };
   const t1 = rappel ?? midi(c.end, ecart[s.frein ?? "autre"]);
   const t2 = plus(t1, s.frein === "moment" ? 7 : 2);
   const t3 = plus(t2, s.frein === "moment" ? 14 : 4);
@@ -217,9 +267,11 @@ export function plan(c: Call, s: Suivi): Plan | null {
     resume: `À relancer${s.frein ? ` (frein : ${libelleFrein(s.frein).toLowerCase()})` : ""} : 1er message ${rappel ? "à la date notée" : "au bon moment"}, puis lien, puis dernière relance.`,
     messages: [
       { id: "relance-1", quand: t1, titre: s.frein ? `Lever le frein : ${libelleFrein(s.frein)}` : "Reprendre contact",
-        texte: leverFrein(p, s.frein, nom, produit, temps) ?? `Hello ${p}, tu as pu y réfléchir depuis notre appel ? Dis-moi ce qui te fait encore hésiter, je te réponds franchement.` },
+        texte: leverFrein(p, s.frein, nom, produit, temps, prix, url) ?? `Hello ${p}, tu as pu y réfléchir depuis notre appel ? Dis-moi ce qui te fait encore hésiter, je te réponds franchement.` },
       { id: "relance-2", quand: t2, titre: "Le lien, sans pression",
-        texte: `Re ${p}, je te remets le lien pour ${nom} (${prix}) si tu veux avancer : ${url}\nEt si tu as une question, réponds juste ici.` },
+        texte: url
+          ? `Re ${p}, je te remets le lien pour ${nom} (${prix}) si tu veux avancer : ${url}\nEt si tu as une question, réponds juste ici.`
+          : `Re ${p}, on lance ${nom} (${prix}) ? Dis-moi go et je t'envoie le lien de paiement. Et si tu as une question, réponds juste ici.` },
       { id: "relance-3", quand: t3, titre: "Dernière relance",
         texte: `${p}, dernier message de ma part sur ${nom}. Si ce n'est pas le moment, je comprends tout à fait, tu sais où me trouver 🙏` },
     ],
@@ -227,16 +279,18 @@ export function plan(c: Call, s: Suivi): Plan | null {
 }
 
 function libelleFrein(f: Frein): string {
-  return { prix: "le prix", temps: "le temps", entourage: "en parler à un proche", reflechir: "veut réfléchir", moment: "pas le bon moment", confiance: "pas encore confiance", autre: "autre" }[f];
+  return { prix: "le prix", "date-paiement": "paie à une date précise", temps: "le temps", entourage: "en parler à un proche", reflechir: "veut réfléchir", moment: "pas le bon moment", confiance: "pas encore confiance", autre: "autre" }[f];
 }
 
 // Le message qui répond au frein noté sur la fiche
-function leverFrein(p: string, f: Frein | undefined, nom: string, produit: Produit, temps: string): string | null {
+function leverFrein(p: string, f: Frein | undefined, nom: string, produit: Produit, temps: string, prix = "", url = ""): string | null {
   switch (f) {
+    case "date-paiement":
+      return `Hello ${p} ! Comme convenu, je reviens vers toi pour ton paiement 🙂 On lance ${nom} (${prix})${avecLien(url)}`;
     case "prix": {
-      const trois = produit === "coaching" ? "3 × 1 665 €" : produit === "suivi" ? "des échéances (3 500 € au total)" : "3 × 499 €";
-      const url = lien(produit === "suivi" ? "suivi" : produit, produit === "suivi" ? "echeances" : "3fois");
-      return `Hello ${p}, j'ai repensé à notre échange : si payer en une fois bloque, ${nom} existe en ${trois}. Le lien : ${url}\nÇa change quelque chose pour toi ?`;
+      const trois = produit === "coaching" ? "3 × 1 665 €" : produit === "suivi" ? "des échéances (3 500 € au total)" : produit === "ads" ? "3 × 1 000 €/mois" : "3 × 499 €";
+      const url3 = lien(produit, produit === "suivi" ? "echeances" : "3fois");
+      return `Hello ${p}, j'ai repensé à notre échange : si payer en une fois bloque, ${nom} existe en ${trois}${url3 ? `. Le lien : ${url3}` : ""}.\nÇa change quelque chose pour toi ?`;
     }
     case "temps":
       return `Hello ${p}, sur le temps : tout est fait pour avancer à ton rythme${temps ? `, même avec ${temps}` : ""}. Tu veux qu'on regarde ensemble comment l'organiser sur ta semaine ?`;
@@ -275,6 +329,6 @@ export function etatMessage(m: Message, s: Suivi, now = Date.now()): "envoye" | 
 // Prochain message à envoyer (pour la liste « À envoyer aujourd'hui » de l'accueil)
 export function prochain(c: Call, s: Suivi | undefined): Message | null {
   if (!s) return null;
-  const pl = plan(c, suiviEffectif(s));
+  const pl = plan(c, suiviEffectif(s, c.end));
   return pl?.messages.find((m) => !s.envoyes?.includes(m.id)) ?? null;
 }

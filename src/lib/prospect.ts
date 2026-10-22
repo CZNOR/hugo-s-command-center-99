@@ -10,9 +10,9 @@ export interface Fiche {
   historique?: { quand: string; venu: string | null; resultat: string | null; produit?: string | null }[];
 }
 export type Resultat = "interesse" | "relancer" | "pas-interesse" | "signe";
-export type Produit = "academie" | "coaching" | "suivi";
+export type Produit = "academie" | "coaching" | "suivi" | "ads";
 export type Modalite = "1fois" | "3fois" | "echeances";
-export type Frein = "prix" | "temps" | "entourage" | "reflechir" | "moment" | "confiance" | "autre";
+export type Frein = "prix" | "date-paiement" | "temps" | "entourage" | "reflechir" | "moment" | "confiance" | "autre";
 
 // Ce qu'Hugo note après l'appel ; les messages proposés en découlent
 export interface Suivi {
@@ -31,6 +31,7 @@ export const PRODUITS: { id: Produit; label: string }[] = [
   { id: "academie", label: "Académie" },
   { id: "coaching", label: "Coaching +" },
   { id: "suivi", label: "Académie + suivi" },
+  { id: "ads", label: "Coaching ads" },
 ];
 export const MODALITES: { id: Modalite; label: string }[] = [
   { id: "1fois", label: "En 1 fois" },
@@ -39,6 +40,7 @@ export const MODALITES: { id: Modalite; label: string }[] = [
 ];
 export const FREINS: { id: Frein; label: string }[] = [
   { id: "prix", label: "Le prix" },
+  { id: "date-paiement", label: "Paie à une date précise" },
   { id: "temps", label: "Le temps" },
   { id: "entourage", label: "En parler à un proche" },
   { id: "reflechir", label: "Veut réfléchir" },

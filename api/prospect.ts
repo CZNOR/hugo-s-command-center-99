@@ -9,9 +9,9 @@ import { metaGet, metaSet } from "./_lib/push.js";
 
 const VENU = new Set(["venu", "absent"]);
 const RESULTATS = new Set(["interesse", "relancer", "pas-interesse", "signe"]);
-const PRODUITS = new Set(["academie", "coaching", "suivi"]);
+const PRODUITS = new Set(["academie", "coaching", "suivi", "ads"]);
 const MODALITES = new Set(["1fois", "3fois", "echeances"]);
-const FREINS = new Set(["prix", "temps", "entourage", "reflechir", "moment", "confiance", "autre"]);
+const FREINS = new Set(["prix", "date-paiement", "temps", "entourage", "reflechir", "moment", "confiance", "autre"]);
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!hasAccess(req)) return res.status(401).json({ error: "code d'accès requis" });
