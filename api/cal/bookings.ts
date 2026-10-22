@@ -18,5 +18,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     headers: calHeaders,
   });
   res.setHeader("Cache-Control", "no-store");
-  return res.status(r.status).json(await r.json().catch(() => ({})));
+  // Un refus de Cal (clé invalide) ne doit pas passer pour un mauvais code d'accès :
+  // l'app redemanderait le code. On le renvoie en 502.
+  if (!r.ok) return res.status(502).json({ error: `Cal ${r.status}` });
+  return res.status(200).json(await r.json().catch(() => ({})));
 }
