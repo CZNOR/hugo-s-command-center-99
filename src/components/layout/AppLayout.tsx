@@ -13,7 +13,7 @@ import { TaskProvider, useTasks, type TaskBusiness } from "@/lib/taskContext";
 import { PrivacyProvider, usePrivacy } from "@/lib/privacyContext";
 import { initGoogleAuth } from "@/lib/googleCalendar";
 import { useTaskNotifications } from "@/lib/useTaskNotifications";
-import { usePushSubscription } from "@/lib/usePushSubscription";
+import { usePushSubscription, type PushStatus } from "@/lib/usePushSubscription";
 import { Bell } from "lucide-react";
 
 const SIDEBAR_W = 220;
@@ -285,29 +285,35 @@ function AppHeader({ onOpenSidebar }: { onOpenSidebar: () => void }) {
   );
 }
 
-// ─── Notification permission banner ───────────────────────────
-function NotifBanner({ onAllow, onDismiss }: { onAllow: () => void; onDismiss: () => void }) {
+// ─── Bandeau d'activation des rappels d'appels ────────────────
+// Visible tant que cet appareil n'a pas d'abonnement enregistré côté serveur.
+const NOTIF_TEXT: Partial<Record<PushStatus, string>> = {
+  "off":           "Active les rappels d'appels sur cet appareil.",
+  "busy":          "Activation en cours…",
+  "denied":        "Notifications bloquées : Réglages iPhone → Notifications → Dring → Autoriser.",
+  "not-installed": "Ouvre l'app depuis l'icône Dring de l'écran d'accueil pour activer les rappels.",
+  "unsupported":   "Ce navigateur ne gère pas les notifications.",
+};
+
+function NotifBanner({ status, error, onAllow }: { status: PushStatus; error: string; onAllow: () => void }) {
+  const text = status === "error" ? `Activation impossible : ${error}` : NOTIF_TEXT[status];
+  const canTap = status === "off" || status === "error";
   return (
     <div style={{
-      position: "fixed", bottom: 90, left: "50%", transform: "translateX(-50%)",
+      position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: "50%", transform: "translateX(-50%)",
       zIndex: 200, display: "flex", alignItems: "center", gap: 10,
-      background: "rgba(10,4,20,0.96)", border: "1px solid rgba(168,85,247,0.35)",
-      borderRadius: 14, padding: "10px 16px", boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
-      backdropFilter: "blur(20px)", maxWidth: "calc(100vw - 32px)",
+      background: "rgba(10,4,20,0.96)", border: "1px solid rgba(177,154,255,0.45)",
+      borderRadius: 14, padding: "10px 14px", boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
+      backdropFilter: "blur(20px)", width: "min(440px, calc(100vw - 32px))",
     }}>
-      <Bell style={{ width: 16, height: 16, color: "#a855f7", flexShrink: 0 }} />
-      <span style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", whiteSpace: "nowrap" }}>
-        Activer les rappels 5 min avant les tâches ?
-      </span>
-      <button onClick={onAllow} style={{
-        background: "linear-gradient(135deg,#7c3aed,#a855f7)", color: "#fff",
-        border: "none", borderRadius: 8, padding: "5px 12px", fontSize: 12,
-        fontWeight: 600, cursor: "pointer", flexShrink: 0,
-      }}>Oui</button>
-      <button onClick={onDismiss} style={{
-        background: "transparent", color: "rgba(255,255,255,0.4)",
-        border: "none", cursor: "pointer", padding: 4, flexShrink: 0,
-      }}>✕</button>
+      <Bell style={{ width: 16, height: 16, color: "#B19AFF", flexShrink: 0 }} />
+      <span style={{ fontSize: 13, color: "rgba(255,255,255,0.85)", flex: 1 }}>{text}</span>
+      {canTap && (
+        <button onClick={onAllow} style={{
+          background: "#B19AFF", color: "#000", border: "none", borderRadius: 8,
+          padding: "7px 12px", fontSize: 13, fontWeight: 600, cursor: "pointer", flexShrink: 0,
+        }}>{status === "error" ? "Réessayer" : "Activer"}</button>
+      )}
     </div>
   );
 }
@@ -340,15 +346,7 @@ function AppLayoutInner() {
   // Fallback in-browser (tab ouvert)
   useTaskNotifications(tasks);
   // Vrai push natif iPhone (Service Worker + VAPID)
-  const { permission, subscribed, subscribe } = usePushSubscription();
-  const [showNotifBanner, setShowNotifBanner] = useState(() =>
-    "Notification" in window && Notification.permission === "default"
-  );
-
-  const handleAllowNotif = async () => {
-    await subscribe();
-    setShowNotifBanner(false);
-  };
+  const { status: pushStatus, error: pushError, subscribe } = usePushSubscription();
 
   // Sync data-biz attr on body for CSS card hover theming
   useEffect(() => {
@@ -440,12 +438,9 @@ function AppLayoutInner() {
       {/* Fixed sidebar — starts below header */}
       <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      {/* Notification permission banner */}
-      {showNotifBanner && (
-        <NotifBanner
-          onAllow={handleAllowNotif}
-          onDismiss={() => setShowNotifBanner(false)}
-        />
+      {/* Bandeau d'activation des rappels d'appels */}
+      {pushStatus !== "on" && pushStatus !== "checking" && (
+        <NotifBanner status={pushStatus} error={pushError} onAllow={subscribe} />
       )}
 
       {/* Mobile bottom nav */}
