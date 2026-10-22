@@ -244,6 +244,25 @@ button.li:active, a.li:active { background: var(--carte-on); }
 .vinted-text { font-size: 15.5px; line-height: 1.6; white-space: pre-wrap; margin-top: 14px; padding: 16px; background: var(--carte); border: 1px solid var(--bord); border-radius: var(--r); overflow-wrap: anywhere; }
 .btn { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 52px; margin-top: 12px; background: var(--c); color: var(--c-ink); border-radius: 12px; font-size: 16.5px; font-weight: 700; }
 
+/* ── Suivi (même rendu que le widget, contrat reports/suivi-spec.md) ── */
+.anneau-widget { position: relative; flex: none; width: 40px; height: 40px; border-radius: 50%; border: 3px solid rgba(177, 154, 255, .5); display: grid; place-items: center; }
+.anneau-widget.tourne { border-color: rgba(177, 154, 255, .3); }
+.anneau-widget::after { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--c); }
+.anneau-widget i { position: absolute; inset: -3px; border-radius: 50%; display: none; }
+.anneau-widget.tourne i { display: block; animation: tourne 1.6s linear infinite; }
+.anneau-widget.tourne i::before { content: ""; position: absolute; top: -1.5px; left: 50%; width: 9px; height: 9px; margin-left: -4.5px; border-radius: 50%; background: var(--c); box-shadow: 0 0 8px var(--c-trait); }
+.compteur { flex: none; min-width: 26px; height: 24px; padding: 0 8px; margin-left: -6px; border-radius: 12px; display: grid; place-items: center; background: var(--ambre); color: #2D232E; font-size: 13.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.alerte { margin-top: 8px; padding: 10px 14px; border-radius: 12px; background: rgba(242, 178, 92, .1); border: 1px solid rgba(242, 178, 92, .3); color: var(--ambre); font-size: 13.5px; font-weight: 500; }
+.sec-titre.lavande { color: var(--c); } .sec-titre.vert { color: var(--vert); } .sec-titre.gris { color: var(--gris); } .sec-titre.rouge { color: var(--rouge); }
+.carte .texte.creme { color: rgba(241, 240, 234, .88); } .carte .texte.gris { color: var(--gris); } .carte .texte.rouge { color: var(--rouge); }
+.carte .texte.vert { color: var(--vert); } .carte .texte.lavande { color: var(--c); }
+.carte .texte .signe { margin-right: 6px; }
+.etat.lavande { color: var(--c); } .etat.creme { color: var(--creme); }
+.pastille.creme { background: var(--creme); } .pastille.gris { background: var(--gris2); }
+.live.pied { justify-content: center; margin: 22px 0 4px; }
+section + .replis, .replis + .replis { margin-top: 8px; }
+section > .sec-titre { animation: none; }
+
 /* ── Tirer pour rafraîchir ──────────────────────────────── */
 .ptr { position: absolute; z-index: 15; top: calc(var(--safe-top) - 40px); left: 50%; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: #231C26; border: 1px solid var(--bord); color: var(--gris); opacity: 0; transform: translate(-50%, 0); pointer-events: none; will-change: transform; }
 .ptr svg.ic { width: 19px; height: 19px; }

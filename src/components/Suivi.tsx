@@ -1,21 +1,23 @@
 import { useEffect, useState } from "react";
 
-// Avancement en direct : envoyé toutes les 20 s par tools/publish_suivi.py depuis le Mac.
-// L'app ne fait que lire : Hugo change tout depuis le Mac, dans ses sessions.
-export interface Attente { qui: string; quoi: string; quand?: string; src?: "etat" | "session" }
-export interface FaitDuJour { qui: string; quoi: string; heure: string }
-export interface Session { nom: string; statut: string; etape: string; pct: number | null; reste_min: number | null }
-export interface Projet {
-  nom: string; faites: number; total: number; etape: string; niveau?: "projet" | "outil" | "fini";
-  objectif?: string; fini_quand?: string; prochaine?: string; attend_hugo?: string;
+// Le Suivi (version 2) : calculé une seule fois sur le Mac par tools/publish_suivi.py,
+// le même pour Dring et pour le widget Suivi (contrat : reports/suivi-spec.md).
+// Dring ne recalcule rien : il dessine les sections, dans l'ordre, avec les textes et couleurs reçus.
+export type Couleur = "lavande" | "ambre" | "rouge" | "vert" | "creme" | "gris";
+export interface Carte {
+  pastille: Couleur; pulse: boolean; titre: string; droite: string; couleur_droite: Couleur;
+  barre: number | null; barre_vivante: boolean;
+  lignes: { signe: string; texte: string; couleur: Couleur }[];
+  lien: { type: "session"; id: string } | { type: "appel"; id: number } | null;
 }
+export interface Section { id: string; titre: string; couleur: Couleur; repliee: boolean; vide: string; cartes: Carte[] }
 export interface SuiviData {
+  version?: number;
   maj?: number;
-  attente?: Attente[]; // src « etat » : son plan (ETAT.json) ; « session » : une session attend sa réponse
-  faits?: FaitDuJour[]; // fait aujourd'hui
-  direct?: Session[];
-  projets?: Projet[];
-  sante?: { rappels: string | null }; // dernier passage du minuteur des notifs (chaque minute)
+  entete?: { titre: string; resume: string; pour_toi: number; au_travail: number; anneau: "tourne" | "calme" };
+  alertes?: string[];
+  sections?: Section[];
+  chiffres?: { releve: string; sections: { titre: string; markdown: string }[] };
 }
 
 // Barre fine ; « vivante » : un reflet passe dessus tant que ça tourne
@@ -49,38 +51,23 @@ export function Age({ ms }: { ms: number | null }) {
   return <>{s < 90 ? `il y a ${s} s` : s < 5400 ? `il y a ${Math.round(s / 60)} min` : `il y a ${Math.round(s / 3600)} h`}</>;
 }
 
-// Une session au travail, comme dans le widget : point qui pulse, nom, avancement, barre, étape
-export function CarteSession({ s, question }: { s: Session; question?: string }) {
-  const attend = s.statut === "attend";
-  const droite = attend ? "t'attend" : s.pct != null ? `${s.pct} %${s.reste_min ? ` · ~${s.reste_min} min` : ""}` : "en cours";
-  return (
-    <div className="carte">
-      <div className="carte-haut">
-        <i className={`pastille ${attend ? "ambre" : "lavande pulse"}`} />
-        <b>{s.nom}</b>
-        <span className={`etat ${attend ? "ambre" : ""}`}>{droite}</span>
-      </div>
-      {!attend && s.pct != null && <Barre pct={s.pct} vivante />}
-      {(attend ? question || s.etape : s.etape) && <p className={`texte ${attend ? "ambre" : ""}`}>{attend ? question || s.etape : s.etape}</p>}
-    </div>
-  );
-}
-
-// Un projet : nom, étapes, barre, la suite ; un tap déplie le texte
-export function CarteProjet({ p }: { p: Projet }) {
-  const [ouvert, setOuvert] = useState(false);
-  const pct = p.total ? Math.round((100 * p.faites) / p.total) : 0;
-  const suite = p.prochaine || p.etape;
-  return (
-    <button className="carte cliquable" onClick={() => setOuvert(!ouvert)}>
+// Une carte du Suivi, telle que reçue : pastille, titre, état à droite, barre, lignes
+export function CarteSuivi({ c, onOpenFiche }: { c: Carte; onOpenFiche: (id: number) => void }) {
+  const contenu = (
+    <>
       <span className="carte-haut">
-        <b>{p.nom}</b>
-        <span className="etat">{p.faites}/{p.total} étapes</span>
+        <i className={`pastille ${c.pastille} ${c.pulse ? "pulse" : ""}`} />
+        <b>{c.titre}</b>
+        {c.droite && <span className={`etat ${c.couleur_droite}`}>{c.droite}</span>}
       </span>
-      <Barre pct={pct} />
-      {suite && <span className={`texte ${ouvert ? "libre" : ""}`}>→ {suite}</span>}
-      {p.attend_hugo && <span className={`texte ambre ${ouvert ? "libre" : ""}`}>Pour toi : {p.attend_hugo}</span>}
-      {ouvert && p.objectif && <span className="texte doux libre">Objectif : {p.objectif}</span>}
-    </button>
+      {c.barre != null && <Barre pct={c.barre * 100} vivante={c.barre_vivante} />}
+      {c.lignes.map((l, i) => (
+        <span key={i} className={`texte ${l.couleur}`}>{l.signe && <span className="signe">{l.signe}</span>}{l.texte}</span>
+      ))}
+    </>
   );
+  // Les fiches d'appel s'ouvrent dans Dring ; les sessions Claude, elles, vivent sur le Mac
+  return c.lien?.type === "appel"
+    ? <button className="carte cliquable" onClick={() => onOpenFiche((c.lien as { id: number }).id)}>{contenu}</button>
+    : <div className="carte">{contenu}</div>;
 }

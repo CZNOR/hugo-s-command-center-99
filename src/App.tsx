@@ -15,7 +15,7 @@ import FicheProspect from "@/tabs/FicheProspect";
 
 type Tab = "point" | "appels" | "vinted" | "liens";
 const TABS: { id: Tab; label: string; titre: string; Icon: () => JSX.Element }[] = [
-  { id: "point",  label: "Point",  titre: "Point du jour", Icon: IcSun },
+  { id: "point",  label: "Suivi",  titre: "Suivi", Icon: IcSun },
   { id: "appels", label: "Appels", titre: "Appels",        Icon: IcCalendar },
   { id: "vinted", label: "Vinted", titre: "Vinted",        Icon: IcTag },
   { id: "liens",  label: "Liens",  titre: "Liens",         Icon: IcLink },
@@ -36,7 +36,7 @@ const RECENTS_JOURS = 7;
 const SUIVI_JOURS = 45;     // fiches chargées sur 45 jours : les relances courent jusqu'à J+30
 const APPELS_MS = 30_000;   // appels à venir, fiches et point : toutes les 30 s
 const HISTO_MS = 2 * 60_000; // appels passés, annulations, visites : toutes les 2 min
-const SUIVI_MS = 20_000;    // le Mac envoie l'avancement toutes les 20 s
+const SUIVI_MS = 10_000;    // le Mac recalcule le Suivi toutes les 10 s
 
 export default function App() {
   // L'écran de code ne s'affiche que si le serveur refuse vraiment (401) :
@@ -289,7 +289,7 @@ export default function App() {
       case "point": return (
         <>
           <Notifs status={pushStatus} error={pushError} onEnable={subscribe} />
-          <Point suivi={suivi} point={point} now={now} callsMaj={callsMaj} calls={calls} recents={recents} suivis={suivis} fiches={fiches} onOpenFiche={openFiche} />
+          <Point suivi={suivi} now={now} onOpenFiche={openFiche} />
         </>
       );
       case "appels": return <Appels calls={calls} error={callsErr} maj={callsMaj} now={now} recents={recents} suivis={suivis} fiches={fiches} onOpenFiche={openFiche} />;
