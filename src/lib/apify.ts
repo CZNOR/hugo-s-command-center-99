@@ -1,6 +1,8 @@
-// ── Apify REST client (browser-compatible, no Node.js deps) ────────────────
-const APIFY_TOKEN = import.meta.env.VITE_APIFY_TOKEN as string;
-const BASE = "https://api.apify.com/v2";
+// ── Apify REST client — passe par /api/apify, qui détient le jeton ──────────
+import { apiFetch } from "./api";
+
+const apify = (path: string, init?: RequestInit, query = "") =>
+  apiFetch(`/api/apify?p=${encodeURIComponent(path)}${query}`, init);
 
 export interface SocialPost {
   id: string;
@@ -25,7 +27,7 @@ export interface SocialProfile {
 
 async function startRun(actorId: string, input: object): Promise<{ runId: string; datasetId: string }> {
   const slug = actorId.replace("/", "~");
-  const res = await fetch(`${BASE}/acts/${slug}/runs?token=${APIFY_TOKEN}`, {
+  const res = await apify(`acts/${slug}/runs`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
@@ -38,7 +40,7 @@ async function startRun(actorId: string, input: object): Promise<{ runId: string
 async function waitForRun(runId: string): Promise<string> {
   for (let i = 0; i < 60; i++) {
     await new Promise((r) => setTimeout(r, 4000));
-    const res = await fetch(`${BASE}/actor-runs/${runId}?token=${APIFY_TOKEN}`);
+    const res = await apify(`actor-runs/${runId}`);
     if (!res.ok) continue;
     const { data } = await res.json();
     if (data.status === "SUCCEEDED") return data.defaultDatasetId;
@@ -49,7 +51,7 @@ async function waitForRun(runId: string): Promise<string> {
 }
 
 async function getDatasetItems(datasetId: string): Promise<any[]> {
-  const res = await fetch(`${BASE}/datasets/${datasetId}/items?token=${APIFY_TOKEN}&limit=20`);
+  const res = await apify(`datasets/${datasetId}/items`, undefined, "&limit=20");
   if (!res.ok) throw new Error(`Apify dataset fetch failed: ${res.status}`);
   return res.json();
 }

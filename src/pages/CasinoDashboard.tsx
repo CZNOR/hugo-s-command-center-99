@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { dbFetch } from "@/lib/api";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   DollarSign, TrendingUp, Users, RefreshCw,
@@ -14,16 +15,12 @@ const TABS: { id: Tab; label: string; path: string }[] = [
 ];
 
 const ACCENT = "#00ff44";
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
 // ─── Supabase helper ─────────────────────────────────────────
 async function sbFetch<T = any>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+  const res = await dbFetch(path, {
     ...options,
     headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
       "Content-Type": "application/json",
       Prefer: "return=representation",
       ...(options?.headers ?? {}),

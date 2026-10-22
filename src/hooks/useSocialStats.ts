@@ -1,12 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
+import { dbFetch } from "@/lib/api";
 import {
   fetchInstagramProfile,
   fetchTikTokProfile,
   type SocialProfile,
 } from "@/lib/apify";
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 // ── Supabase REST helpers ─────────────────────────────────────
@@ -14,11 +13,9 @@ async function sbFetch<T = any>(
   path: string,
   options?: RequestInit
 ): Promise<T> {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+  const res = await dbFetch(path, {
     ...options,
     headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
       "Content-Type": "application/json",
       Prefer: "return=representation",
       ...(options?.headers ?? {}),

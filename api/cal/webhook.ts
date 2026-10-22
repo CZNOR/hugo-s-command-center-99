@@ -7,15 +7,13 @@
 // URL à configurer dans Cal.com :
 //   https://<domaine>/api/cal/webhook?token=<CAL_WEBHOOK_SECRET>
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { SB_URL, APP_TZ, sbHeaders } from "../_lib/server.js";
 import webpush from "web-push";
 
-const SB_URL        = process.env.VITE_SUPABASE_URL!;
-const SB_KEY        = process.env.VITE_SUPABASE_ANON_KEY!;
 const VAPID_PUBLIC  = process.env.VAPID_PUBLIC_KEY!;
 const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY!;
 const VAPID_EMAIL   = process.env.VAPID_EMAIL || "mailto:hugo@agencemade.com";
 const WEBHOOK_TOKEN = process.env.CAL_WEBHOOK_SECRET || "";
-const APP_TZ        = process.env.APP_TIMEZONE || "Europe/Paris";
 
 webpush.setVapidDetails(VAPID_EMAIL, VAPID_PUBLIC, VAPID_PRIVATE);
 
@@ -31,7 +29,7 @@ function pick(v: any): string {
 
 async function sendToAll(payload: object): Promise<number> {
   const r = await fetch(`${SB_URL}/rest/v1/push_subscriptions?select=*`, {
-    headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` },
+    headers: sbHeaders(),
   });
   const subs: any[] = await r.json();
   if (!subs?.length) return 0;
@@ -49,7 +47,7 @@ async function sendToAll(payload: object): Promise<number> {
       if (err.statusCode === 410) {
         await fetch(
           `${SB_URL}/rest/v1/push_subscriptions?endpoint=eq.${encodeURIComponent(sub.endpoint)}`,
-          { method: "DELETE", headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } }
+          { method: "DELETE", headers: sbHeaders() }
         );
       }
     }
@@ -59,17 +57,14 @@ async function sendToAll(payload: object): Promise<number> {
 
 async function markNotified(id: number) {
   const r = await fetch(`${SB_URL}/rest/v1/task_meta?notion_id=eq.__cal_notified__&limit=1`, {
-    headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` },
+    headers: sbHeaders(),
   });
   const rows: any[] = await r.json().catch(() => []);
   const seen: number[] = rows?.[0]?.completed_at ? JSON.parse(rows[0].completed_at) : [];
   if (seen.includes(id)) return;
   await fetch(`${SB_URL}/rest/v1/task_meta`, {
     method: "POST",
-    headers: {
-      apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`,
-      "Content-Type": "application/json", Prefer: "resolution=merge-duplicates",
-    },
+    headers: sbHeaders({ "Content-Type": "application/json", Prefer: "resolution=merge-duplicates" }),
     body: JSON.stringify({
       notion_id: "__cal_notified__", business: "__snapshot__", priority: "normale",
       time: null, completed_at: JSON.stringify([...seen, id].slice(-100)),

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { dbFetch } from "@/lib/api";
 
 // ─── Types ───────────────────────────────────────────────────
 export interface MonthEntry {
@@ -76,16 +77,12 @@ export const COACHING_DEFAULTS: CoachingStats = {
 };
 
 // ─── Supabase ─────────────────────────────────────────────────
-const SB_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const SB_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 const SNAPSHOT_KEY = "__coaching_stats_v3__"; // bumped → force reload from COACHING_DEFAULTS (v1/v2 had stale data)
 
 async function sbFetch<T = any>(path: string, opts?: RequestInit): Promise<T> {
-  const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
+  const res = await dbFetch(path, {
     ...opts,
     headers: {
-      apikey:        SB_KEY,
-      Authorization: `Bearer ${SB_KEY}`,
       "Content-Type": "application/json",
       ...(opts?.headers ?? {}),
     },

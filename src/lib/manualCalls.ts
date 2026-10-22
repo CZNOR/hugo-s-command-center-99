@@ -9,6 +9,8 @@
  * absolute timestamp in APP_TIMEZONE (Europe/Paris by default, DST-aware).
  */
 
+import { dbFetch } from "@/lib/api";
+
 export interface ManualCall {
   id: string;                 // "mc_17294881234"
   clientName: string;
@@ -20,18 +22,13 @@ export interface ManualCall {
   createdAt: string;          // ISO
 }
 
-const SB_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const SB_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 const SNAPSHOT_KEY = "__manual_calls__";
 const STORAGE_KEY  = "czn_manual_calls_v1";
 
-function sbEnabled() { return !!SB_URL && !!SB_KEY; }
-
 async function sbFetch<T = any>(path: string, opts?: RequestInit): Promise<T> {
-  const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
+  const res = await dbFetch(path, {
     ...opts,
     headers: {
-      apikey: SB_KEY!, Authorization: `Bearer ${SB_KEY}`,
       "Content-Type": "application/json",
       ...(opts?.headers ?? {}),
     },
@@ -54,7 +51,6 @@ function writeCache(calls: ManualCall[]) {
 
 /** Returns calls, sourced from Supabase (falls back to localStorage cache on error). */
 export async function loadManualCalls(): Promise<ManualCall[]> {
-  if (!sbEnabled()) return readCache();
   try {
     const rows = await sbFetch<any[]>(`task_meta?notion_id=eq.${SNAPSHOT_KEY}&limit=1`);
     if (rows?.[0]?.completed_at) {
@@ -69,7 +65,6 @@ export async function loadManualCalls(): Promise<ManualCall[]> {
 /** Persists the whole array back to Supabase + localStorage. */
 export async function saveManualCalls(calls: ManualCall[]): Promise<void> {
   writeCache(calls);
-  if (!sbEnabled()) return;
   try {
     await sbFetch("task_meta", {
       method: "POST",

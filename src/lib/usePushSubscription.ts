@@ -1,5 +1,6 @@
 // usePushSubscription.ts — Enregistre le Service Worker + subscription push
 import { useEffect, useCallback, useState } from "react";
+import { apiFetch } from "./api";
 
 const VAPID_PUBLIC_KEY = "BP3pESPfbab2cV4X1THfe2hF_PQGEfOQsmkoBHUxWZWcMGKkYct-5HzdWV6bCUhyJqV-pHt01-GiV8CCGJHxufw";
 
@@ -42,7 +43,7 @@ export function usePushSubscription() {
     }
 
     // 4. Envoyer au serveur Vercel pour stockage Supabase
-    const r = await fetch("/api/push/subscribe", {
+    const r = await apiFetch("/api/push/subscribe", {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
       body:    JSON.stringify({ subscription: sub.toJSON() }),
@@ -71,7 +72,7 @@ export function usePushSubscription() {
         }
         setSubscribed(!!sub);
         // Envoyer au serveur si pas encore enregistré
-        await fetch("/api/push/subscribe", {
+        await apiFetch("/api/push/subscribe", {
           method:  "POST",
           headers: { "Content-Type": "application/json" },
           body:    JSON.stringify({ subscription: sub.toJSON() }),

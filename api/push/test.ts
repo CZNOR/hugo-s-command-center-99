@@ -1,18 +1,18 @@
 // api/push/test.ts — Envoie une notif de test à tous les abonnés
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { SB_URL, sbHeaders, hasAccess } from "../_lib/server.js";
 import webpush from "web-push";
 
-const SB_URL        = process.env.VITE_SUPABASE_URL!;
-const SB_KEY        = process.env.VITE_SUPABASE_ANON_KEY!;
 const VAPID_PUBLIC  = process.env.VAPID_PUBLIC_KEY!;
 const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY!;
 const VAPID_EMAIL   = process.env.VAPID_EMAIL || "mailto:hugo@agencemade.com";
 
 webpush.setVapidDetails(VAPID_EMAIL, VAPID_PUBLIC, VAPID_PRIVATE);
 
-export default async function handler(_req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (!hasAccess(req)) return res.status(401).json({ error: "code d'accès requis" });
   const r = await fetch(`${SB_URL}/rest/v1/push_subscriptions?select=*`, {
-    headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` },
+    headers: sbHeaders(),
   });
   const subs: any[] = await r.json();
 

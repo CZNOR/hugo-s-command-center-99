@@ -1,15 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
+import { dbFetch } from "@/lib/api";
 import { Plus, X, DollarSign, CheckCircle, Clock, AlertCircle, BarChart2, Users, TrendingUp, TrendingDown, Hourglass } from "lucide-react";
 import {
   BarChart, Bar, ResponsiveContainer, XAxis, CartesianGrid, Tooltip, Cell,
 } from "recharts";
 
 // ─── Supabase (for expenses this month) ───────────────────────
-const SB_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const SB_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
 async function fetchMonthExpenses(month: string): Promise<number> {
-  if (!SB_URL || !SB_KEY) return 0;
   try {
     // finance_entries has `type`, `amount`, `date` (YYYY-MM-DD), `status`
     // month is YYYY-MM → filter on date.gte=YYYY-MM-01 and date.lt=next-month-01
@@ -18,10 +16,7 @@ async function fetchMonthExpenses(month: string): Promise<number> {
     const nextY = m === 12 ? y + 1 : y;
     const nextM = m === 12 ? 1 : m + 1;
     const end = `${nextY}-${String(nextM).padStart(2, "0")}-01`;
-    const r = await fetch(
-      `${SB_URL}/rest/v1/finance_entries?type=eq.depense&date=gte.${start}&date=lt.${end}&select=amount,status`,
-      { headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } }
-    );
+    const r = await dbFetch(`finance_entries?type=eq.depense&date=gte.${start}&date=lt.${end}&select=amount,status`);
     if (!r.ok) return 0;
     const rows = (await r.json()) as { amount: number }[];
     return rows.reduce((s, row) => s + (row.amount ?? 0), 0);

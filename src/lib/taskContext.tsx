@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import { dbFetch } from "@/lib/api";
 
 // ─── Types ────────────────────────────────────────────────────
 export type TaskBusiness = "coaching" | "casino" | "content" | "equipe";
@@ -18,16 +19,12 @@ export interface Task {
 }
 
 // ─── Supabase ─────────────────────────────────────────────────
-const SB_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const SB_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 const SNAPSHOT_ID = "__tasks_v2__";
 
 async function sbFetch<T = any>(path: string, opts?: RequestInit): Promise<T> {
-  const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
+  const res = await dbFetch(path, {
     ...opts,
     headers: {
-      apikey: SB_KEY,
-      Authorization: `Bearer ${SB_KEY}`,
       "Content-Type": "application/json",
       ...(opts?.headers ?? {}),
     },

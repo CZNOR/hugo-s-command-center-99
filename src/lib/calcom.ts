@@ -1,11 +1,5 @@
 // ── Cal.com REST client v2 ─────────────────────────────────────────────────
-const CALCOM_KEY = import.meta.env.VITE_CALCOM_API_KEY as string;
-const BASE = "https://api.cal.com/v2";
-const CAL_HEADERS = {
-  "Authorization": `Bearer ${CALCOM_KEY}`,
-  "cal-api-version": "2024-08-13",
-  "Content-Type": "application/json",
-};
+import { apiFetch } from "./api";
 
 export interface CalBooking {
   id: number;
@@ -49,10 +43,8 @@ async function fetchByStatus(
   statusFilter: "past" | "upcoming" | "cancelled",
   limit = 250
 ): Promise<CalBooking[]> {
-  const res = await fetch(
-    `${BASE}/bookings?status=${statusFilter}&limit=${limit}`,
-    { headers: CAL_HEADERS }
-  );
+  // La clé Cal reste sur le serveur : /api/cal/bookings relaie l'appel
+  const res = await apiFetch(`/api/cal/bookings?status=${statusFilter}&limit=${limit}`);
   if (!res.ok) throw new Error(`Cal.com error: ${res.status}`);
   const json = await res.json();
   const data: any[] = Array.isArray(json.data) ? json.data : [];

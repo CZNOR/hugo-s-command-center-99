@@ -1,24 +1,19 @@
 // api/push/notify.ts — Cron Vercel toutes les minutes
 // Vérifie tâches + nouveaux calls Cal.com et envoie les pushs natifs
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { SB_URL, APP_TZ, sbHeaders, calHeaders, hasAccess } from "../_lib/server.js";
 import webpush from "web-push";
 
-const SB_URL        = process.env.VITE_SUPABASE_URL!;
-const SB_KEY        = process.env.VITE_SUPABASE_ANON_KEY!;
 const VAPID_PUBLIC  = process.env.VAPID_PUBLIC_KEY!;
 const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY!;
 const VAPID_EMAIL   = process.env.VAPID_EMAIL || "mailto:hugo@agencemade.com";
-const CALCOM_KEY    = process.env.VITE_CALCOM_API_KEY!;
-// Fuseau d'Hugo : les serveurs Vercel tournent en UTC, toute heure affichée ou
-// saisie à la main doit être interprétée dans ce fuseau.
-const APP_TZ        = process.env.APP_TIMEZONE || "Europe/Paris";
 
 webpush.setVapidDetails(VAPID_EMAIL, VAPID_PUBLIC, VAPID_PRIVATE);
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 async function sbGet<T>(path: string): Promise<T> {
   const r = await fetch(`${SB_URL}/rest/v1/${path}`, {
-    headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` },
+    headers: sbHeaders(),
   });
   const t = await r.text();
   return t ? JSON.parse(t) : [];
@@ -27,10 +22,7 @@ async function sbGet<T>(path: string): Promise<T> {
 async function sbPost(path: string, body: object) {
   return fetch(`${SB_URL}/rest/v1/${path}`, {
     method: "POST",
-    headers: {
-      apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`,
-      "Content-Type": "application/json", Prefer: "resolution=merge-duplicates",
-    },
+    headers: sbHeaders({ "Content-Type": "application/json", Prefer: "resolution=merge-duplicates" }),
     body: JSON.stringify(body),
   });
 }
@@ -74,7 +66,7 @@ async function sendToAll(subs: any[], payload: object): Promise<number> {
     } catch (err: any) {
       if (err.statusCode === 410) {
         await fetch(`${SB_URL}/rest/v1/push_subscriptions?endpoint=eq.${encodeURIComponent(sub.endpoint)}`, {
-          method: "DELETE", headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` },
+          method: "DELETE", headers: sbHeaders(),
         });
       }
     }
@@ -86,7 +78,8 @@ async function sendToAll(subs: any[], payload: object): Promise<number> {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Debug trace — opt-in via ?debug=1 so the response shows what the handler saw.
   // Version stamp lets us verify a deploy is live without relying on logs.
-  const debug = req.query?.debug === "1";
+  // La trace contient des noms de clients : réservée au code d'accès.
+  const debug = req.query?.debug === "1" && hasAccess(req);
   const trace: any = { version: "2026-04-22-first-sight", now: new Date().toISOString() };
   try {
     const subs = await sbGet<any[]>("push_subscriptions?select=*");
@@ -134,7 +127,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
       const calRes = await fetch(
         "https://api.cal.com/v2/bookings?status=upcoming&limit=10",
-        { headers: { Authorization: `Bearer ${CALCOM_KEY}`, "cal-api-version": "2024-08-13" } }
+        { headers: calHeaders }
       );
       const calJson = await calRes.json();
       calBookings = Array.isArray(calJson?.data) ? calJson.data : [];

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { dbFetch } from "@/lib/api";
 import { Link } from "react-router-dom";
 import {
   ArrowRight, CheckCircle2, Circle, Calendar, Phone,
@@ -18,10 +19,8 @@ const isToday   = (iso: string) => !!iso && iso.startsWith(todayStr());
 const fmtMoney  = (n: number) => n.toLocaleString("fr-FR") + " €";
 const fmtTime   = (iso: string) => new Date(iso).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
 
-const SB = import.meta.env.VITE_SUPABASE_URL as string;
-const SK = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 async function sbGet<T>(path: string): Promise<T> {
-  const r = await fetch(`${SB}/rest/v1/${path}`, { headers: { apikey: SK, Authorization: `Bearer ${SK}` } });
+  const r = await dbFetch(path);
   const t = await r.text(); try { return JSON.parse(t); } catch { return [] as T; }
 }
 

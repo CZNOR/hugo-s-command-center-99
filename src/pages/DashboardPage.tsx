@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { dbFetch } from "@/lib/api";
 import { Link } from "react-router-dom";
 import {
   AreaChart, Area, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid,
@@ -12,12 +13,8 @@ import { useCoachingStats, type CoachingStats, type MonthEntry } from "@/lib/coa
 import { usePrivacy } from "@/lib/privacyContext";
 
 // ─── Supabase ─────────────────────────────────────────────────
-const SB  = import.meta.env.VITE_SUPABASE_URL as string;
-const SK  = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 async function sbGet<T>(path: string): Promise<T> {
-  const r = await fetch(`${SB}/rest/v1/${path}`, {
-    headers: { apikey: SK, Authorization: `Bearer ${SK}` },
-  });
+  const r = await dbFetch(path);
   const t = await r.text();
   try { return JSON.parse(t); } catch { return [] as T; }
 }

@@ -2,12 +2,12 @@
 // Uses OAuth2 PKCE flow — no gapi client library, works cleanly with Vite/React
 // Tokens stored in localStorage under "gcal_tokens"
 
+import { apiFetch } from "./api";
+
 const CLIENT_ID     = import.meta.env.VITE_GOOGLE_CLIENT_ID as string;
-const CLIENT_SECRET = import.meta.env.VITE_GOOGLE_CLIENT_SECRET as string;
 
 const SCOPES         = "https://www.googleapis.com/auth/calendar.events";
 const AUTH_ENDPOINT  = "https://accounts.google.com/o/oauth2/v2/auth";
-const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 const CALENDAR_BASE  = "https://www.googleapis.com/calendar/v3";
 const STORAGE_KEY    = "gcal_tokens";
 const PKCE_KEY       = "gcal_pkce_verifier";
@@ -104,19 +104,16 @@ async function exchangeCodeForTokens(code: string): Promise<void> {
   const verifier = localStorage.getItem(PKCE_KEY);
   if (!verifier) throw new Error("PKCE verifier not found");
 
-  const body = new URLSearchParams({
-    client_id:     CLIENT_ID,
-    client_secret: CLIENT_SECRET,
-    code,
-    code_verifier: verifier,
-    grant_type:    "authorization_code",
-    redirect_uri:  window.location.origin,
-  });
-
-  const res = await fetch(TOKEN_ENDPOINT, {
+  // L'échange passe par le serveur, qui détient le secret client Google
+  const res = await apiFetch("/api/google/token", {
     method:  "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body:    body.toString(),
+    headers: { "Content-Type": "application/json" },
+    body:    JSON.stringify({
+      code,
+      code_verifier: verifier,
+      grant_type:    "authorization_code",
+      redirect_uri:  window.location.origin,
+    }),
   });
 
   if (!res.ok) {
@@ -144,17 +141,10 @@ async function refreshAccessToken(): Promise<string | null> {
   const tokens = getTokens();
   if (!tokens?.refresh_token) return null;
 
-  const body = new URLSearchParams({
-    client_id:     CLIENT_ID,
-    client_secret: CLIENT_SECRET,
-    refresh_token: tokens.refresh_token,
-    grant_type:    "refresh_token",
-  });
-
-  const res = await fetch(TOKEN_ENDPOINT, {
+  const res = await apiFetch("/api/google/token", {
     method:  "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body:    body.toString(),
+    headers: { "Content-Type": "application/json" },
+    body:    JSON.stringify({ refresh_token: tokens.refresh_token, grant_type: "refresh_token" }),
   });
 
   if (!res.ok) {
