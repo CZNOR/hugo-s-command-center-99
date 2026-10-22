@@ -27,11 +27,12 @@ export default function AccessGate({ onDone }: { onDone: () => void }) {
       <input
         value={code}
         onChange={(e) => setCode(e.target.value)}
-        autoCapitalize="none"
-        autoCorrect="off"
         autoComplete="current-password"
         type="password"
-        placeholder="mot-mot-mot-mot-000"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        maxLength={8}
+        placeholder="8 chiffres"
       />
       {err && <p className="err">{err}</p>}
       <button className="btn" disabled={busy}>{busy ? "Vérification…" : "Entrer"}</button>
