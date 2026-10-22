@@ -15,6 +15,7 @@ export interface SuiviData {
   faits?: FaitDuJour[]; // fait aujourd'hui
   direct?: Session[];
   projets?: Projet[];
+  sante?: { rappels: string | null }; // dernier passage du minuteur des notifs (chaque minute)
 }
 
 export const Barre = ({ pct }: { pct: number }) => (

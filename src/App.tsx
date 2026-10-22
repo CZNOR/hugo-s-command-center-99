@@ -226,7 +226,7 @@ export default function App() {
       case "point": return (
         <>
           <Notifs status={pushStatus} error={pushError} onEnable={subscribe} />
-          <Point suivi={suivi} point={point} now={now} calls={calls} recents={recents} suivis={suivis} fiches={fiches} onOpenFiche={openFiche} />
+          <Point suivi={suivi} point={point} now={now} callsMaj={callsMaj} calls={calls} recents={recents} suivis={suivis} fiches={fiches} onOpenFiche={openFiche} />
         </>
       );
       case "appels": return <Appels calls={calls} error={callsErr} maj={callsMaj} now={now} recents={recents} suivis={suivis} fiches={fiches} onOpenFiche={openFiche} />;

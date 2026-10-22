@@ -1,5 +1,5 @@
 // api/suivi.ts — Avancement en direct des sessions et des projets (onglet « Point »)
-//   GET          → le dernier suivi.json
+//   GET          → le dernier suivi.json + sante.rappels (dernier passage du minuteur des notifs)
 //   POST suivi   → enregistre (envoyé toutes les 20 s par tools/publish_suivi.py depuis le Mac)
 //   POST { diag } / GET ?diag=1 → mesures d'écran envoyées par l'app (réglage du menu du bas sur l'iPhone)
 // L'app ne fait que lire : Hugo modifie tout depuis le Mac. Stocké dans task_meta, base fermée par RLS.
@@ -16,13 +16,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (req.method === "GET") {
     if (req.query.diag) return res.status(200).json((await metaGet("__diag__")) ?? []);
-    const r = await fetch(`${SB_URL}/rest/v1/task_meta?notion_id=eq.${ROW}&select=completed_at&limit=1`, {
-      headers: sbHeaders(),
-    });
-    const rows: any[] = await r.json().catch(() => []);
-    let suivi = null;
-    try { suivi = JSON.parse(rows?.[0]?.completed_at ?? "null"); } catch { /* ligne absente */ }
-    return res.status(200).json(suivi ?? {});
+    // Le minuteur des notifs (chaque minute) réécrit __cal_notified__ à chaque passage : sa date dit s'il tourne
+    const [rows, minuteur]: any[][] = await Promise.all(
+      [`notion_id=eq.${ROW}&select=completed_at`, "notion_id=eq.__cal_notified__&select=updated_at"].map((q) =>
+        fetch(`${SB_URL}/rest/v1/task_meta?${q}&limit=1`, { headers: sbHeaders() }).then((r) => r.json()).catch(() => [])),
+    );
+    let suivi: any = {};
+    try { suivi = JSON.parse(rows?.[0]?.completed_at ?? "{}") ?? {}; } catch { /* ligne absente */ }
+    suivi.sante = { rappels: minuteur?.[0]?.updated_at ?? null };
+    return res.status(200).json(suivi);
   }
 
   if (req.method === "POST") {

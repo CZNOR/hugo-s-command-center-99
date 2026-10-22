@@ -11,6 +11,7 @@ interface Props {
   suivi: SuiviData;
   point: { markdown: string; updatedAt: string | null };
   now: number;
+  callsMaj: number; // dernière lecture réussie de Cal
   calls: Call[] | null;
   recents: Call[];
   suivis: Call[];
@@ -39,7 +40,7 @@ function lireQuand(quand = "", aujourdhui: string): { plusTard: boolean; heure: 
 
 // Accueil : le reporting en direct. Le plan du jour (ce qui est fait, ce qui reste),
 // les sessions au travail, les projets. Rien ne se modifie ici : tout se change depuis le Mac.
-export default function Point({ suivi, point, now, calls, recents, suivis, fiches, onOpenFiche }: Props) {
+export default function Point({ suivi, point, now, callsMaj, calls, recents, suivis, fiches, onOpenFiche }: Props) {
   const sections = useMemo(
     () => markdownSections(point.markdown).filter((s) => !EN_DIRECT.test(s.title) && !/remplie au point du soir/.test(s.html)),
     [point.markdown],
@@ -77,6 +78,15 @@ export default function Point({ suivi, point, now, calls, recents, suivis, fiche
   // ── Le direct ──
   const ageS = suivi.maj ? Math.max(0, Math.round(now / 1000 - suivi.maj)) : null;
   const horsLigne = ageS == null || ageS > 300;
+  // Chaque source et son âge : tout doit bouger en continu
+  const age = (ms: number | null) => (ms == null ? null : Math.max(0, Math.round((now - ms) / 1000)));
+  const sources = [
+    { nom: "Sessions et projets", detail: "envoyés par ton Mac toutes les 20 s", s: ageS, max: 90 },
+    { nom: "Appels Cal", detail: "relus toutes les 30 s", s: age(callsMaj || null), max: 120 },
+    { nom: "Rappels d'appels", detail: "le serveur vérifie chaque minute", s: age(suivi.sante?.rappels ? Date.parse(suivi.sante.rappels) : null), max: 180 },
+  ];
+  const enRetard = sources.filter((x) => x.s == null || x.s > x.max);
+  const depuis = (s: number | null) => (s == null ? "jamais" : s < 90 ? `il y a ${s} s` : s < 5400 ? `il y a ${Math.round(s / 60)} min` : `il y a ${Math.round(s / 3600)} h`);
   const sessions = (suivi.direct ?? []).filter((s) => s.statut === "travaille" || s.statut === "attend");
   const projets = suivi.projets ?? [];
   const gros = projets.filter((p) => (p.niveau ?? "projet") === "projet");
@@ -86,9 +96,11 @@ export default function Point({ suivi, point, now, calls, recents, suivis, fiche
 
   return (
     <>
-      <p className={`live ${horsLigne ? "eteint" : ""}`}>
+      <p className={`live ${enRetard.length ? "eteint" : ""}`}>
         <i aria-hidden="true" />
-        {horsLigne ? `Mac hors ligne${ageS != null ? ` depuis ${Math.round(ageS / 60)} min` : ""}` : `En direct · mis à jour il y a ${ageS} s`}
+        {horsLigne ? `Mac hors ligne${ageS != null ? ` depuis ${Math.round(ageS / 60)} min` : ""}`
+          : enRetard.length ? `${enRetard.map((x) => x.nom).join(", ")} : en retard`
+          : `En direct · tout est à jour · il y a ${ageS} s`}
       </p>
 
       <div className="kpis">
@@ -156,6 +168,20 @@ export default function Point({ suivi, point, now, calls, recents, suivis, fiche
           {outils.map((p) => <Avancement key={p.nom} nom={p.nom} pct={pctProjet(p)} droite={`${p.faites}/${p.total}`} texte={p.prochaine || p.etape} />)}
         </Repli>
         <Repli titre="Terminés" n={finis.length}>{finis.map((p) => <div key={p.nom} className="plan-ligne fait"><span className="plan-heure"><IcCheck /></span><span className="plan-quoi">{p.nom}</span></div>)}</Repli>
+        <Repli titre="Mises à jour" n={sources.length + 1}>
+          {sources.map((x) => (
+            <div key={x.nom} className="plan-ligne">
+              <span className={`plan-heure ${x.s == null || x.s > x.max ? "retard" : "ok"}`}>{x.s == null || x.s > x.max ? "retard" : "ok"}</span>
+              <span className="plan-quoi">{x.nom}<small className="plan-detail">{x.detail}</small></span>
+              <span className="plan-qui">{depuis(x.s)}</span>
+            </div>
+          ))}
+          <div className="plan-ligne">
+            <span className="plan-heure ok">ok</span>
+            <span className="plan-quoi">Chiffres du point<small className="plan-detail">relevés au point du matin et du soir</small></span>
+            <span className="plan-qui">{releve ? `à ${releve}` : "—"}</span>
+          </div>
+        </Repli>
         <Repli titre="Chiffres et blocages" n={sections.length}>
           {releve && <p className="explain">Relevés au point de {releve}.</p>}
           {sections.map((s) => (
