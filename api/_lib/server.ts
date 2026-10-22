@@ -19,7 +19,8 @@ const decodeHeader = (v: unknown) => {
 export const SB_URL   = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL)!;
 const SB_ANON         = process.env.VITE_SUPABASE_ANON_KEY!;
 const SB_SERVER_KEY   = process.env.SUPABASE_SERVER_KEY!;
-export const CAL_KEY  = process.env.CALCOM_API_KEY!;
+// trim + guillemets retirés : une clé collée à la main dans Vercel traîne souvent un espace ou des " "
+export const CAL_KEY  = (process.env.CALCOM_API_KEY || "").trim().replace(/^["']|["']$/g, "");
 export const APP_TZ   = process.env.APP_TIMEZONE || "Europe/Paris";
 
 export const sbHeaders = (extra: Record<string, string> = {}) => ({
