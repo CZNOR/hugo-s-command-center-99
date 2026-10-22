@@ -5,25 +5,26 @@ import type { Fiche, Suivi, Visite } from "@/lib/prospect";
 import { usePushSubscription } from "@/lib/usePushSubscription";
 import AccessGate from "@/components/AccessGate";
 import type { SuiviData } from "@/components/Suivi";
-import { IcCalendar, IcCopy, IcLink, IcSun } from "@/components/Icons";
+import { IcCalendar, IcHome, IcLink, IcTag } from "@/components/Icons";
 import Appels from "@/tabs/Appels";
-import Point from "@/tabs/Point";
+import Aujourdhui from "@/tabs/Aujourdhui";
 import Vinted from "@/tabs/Vinted";
 import Liens from "@/tabs/Liens";
 import FicheProspect from "@/tabs/FicheProspect";
 
-type Tab = "appels" | "point" | "vinted" | "liens";
+type Tab = "aujourdhui" | "appels" | "vinted" | "liens";
 const TABS: { id: Tab; label: string; Icon: () => JSX.Element }[] = [
-  { id: "appels", label: "Appels", Icon: IcCalendar },
-  { id: "point",  label: "Point",  Icon: IcSun },
-  { id: "vinted", label: "Vinted", Icon: IcCopy },
-  { id: "liens",  label: "Liens",  Icon: IcLink },
+  { id: "aujourdhui", label: "Aujourd'hui", Icon: IcHome },
+  { id: "appels",     label: "Appels",      Icon: IcCalendar },
+  { id: "vinted",     label: "Vinted",      Icon: IcTag },
+  { id: "liens",      label: "Liens",       Icon: IcLink },
 ];
 // Grand titre de chaque onglet
-const TITLES: Record<Tab, string> = { appels: "Appels", point: "Point du jour", vinted: "Vinted", liens: "Liens" };
+const TITLES: Record<Tab, string> = { aujourdhui: "Aujourd'hui", appels: "Appels", vinted: "Vinted", liens: "Liens" };
+// Accueil = « Aujourd'hui » (l'ancien #point des notifs y mène aussi)
 const tabFromHash = (): Tab => {
   const h = window.location.hash.slice(1) as Tab;
-  return TABS.some((t) => t.id === h) ? h : "appels";
+  return TABS.some((t) => t.id === h) ? h : "aujourdhui";
 };
 // Fiche prospect ouverte : #appel-<id de réservation Cal> (aussi le lien des notifs 1 h avant)
 const ficheFromHash = (): number | null => {
@@ -58,11 +59,9 @@ export default function App() {
   const [sens, setSens] = useState<"droite" | "gauche" | "push" | "pop">("droite");
   // Le grand titre se réduit en barre fine quand on fait défiler (comme les apps Apple)
   const [compact, setCompact] = useState(false);
-  useEffect(() => {
-    const onScroll = () => setCompact(window.scrollY > 56);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  // Seule cette zone défile : la barre d'onglets, en dehors, reste toujours en bas
+  const zone = useRef<HTMLDivElement>(null);
+  const enHaut = () => zone.current?.scrollTo({ top: 0 });
   const [toastMsg, setToastMsg] = useState("");
   const { status: pushStatus, error: pushError, subscribe } = usePushSubscription();
 
@@ -145,7 +144,7 @@ export default function App() {
     setSens(id ? "push" : "pop");
     window.location.hash = id ? `appel-${id}` : "";
     setFicheId(id);
-    window.scrollTo(0, 0);
+    enHaut();
     if (id) loadVisites(); // visite toute fraîche (réservation faite il y a quelques minutes)
   };
 
@@ -167,9 +166,9 @@ export default function App() {
     const ordre = TABS.map((x) => x.id);
     setSens(ordre.indexOf(t) >= ordre.indexOf(tab) ? "droite" : "gauche");
     setFicheId(null);
-    window.location.hash = t === "appels" ? "" : t;
+    window.location.hash = t === "aujourdhui" ? "" : t;
     setTab(t);
-    window.scrollTo(0, 0);
+    enHaut();
   };
 
   const toast = (msg: string) => {
@@ -185,53 +184,63 @@ export default function App() {
   const salut = heure < 5 ? "Bonne nuit" : heure < 12 ? "Bonjour" : heure < 18 ? "Bon après-midi" : "Bonsoir";
   const titreCourant = fiche ? fiche.name : TITLES[tab];
 
-  return (
-    <div className="shell">
-      <div className={`mini-bar ${compact ? "visible" : ""}`} aria-hidden={!compact}>{titreCourant}</div>
-      <main className={`view ${sens}`} key={fiche ? `fiche-${fiche.id}` : tab}>
-      {fiche ? (
-        <FicheProspect
-          call={fiche}
-          autres={[...(calls ?? []), ...past]}
-          annulees={annulees}
-          visites={visites}
-          fiche={fiches[fiche.id] ?? {}}
-          now={now}
-          onBack={() => openFiche(null)}
-          onSave={(patch) => saveFiche(fiche.id, patch)}
-          toast={toast}
-        />
-      ) : (
-        <header className="head">
-          <p className="eyebrow">{salut} Hugo · {date}</p>
-          <h1 className="title">{TITLES[tab]}</h1>
-        </header>
-      )}
+  const recents = past.filter((c) => c.start.getTime() > now - RECENTS_JOURS * 86_400_000);
+  const suivis = past.filter((c) => c.start.getTime() > now - SUIVI_JOURS * 86_400_000);
+  const iTab = TABS.findIndex((t) => t.id === tab);
 
-      {!fiche && tab === "appels" && (
-        <Appels
-          calls={calls}
-          error={callsErr}
-          point={point.markdown}
-          now={now}
-          pushStatus={pushStatus}
-          pushError={pushError}
-          onEnableNotif={subscribe}
-          onOpenPoint={() => go("point")}
-          recents={past.filter((c) => c.start.getTime() > now - RECENTS_JOURS * 86_400_000)}
-          suivis={past.filter((c) => c.start.getTime() > now - SUIVI_JOURS * 86_400_000)}
-          fiches={fiches}
-          onOpenFiche={openFiche}
-        />
-      )}
-      {!fiche && tab === "point" && <Point markdown={point.markdown} updatedAt={point.updatedAt} suivi={suivi} now={now} />}
-      {!fiche && tab === "vinted" && <Vinted toast={toast} />}
-      {!fiche && tab === "liens" && <Liens toast={toast} />}
-      </main>
+  return (
+    <div className="app">
+      <div className={`mini-bar ${compact ? "visible" : ""}`} aria-hidden={!compact}>{titreCourant}</div>
+      <div className="zone" ref={zone} onScroll={(e) => setCompact(e.currentTarget.scrollTop > 56)}>
+        <div className="shell">
+          <main className={`view ${sens}`} key={fiche ? `fiche-${fiche.id}` : tab}>
+          {fiche ? (
+            <FicheProspect
+              call={fiche}
+              autres={[...(calls ?? []), ...past]}
+              annulees={annulees}
+              visites={visites}
+              fiche={fiches[fiche.id] ?? {}}
+              now={now}
+              onBack={() => openFiche(null)}
+              onSave={(patch) => saveFiche(fiche.id, patch)}
+              toast={toast}
+            />
+          ) : (
+            <header className="head">
+              <p className="eyebrow">{salut} Hugo · {date}</p>
+              <h1 className="title">{TITLES[tab]}</h1>
+            </header>
+          )}
+
+          {!fiche && tab === "aujourdhui" && (
+            <Aujourdhui
+              calls={calls}
+              recents={recents}
+              suivis={suivis}
+              fiches={fiches}
+              suivi={suivi}
+              point={point}
+              now={now}
+              pushStatus={pushStatus}
+              pushError={pushError}
+              onEnableNotif={subscribe}
+              onOpenFiche={openFiche}
+              onGo={go}
+            />
+          )}
+          {!fiche && tab === "appels" && (
+            <Appels calls={calls} error={callsErr} now={now} recents={recents} fiches={fiches} onOpenFiche={openFiche} />
+          )}
+          {!fiche && tab === "vinted" && <Vinted toast={toast} />}
+          {!fiche && tab === "liens" && <Liens toast={toast} />}
+          </main>
+        </div>
+      </div>
 
       {toastMsg && <div className="toast">{toastMsg}</div>}
 
-      <nav className="nav">
+      <nav className="nav" style={{ "--i": iTab, "--n": TABS.length } as React.CSSProperties}>
         {TABS.map(({ id, label, Icon }) => (
           <button key={id} className={tab === id ? "on" : ""} onClick={() => go(id)}>
             <Icon />{label}

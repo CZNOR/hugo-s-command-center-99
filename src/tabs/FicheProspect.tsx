@@ -114,6 +114,17 @@ export default function FicheProspect({ call: c, autres, annulees, visites, fich
           <h2 className="sec">Il est venu ?</h2>
           <Segment items={[{ id: "venu", label: "Venu" }, { id: "absent", label: "Pas venu" }]} choisi={su.venu} onPick={(id) => onSave({ venu: id as Suivi["venu"] })} />
 
+          {/* Interrupteur : coupe toutes les relances (s'allume seul si la note dit « à supprimer ») */}
+          <div className="list interrupteur-liste">
+            <button className="li interrupteur" onClick={() => onSave({ stop: !deduit.stop })} role="switch" aria-checked={!!deduit.stop}>
+              <span className="li-main">
+                <span className="li-title">Ne plus le relancer</span>
+                {su.stop === undefined && deduit.stop && <span className="li-sub">Lu dans ta note</span>}
+              </span>
+              <span className={`switch ${deduit.stop ? "on" : ""}`} aria-hidden="true"><i /></span>
+            </button>
+          </div>
+
           {su.venu === "venu" && (
             <>
               <h2 className="sec">Résultat</h2>
@@ -158,7 +169,9 @@ export default function FicheProspect({ call: c, autres, annulees, visites, fich
             onBlur={finNote}
           />
 
-          {pl ? (
+          {deduit.stop ? (
+            <p className="explain">Relances coupées : il n'apparaîtra plus dans « À relancer ».</p>
+          ) : pl ? (
             <>
               <h2 className="sec">Messages à envoyer</h2>
               <p className="explain">{pl.resume}</p>

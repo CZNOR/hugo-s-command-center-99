@@ -263,3 +263,45 @@ button.li:active, a.li:active { background: rgba(255, 255, 255, .08); }
 .tuile.sonne svg { transform-origin: 50% 15%; animation: sonne 4s ease-in-out infinite; }
 /* Vinted : gros bouton central */
 .btn.copier-texte { margin: 22px auto 0; width: 100%; font-size: 18px; min-height: 56px; }
+
+/* ══ Mise en page fixe : seule la zone du milieu défile ═════════════════════
+   La barre d'onglets n'est plus « fixed » : c'est le bas d'une colonne qui fait
+   toute la hauteur de l'écran. Elle ne peut donc plus bouger, quel que soit l'onglet. */
+html, body, #root { height: 100%; }
+html, body { overflow: hidden; }
+.app { height: 100vh; height: 100dvh; display: flex; flex-direction: column; }
+.zone { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
+.shell { padding-bottom: 36px; }
+.nav { position: relative; flex: none; }
+
+/* Curseur lavande qui glisse au-dessus de l'onglet actif */
+.nav::before { content: ""; position: absolute; top: -1px; height: 3px; width: 28px; border-radius: 0 0 3px 3px; background: var(--accent);
+  left: calc((100% / var(--n)) * var(--i) + (100% / var(--n) - 28px) / 2); transition: left .38s var(--ressort); }
+
+/* Les 3 chiffres du jour */
+.compteurs { display: grid; grid-template-columns: repeat(3, 1fr); margin: 18px calc(-1 * var(--gutter)) 0; border-top: .5px solid var(--sep); border-bottom: .5px solid var(--sep); }
+.compteurs button { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 14px 4px 12px; text-align: center; position: relative; }
+.compteurs button + button::before { content: ""; position: absolute; left: 0; top: 14px; bottom: 14px; border-left: .5px solid var(--sep); }
+.compteur-n { font-size: 36px; font-weight: 700; line-height: 1; letter-spacing: -.03em; font-variant-numeric: tabular-nums; animation: pop .5s var(--ressort) both; }
+.compteurs button:nth-child(2) .compteur-n { animation-delay: .06s; }
+.compteurs button:nth-child(3) .compteur-n { animation-delay: .12s; }
+.compteurs .chaud .compteur-n { color: var(--orange); }
+.compteurs .calme .compteur-n { color: var(--green); }
+.compteur-l { font-size: 13px; color: var(--label2); }
+
+/* Prochain appel : anneau qui se remplit pendant la dernière heure */
+.li.prochain { gap: 14px; padding-top: 12px; padding-bottom: 12px; }
+.anneau { position: relative; width: 58px; height: 58px; flex: none; }
+.anneau svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.anneau circle { fill: none; stroke-width: 4; }
+.anneau-fond { stroke: var(--fill); }
+.anneau-plein { stroke: var(--accent); stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+.anneau-centre { position: absolute; inset: 0; display: grid; place-items: center; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.li-sub.accent { color: var(--accent); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* Interrupteur iOS « Ne plus le relancer » */
+.interrupteur-liste { margin-top: 20px; }
+.switch { flex: none; width: 51px; height: 31px; border-radius: 16px; background: var(--fill); position: relative; transition: background .25s ease; }
+.switch i { position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .3); transition: transform .3s var(--ressort); }
+.switch.on { background: var(--green); }
+.switch.on i { transform: translateX(20px); }
