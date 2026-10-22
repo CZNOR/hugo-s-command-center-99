@@ -4,10 +4,9 @@ import CopyButton from "@/components/CopyButton";
 export default function Liens({ toast }: { toast: (msg: string) => void }) {
   return (
     <>
-      <h1 className="h">Liens <em>en appel</em></h1>
       {GROUPES.map((g) => (
         <section key={g.title}>
-          <div className="lbl" style={{ margin: "14px 4px 7px" }}>{g.title}</div>
+          <div className="lbl section">{g.title}</div>
           <div className="card">
             {g.liens.map((l, i) => (
               <div key={l.url}>

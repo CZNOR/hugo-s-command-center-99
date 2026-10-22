@@ -9,7 +9,6 @@ export default function Vinted({ toast }: { toast: (msg: string) => void }) {
 
   return (
     <>
-      <h1 className="h">Textes <em>Vinted</em></h1>
       <div className="seg">
         {VINTED.map((v) => (
           <button key={v.id} className={v.id === id ? "on" : ""} onClick={() => setId(v.id)}>{v.label}</button>

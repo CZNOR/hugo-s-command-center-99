@@ -17,6 +17,13 @@ const TABS: { id: Tab; label: string; Icon: () => JSX.Element }[] = [
   { id: "vinted", label: "Vinted", Icon: IcCopy },
   { id: "liens",  label: "Liens",  Icon: IcLink },
 ];
+// Grand titre de chaque onglet : [blanc, lavande]
+const TITLES: Record<Tab, [string, string]> = {
+  appels: ["Mes", "appels"],
+  point:  ["Point du", "jour"],
+  vinted: ["Textes", "Vinted"],
+  liens:  ["Liens", "en appel"],
+};
 const tabFromHash = (): Tab => {
   const h = window.location.hash.slice(1) as Tab;
   return TABS.some((t) => t.id === h) ? h : "appels";
@@ -85,17 +92,15 @@ export default function App() {
 
   if (locked) return <AccessGate onDone={() => { setLocked(false); window.location.reload(); }} />;
 
-  const date = new Date(now).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short", timeZone: TZ });
+  const date = new Date(now).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: TZ });
 
   return (
     <div className="shell">
       <header className="top">
-        <div className="brand">
-          <img className="icon" src="/icon-192.png" alt="" />
-          <img className="word" src="/dring-wordmark.png" alt="Dring" />
-        </div>
+        <img className="icon" src="/icon-192.png" alt="Dring" />
         <span className="date">{date}</span>
       </header>
+      <h1 className="title">{TITLES[tab][0]} <em>{TITLES[tab][1]}</em></h1>
 
       {tab === "appels" && (
         <Appels

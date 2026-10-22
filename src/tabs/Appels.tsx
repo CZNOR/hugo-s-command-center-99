@@ -80,7 +80,7 @@ export default function Appels({ calls, error, point, now, pushStatus, pushError
           {rest.map((c, i) => (
             <div key={c.id}>
               {i > 0 && <div className="sep" />}
-              <div className="row" style={{ marginTop: i === 0 ? 10 : 0 }}>
+              <div className="row" style={{ marginTop: i === 0 ? 12 : 0 }}>
                 <div className="t"><small>{fmtDayShort(c.start)}</small>{fmtTime(c.start)}</div>
                 <div className="n">
                   <b>{c.name}</b>
@@ -95,7 +95,7 @@ export default function Appels({ calls, error, point, now, pushStatus, pushError
       <div className="card">
         <div className="lbl">Point du jour</div>
         {today.length ? (
-          <ul className="pt" style={{ marginTop: 6 }}>
+          <ul className="pt" style={{ marginTop: 8 }}>
             {today.map((r, i) => (
               <li key={i}><span className="when">{r.when}</span><span>{r.what}</span></li>
             ))}
