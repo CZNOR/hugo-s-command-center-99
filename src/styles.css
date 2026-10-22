@@ -2,8 +2,8 @@
    Fond noir, blocs à angles serrés (8 px) avec un filet, gros chiffres très gras, texte net.
    Une couleur par page, en accent seulement : violet partout, vert sur Vinted (variable --c).
    Icônes au trait dans la couleur de la page. Aucun dégradé, aucun flou. */
-:root, .app { --c: #A98BFF; --c-ink: #120A28; --c-soft: rgba(169, 139, 255, .13); --c-trait: rgba(169, 139, 255, .3); }
-.app[data-page="vinted"] { --c: #3DDC84; --c-ink: #03200E; --c-soft: rgba(61, 220, 132, .12); --c-trait: rgba(61, 220, 132, .3); }
+:root, .app, .page { --c: #A98BFF; --c-ink: #120A28; --c-soft: rgba(169, 139, 255, .13); --c-trait: rgba(169, 139, 255, .3); }
+.app[data-page="vinted"], .page[data-tab="vinted"] { --c: #3DDC84; --c-ink: #03200E; --c-soft: rgba(61, 220, 132, .12); --c-trait: rgba(61, 220, 132, .3); }
 
 :root {
   --bg: #000; --bloc: #0E0E11; --bloc2: #1A1A1F; --trait: rgba(255, 255, 255, .07); --bord: rgba(255, 255, 255, .07);
@@ -28,11 +28,15 @@ svg.ic { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-wid
 button, .bouton, .btn { transition: transform .15s var(--ressort), background .2s, color .2s, opacity .2s; }
 button:active, .bouton:active, .btn:active { transform: scale(.97); }
 
-/* ── Cadre : l'app occupe tout l'écran, seul le milieu défile ──
-   --app-h : hauteur réelle de l'écran sur iPhone en app installée (calculée dans main.tsx),
-   sinon la vue s'arrête 59 px avant le bas. Le menu a la même couleur que le fond. */
-.app { position: fixed; top: 0; left: 0; right: 0; height: var(--app-h, 100%); display: flex; flex-direction: column; background: var(--bg); }
-.zone { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
+/* ── Cadre : l'app occupe tout l'écran ; au milieu, les 4 pages côte à côte ──
+   On glisse d'une page à l'autre (défilement horizontal aimanté, une page à la fois) ;
+   chaque page défile en hauteur. La fiche prospect s'ouvre par-dessus. */
+.app { position: fixed; inset: 0; display: flex; flex-direction: column; background: var(--bg); }
+.ecran { position: relative; flex: 1; min-height: 0; }
+.pager { position: absolute; inset: 0; display: flex; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.pager::-webkit-scrollbar { display: none; }
+.page { flex: 0 0 100%; width: 100%; height: 100%; overflow-y: auto; overflow-x: hidden; scroll-snap-align: start; scroll-snap-stop: always; overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; }
+.fiche-couche { position: absolute; inset: 0; z-index: 20; overflow-y: auto; overflow-x: hidden; background: var(--bg); overscroll-behavior: contain; animation: entrePush .4s var(--ressort) both; box-shadow: -12px 0 30px rgba(0, 0, 0, .6); }
 .shell { width: 100%; max-width: 620px; margin: 0 auto; padding: calc(var(--safe-top) + 14px) var(--gouttiere) 40px; overflow-x: clip; }
 
 /* En-tête */
@@ -245,9 +249,11 @@ button.li:active, a.li:active { background: var(--bloc2); }
 
 /* ── Barre d'onglets : au ras du bas, même noir que la page ──
    Dessous, juste la place du trait d'accueil de l'iPhone (pas toute la marge de sécurité). */
-.nav { position: relative; flex: none; display: flex; background: var(--bg); border-top: 1px solid var(--trait); padding: 6px 10px max(6px, calc(var(--safe-bottom) - 14px)); }
+.nav { --i: 0; position: relative; flex: none; display: flex; background: var(--bg); border-top: 1px solid var(--trait); padding: 6px 10px max(6px, calc(var(--safe-bottom) - 14px)); }
+/* iPhone dont la vue s'arrête avant le bas (barre d'état transparente) : le trait d'accueil est hors de la vue */
+.bande-ios .nav { padding-bottom: 4px; }
 .nav::before { content: ""; position: absolute; top: 6px; height: 32px; width: 60px; border-radius: 7px; background: var(--c-soft);
-  left: calc(10px + ((100% - 20px) / var(--n)) * var(--i) + ((100% - 20px) / var(--n) - 60px) / 2); transition: left .4s var(--ressort), background .3s; }
+  left: calc(10px + ((100% - 20px) / var(--n)) * var(--i) + ((100% - 20px) / var(--n) - 60px) / 2); transition: background .3s; }
 .nav button { position: relative; flex: 1; height: 50px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 5px; padding-top: 4px; font-size: 11px; font-weight: 600; letter-spacing: .01em; color: var(--texte3); }
 .nav button svg.ic { width: 24px; height: 24px; }
 .nav button.on { color: var(--c); }
@@ -263,18 +269,14 @@ button.li:active, a.li:active { background: var(--bloc2); }
 .gate .err { color: var(--rouge); font-size: 15px; font-weight: 500; margin-top: 10px; }
 
 /* ── Mouvement ─────────────────────────────────────────── */
-.view.droite { animation: entreDroite .4s var(--ressort) both; }
-.view.gauche, .view.pop { animation: entreGauche .4s var(--ressort) both; }
-.view.push { animation: entrePush .45s var(--ressort) both; }
-@keyframes entreDroite { from { opacity: 0; transform: translateX(24px); } }
-@keyframes entreGauche { from { opacity: 0; transform: translateX(-24px); } }
-@keyframes entrePush { from { opacity: .4; transform: translateX(70%); } }
-.view .bloc, .view .list, .view .replis > *, .view .kpi { animation: monte .5s var(--ressort) both; }
-.view > *:nth-child(2) { animation-delay: .04s; } .view > *:nth-child(3) { animation-delay: .08s; }
-.view > *:nth-child(4) { animation-delay: .12s; } .view > *:nth-child(5) { animation-delay: .16s; } .view > *:nth-child(n+6) { animation-delay: .2s; }
+@keyframes entrePush { from { transform: translateX(100%); } }
+.shell > .bloc, .shell > .list, .shell > .replis > *, .shell > .kpis > .kpi, .shell > section > .list { animation: monte .5s var(--ressort) both; }
+.shell > *:nth-child(3) > *, .shell > *:nth-child(3) { animation-delay: .04s; } .shell > *:nth-child(4) { animation-delay: .08s; }
+.shell > *:nth-child(5) { animation-delay: .12s; } .shell > *:nth-child(6) { animation-delay: .16s; } .shell > *:nth-child(n+7) { animation-delay: .2s; }
 @keyframes monte { from { opacity: 0; transform: translateY(10px); } }
 @keyframes pop { 0% { transform: scale(.6); opacity: 0; } 60% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .view, .view .bloc, .view .list, .view .replis > *, .cloche, .direct, .barre i, .toast, .repli-corps, .projet-detail { animation: none !important; }
+  .shell *, .fiche-couche, .cloche, .direct, .barre i, .toast, .live i { animation: none !important; }
+  .pager { scroll-behavior: auto; }
 }

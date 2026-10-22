@@ -10,7 +10,8 @@
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <!-- « black » et non « black-translucent » : sous iOS 26, la barre transparente faisait s'arrêter la vue 59 px avant le bas -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
     <meta name="apple-mobile-web-app-title" content="Dring" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="theme-color" content="#000000" />

@@ -73,23 +73,6 @@ export function renderMarkdown(md: string): string {
   return out.join("\n");
 }
 
-// Lignes du tableau « Ce que tu fais aujourd'hui » pour l'accueil
-export function todayRows(md: string, max = 3): { when: string; what: string }[] {
-  const lines = md.split("\n");
-  const start = lines.findIndex((l) => /^#+ .*aujourd/i.test(l));
-  if (start < 0) return [];
-  const rows: { when: string; what: string }[] = [];
-  for (const l of lines.slice(start + 1)) {
-    if (/^#/.test(l)) break;
-    if (!/^\s*\|/.test(l) || /^\s*\|?\s*:?-{2,}/.test(l)) continue;
-    const [when, what] = cells(l);
-    if (!when || /^heure$/i.test(when)) continue;
-    rows.push({ when: when.replace(/\*/g, ""), what: what.replace(/\*\*/g, "") });
-    if (rows.length >= max) break;
-  }
-  return rows;
-}
-
 // Découpe le point en sections (une par titre « ## »), pour l'affichage repliable.
 // Le titre principal (« # ») et son chapeau sont ignorés : l'app a déjà son titre.
 export function markdownSections(md: string): { title: string; html: string }[] {

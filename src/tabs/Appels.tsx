@@ -9,6 +9,7 @@ import { Nombre } from "@/components/Deco";
 interface Props {
   calls: Call[] | null;
   error: string;
+  maj: number; // dernière lecture réussie de Cal
   now: number;
   recents: Call[];
   suivis: Call[];
@@ -25,7 +26,7 @@ function etat(c: Call, f?: Fiche): string {
 }
 
 // Les appels : les chiffres en gros, les relances, le prochain appel en grand, la suite, les récents
-export default function Appels({ calls, error, now, recents, suivis, fiches, onOpenFiche }: Props) {
+export default function Appels({ calls, error, maj, now, recents, suivis, fiches, onOpenFiche }: Props) {
   const [next, ...rest] = calls ?? [];
   const taches = aFaire(suivis, recents, fiches, now);
   const jour = (d: Date) => d.toLocaleDateString("fr-CA", { timeZone: TZ });
@@ -48,6 +49,10 @@ export default function Appels({ calls, error, now, recents, suivis, fiches, onO
 
   return (
     <>
+      <p className={`live ${error || !maj ? "eteint" : ""}`}>
+        <i aria-hidden="true" />
+        {error ? "Cal injoignable, nouvel essai dans 30 s" : maj ? `Cal en direct · lu il y a ${Math.max(0, Math.round((now - maj) / 1000))} s` : "Lecture de Cal…"}
+      </p>
       <div className="kpis">
         <div className="kpi accent"><b><Nombre n={auj} /></b><span>aujourd'hui</span></div>
         <div className="kpi"><b><Nombre n={calls?.length ?? 0} /></b><span>à venir</span></div>

@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { apiFetch, NEED_CODE_EVENT } from "@/lib/api";
 import { fetchCancelledCalls, fetchPastCalls, fetchUpcomingCalls, TZ, type Call } from "@/lib/cal";
 import type { Fiche, Suivi, Visite } from "@/lib/prospect";
 import { usePushSubscription } from "@/lib/usePushSubscription";
 import AccessGate from "@/components/AccessGate";
+import Notifs from "@/components/Notifs";
 import type { SuiviData } from "@/components/Suivi";
 import { IcCalendar, IcLink, IcSun, IcTag } from "@/components/Icons";
 import Appels from "@/tabs/Appels";
@@ -13,56 +14,56 @@ import Liens from "@/tabs/Liens";
 import FicheProspect from "@/tabs/FicheProspect";
 
 type Tab = "point" | "appels" | "vinted" | "liens";
-const TABS: { id: Tab; label: string; Icon: () => JSX.Element }[] = [
-  { id: "point",      label: "Point",       Icon: IcSun },
-  { id: "appels",     label: "Appels",      Icon: IcCalendar },
-  { id: "vinted",     label: "Vinted",      Icon: IcTag },
-  { id: "liens",      label: "Liens",       Icon: IcLink },
+const TABS: { id: Tab; label: string; titre: string; Icon: () => JSX.Element }[] = [
+  { id: "point",  label: "Point",  titre: "Point du jour", Icon: IcSun },
+  { id: "appels", label: "Appels", titre: "Appels",        Icon: IcCalendar },
+  { id: "vinted", label: "Vinted", titre: "Vinted",        Icon: IcTag },
+  { id: "liens",  label: "Liens",  titre: "Liens",         Icon: IcLink },
 ];
-// Grand titre de chaque onglet
-const TITLES: Record<Tab, string> = { point: "Point du jour", appels: "Appels", vinted: "Vinted", liens: "Liens" };
-// Accueil = le Point (suivi en direct)
+const indexDe = (t: Tab) => TABS.findIndex((x) => x.id === t);
+// Accueil = le Point. #appels, #vinted, #liens : un onglet ; #appel-<id Cal> : une fiche (lien des notifs 1 h avant)
 const tabFromHash = (): Tab => {
-  const h = window.location.hash.slice(1) as Tab;
-  return TABS.some((t) => t.id === h) ? h : "point";
+  const h = window.location.hash.slice(1);
+  if (/^appel-\d+$/.test(h)) return "appels";
+  return TABS.some((t) => t.id === h) ? (h as Tab) : "point";
 };
-// Fiche prospect ouverte : #appel-<id de réservation Cal> (aussi le lien des notifs 1 h avant)
 const ficheFromHash = (): number | null => {
   const m = window.location.hash.match(/^#appel-(\d+)$/);
   return m ? Number(m[1]) : null;
 };
+
 const RECENTS_JOURS = 7;
-const SUIVI_JOURS = 45; // fiches chargées sur 45 jours : les relances courent jusqu'à J+30
-const HISTO_MS = 5 * 60_000; // passé, annulations et visites : relus toutes les 5 min (au lieu de chaque minute)
-const REFRESH_MS = 60_000;
-const SUIVI_MS = 20_000; // le Mac envoie l'avancement toutes les 20 s
+const SUIVI_JOURS = 45;     // fiches chargées sur 45 jours : les relances courent jusqu'à J+30
+const APPELS_MS = 30_000;   // appels à venir, fiches et point : toutes les 30 s
+const HISTO_MS = 2 * 60_000; // appels passés, annulations, visites : toutes les 2 min
+const SUIVI_MS = 20_000;    // le Mac envoie l'avancement toutes les 20 s
 
 export default function App() {
   // L'écran de code ne s'affiche que si le serveur refuse vraiment (401) :
   // le jeton d'appareil (cookie d'un an) suffit, même si le stockage local est vidé.
   const [locked, setLocked] = useState(false);
   const [tab, setTab] = useState<Tab>(tabFromHash);
+  const [ficheId, setFicheId] = useState<number | null>(ficheFromHash);
   const [calls, setCalls] = useState<Call[] | null>(null);
   const [callsErr, setCallsErr] = useState("");
+  const [callsMaj, setCallsMaj] = useState(0);
   const [past, setPast] = useState<Call[]>([]);
   const [annulees, setAnnulees] = useState<Call[]>([]);
   const [visites, setVisites] = useState<Visite[]>([]);
   const [fiches, setFiches] = useState<Record<number, Fiche>>({});
-  const [ficheId, setFicheId] = useState<number | null>(ficheFromHash);
-  const saveQueue = useRef<Promise<unknown>>(Promise.resolve());
-  const lastHisto = useRef(0);
-  const pastRef = useRef<Call[]>([]);
   const [point, setPoint] = useState<{ markdown: string; updatedAt: string | null }>({ markdown: "", updatedAt: null });
   const [suivi, setSuivi] = useState<SuiviData>({});
   const [now, setNow] = useState(Date.now());
-  // Sens du glissement entre écrans : vers la droite si on avance dans les onglets, fiche = « push »
-  const [sens, setSens] = useState<"droite" | "gauche" | "push" | "pop">("droite");
-  // Le grand titre se réduit en barre fine quand on fait défiler (comme les apps Apple)
-  const [compact, setCompact] = useState(false);
-  // Seule cette zone défile : la barre d'onglets, en dehors, reste toujours en bas
-  const zone = useRef<HTMLDivElement>(null);
-  const enHaut = () => zone.current?.scrollTo({ top: 0 });
+  const [compact, setCompact] = useState(false); // grand titre réduit en barre fine quand la page défile
+  const [compactFiche, setCompactFiche] = useState(false);
   const [toastMsg, setToastMsg] = useState("");
+  const saveQueue = useRef<Promise<unknown>>(Promise.resolve());
+  const lastHisto = useRef(0);
+  const pastRef = useRef<Call[]>([]);
+  const pager = useRef<HTMLDivElement>(null);
+  const pages = useRef<(HTMLElement | null)[]>([]);
+  const nav = useRef<HTMLElement>(null);
+  const ficheEl = useRef<HTMLDivElement>(null);
   const { status: pushStatus, error: pushError, subscribe } = usePushSubscription();
 
   // Un appel refusé (401) ramène à l'écran de code
@@ -72,25 +73,19 @@ export default function App() {
     return () => window.removeEventListener(NEED_CODE_EVENT, lock);
   }, []);
 
-  useEffect(() => {
-    const onHash = () => { setTab(tabFromHash()); setFicheId(ficheFromHash()); };
-    window.addEventListener("hashchange", onHash);
-    return () => window.removeEventListener("hashchange", onHash);
-  }, []);
-
+  // ── Données : tout se relit souvent, et tout de suite au retour dans l'app ──
   const loadVisites = useCallback(() => {
     apiFetch("/api/visite").then((r) => (r.ok ? r.json() : null)).then((v) => v && setVisites(v)).catch(() => {});
   }, []);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (forcer = false) => {
     setNow(Date.now());
-    // Les appels à venir chaque minute ; le reste (lourd, qui bouge peu) toutes les 5 min
-    const histoAJour = Date.now() - lastHisto.current < HISTO_MS;
+    const histoAJour = !forcer && Date.now() - lastHisto.current < HISTO_MS;
     const [up, pa] = await Promise.all([
       fetchUpcomingCalls().catch((e) => { setCallsErr(String(e.message ?? e)); return null; }),
       histoAJour ? Promise.resolve(pastRef.current) : fetchPastCalls().catch(() => pastRef.current),
     ]);
-    if (up) { setCalls(up); setCallsErr(""); }
+    if (up) { setCalls(up); setCallsErr(""); setCallsMaj(Date.now()); }
     if (!histoAJour) {
       lastHisto.current = Date.now();
       pastRef.current = pa;
@@ -98,76 +93,117 @@ export default function App() {
       fetchCancelledCalls().then(setAnnulees).catch(() => {});
       loadVisites();
     }
-    // Fiches (source + suivi) des appels à venir et des 7 derniers jours
+    // Fiches (source + suivi) des appels à venir et des 45 derniers jours
     const depuis = Date.now() - SUIVI_JOURS * 86_400_000;
     const ids = [...(up ?? []), ...pa.filter((c) => c.start.getTime() > depuis)].map((c) => c.id).slice(0, 60);
     if (ids.length) {
-      apiFetch(`/api/prospect?ids=${ids.join(",")}`)
-        .then((r) => (r.ok ? r.json() : null))
-        .then((f) => f && setFiches(f))
-        .catch(() => {});
+      apiFetch(`/api/prospect?ids=${ids.join(",")}`).then((r) => (r.ok ? r.json() : null)).then((f) => f && setFiches(f)).catch(() => {});
     }
-    apiFetch("/api/point")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((p) => p && setPoint(p))
-      .catch(() => {});
+    apiFetch("/api/point").then((r) => (r.ok ? r.json() : null)).then((p) => p && setPoint(p)).catch(() => {});
   }, [loadVisites]);
 
-  // Avancement en direct : relu toutes les 20 s, seulement quand l'app est à l'écran
   const loadSuivi = useCallback(() => {
-    if (document.visibilityState !== "visible") return;
-    apiFetch("/api/suivi")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (d) { setSuivi(d); setNow(Date.now()); } })
-      .catch(() => {});
+    apiFetch("/api/suivi").then((r) => (r.ok ? r.json() : null)).then((d) => { if (d) { setSuivi(d); setNow(Date.now()); } }).catch(() => {});
   }, []);
 
   useEffect(() => {
     if (locked) return;
+    load(true);
     loadSuivi();
-    const id = setInterval(loadSuivi, SUIVI_MS);
-    document.addEventListener("visibilitychange", loadSuivi);
-    return () => { clearInterval(id); document.removeEventListener("visibilitychange", loadSuivi); };
-  }, [locked, loadSuivi]);
+    const ids = [
+      setInterval(() => document.visibilityState === "visible" && load(), APPELS_MS),
+      setInterval(() => document.visibilityState === "visible" && loadSuivi(), SUIVI_MS),
+      setInterval(() => setNow(Date.now()), 5_000), // « il y a 12 s », comptes à rebours
+    ];
+    const retour = () => { if (document.visibilityState === "visible") { load(true); loadSuivi(); } };
+    document.addEventListener("visibilitychange", retour);
+    return () => { ids.forEach(clearInterval); document.removeEventListener("visibilitychange", retour); };
+  }, [locked, load, loadSuivi]);
 
-  // Chargement, puis rafraîchissement chaque minute et au retour dans l'app
-  useEffect(() => {
-    if (locked) return;
-    load();
-    const id = setInterval(load, REFRESH_MS);
-    const onVisible = () => document.visibilityState === "visible" && load();
-    document.addEventListener("visibilitychange", onVisible);
-    return () => { clearInterval(id); document.removeEventListener("visibilitychange", onVisible); };
-  }, [locked, load]);
+  // ── Navigation : les 4 pages côte à côte, on glisse de l'une à l'autre ──
+  // La pastille du menu suit le doigt ; l'onglet change quand la page est à moitié passée.
+  const largeur = () => pager.current?.clientWidth || window.innerWidth;
+  const tabRef = useRef(tab);
+  tabRef.current = tab;
+  useLayoutEffect(() => {
+    if (locked || !pager.current) return;
+    pager.current.scrollLeft = indexDe(tab) * largeur();
+    nav.current?.style.setProperty("--i", String(indexDe(tab)));
+    const recaler = () => { if (pager.current) pager.current.scrollLeft = indexDe(tabRef.current) * largeur(); };
+    window.addEventListener("resize", recaler);
+    return () => window.removeEventListener("resize", recaler);
+  }, [locked]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const openFiche = (id: number | null) => {
-    setSens(id ? "push" : "pop");
-    window.location.hash = id ? `appel-${id}` : "";
+  const onPager = () => {
+    const pos = (pager.current?.scrollLeft ?? 0) / largeur();
+    nav.current?.style.setProperty("--i", pos.toFixed(3));
+    const t = TABS[Math.max(0, Math.min(TABS.length - 1, Math.round(pos)))].id;
+    if (t !== tabRef.current) {
+      tabRef.current = t;
+      setTab(t);
+      setCompact((pages.current[indexDe(t)]?.scrollTop ?? 0) > 56);
+      history.replaceState(null, "", t === "point" ? location.pathname : `#${t}`);
+    }
+  };
+
+  const go = (t: Tab) => {
+    if (ficheId) fermerFiche();
+    if (t === tab) { pages.current[indexDe(t)]?.scrollTo({ top: 0, behavior: "smooth" }); return; }
+    pager.current?.scrollTo({ left: indexDe(t) * largeur(), behavior: "smooth" });
+  };
+
+  // ── Fiche prospect : s'ouvre par-dessus, se referme d'un glissement vers la droite ──
+  const openFiche = (id: number) => {
     setFicheId(id);
-    enHaut();
-    if (id) loadVisites(); // visite toute fraîche (réservation faite il y a quelques minutes)
+    setCompactFiche(false);
+    history.pushState(null, "", `#appel-${id}`);
+    loadVisites(); // visite toute fraîche (réservation faite il y a quelques minutes)
+  };
+  const fermerFiche = () => {
+    setFicheId(null);
+    history.replaceState(null, "", tab === "point" ? location.pathname : `#${tab}`);
+  };
+  useEffect(() => {
+    const onHash = () => {
+      const id = ficheFromHash();
+      setFicheId(id);
+      if (!id) { const t = tabFromHash(); pager.current?.scrollTo({ left: indexDe(t) * largeur() }); }
+    };
+    window.addEventListener("hashchange", onHash);
+    window.addEventListener("popstate", onHash);
+    return () => { window.removeEventListener("hashchange", onHash); window.removeEventListener("popstate", onHash); };
+  }, []);
+
+  const doigt = useRef<{ x: number; y: number; dx: number; suit: boolean } | null>(null);
+  const ficheTouch = {
+    onTouchStart: (e: React.TouchEvent) => { const t = e.touches[0]; doigt.current = { x: t.clientX, y: t.clientY, dx: 0, suit: false }; },
+    onTouchMove: (e: React.TouchEvent) => {
+      const d = doigt.current, el = ficheEl.current;
+      if (!d || !el) return;
+      const t = e.touches[0], dx = t.clientX - d.x, dy = t.clientY - d.y;
+      if (!d.suit && dx > 12 && dx > Math.abs(dy) * 1.4) d.suit = true;
+      if (d.suit) { d.dx = Math.max(0, dx); el.style.transition = "none"; el.style.transform = `translateX(${d.dx}px)`; }
+    },
+    onTouchEnd: () => {
+      const d = doigt.current, el = ficheEl.current;
+      doigt.current = null;
+      if (!d?.suit || !el) return;
+      el.style.transition = "transform .3s cubic-bezier(.32,.72,0,1)";
+      if (d.dx > largeur() * 0.3) { el.style.transform = "translateX(100%)"; setTimeout(fermerFiche, 280); }
+      else el.style.transform = "";
+    },
   };
 
   // Suivi après l'appel : mis à jour tout de suite à l'écran, puis enregistré
-  // On envoie tout le suivi à chaque fois : deux taps rapides ne s'écrasent pas côté serveur.
+  // On envoie tout le suivi à chaque fois, à la file : deux taps rapides ne s'écrasent pas côté serveur.
   const saveFiche = (id: number, patch: Partial<Suivi>) => {
-    const suivi: Suivi = { ...fiches[id]?.suivi, ...patch };
-    setFiches((f) => ({ ...f, [id]: { ...f[id], suivi } }));
-    // Enregistrements à la file : le serveur lit puis réécrit la fiche, deux envois simultanés se perdraient
-    saveQueue.current = saveQueue.current.catch(() => {}).then(() => apiFetch("/api/prospect", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, ...suivi, frein: suivi.frein ?? null, rappel: suivi.rappel ?? "" }) }))
+    const s: Suivi = { ...fiches[id]?.suivi, ...patch };
+    setFiches((f) => ({ ...f, [id]: { ...f[id], suivi: s } }));
+    saveQueue.current = saveQueue.current.catch(() => {}).then(() => apiFetch("/api/prospect", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, ...s, frein: s.frein ?? null, rappel: s.rappel ?? "" }) }))
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => d && setFiches((f) => ({ ...f, [id]: { ...f[id], suivi: d.suivi, historique: d.historique } })))
       .then(() => toast("Enregistré"))
       .catch(() => toast("Pas enregistré, réessaie"));
-  };
-
-  const go = (t: Tab) => {
-    const ordre = TABS.map((x) => x.id);
-    setSens(ordre.indexOf(t) >= ordre.indexOf(tab) ? "droite" : "gauche");
-    setFicheId(null);
-    window.location.hash = t === "point" ? "" : t;
-    setTab(t);
-    enHaut();
   };
 
   const toast = (msg: string) => {
@@ -177,56 +213,67 @@ export default function App() {
 
   if (locked) return <AccessGate onDone={() => { setLocked(false); window.location.reload(); }} />;
 
-  const fiche = ficheId ? [...(calls ?? []), ...past].find((c) => c.id === ficheId) ?? null : null;
+  const tous = [...(calls ?? []), ...past];
+  const fiche = ficheId ? tous.find((c) => c.id === ficheId) ?? null : null;
   const date = new Date(now).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: TZ });
   const heure = Number(new Date(now).toLocaleTimeString("fr-FR", { hour: "2-digit", hour12: false, timeZone: TZ }).slice(0, 2));
   const salut = heure < 5 ? "Bonne nuit" : heure < 12 ? "Bonjour" : heure < 18 ? "Bon après-midi" : "Bonsoir";
-  const titreCourant = fiche ? fiche.name : TITLES[tab];
-
   const recents = past.filter((c) => c.start.getTime() > now - RECENTS_JOURS * 86_400_000);
   const suivis = past.filter((c) => c.start.getTime() > now - SUIVI_JOURS * 86_400_000);
-  const iTab = TABS.findIndex((t) => t.id === tab);
+
+  const contenu = (t: Tab) => {
+    switch (t) {
+      case "point": return (
+        <>
+          <Notifs status={pushStatus} error={pushError} onEnable={subscribe} />
+          <Point suivi={suivi} point={point} now={now} calls={calls} recents={recents} suivis={suivis} fiches={fiches} onOpenFiche={openFiche} />
+        </>
+      );
+      case "appels": return <Appels calls={calls} error={callsErr} maj={callsMaj} now={now} recents={recents} suivis={suivis} fiches={fiches} onOpenFiche={openFiche} />;
+      case "vinted": return <Vinted toast={toast} />;
+      case "liens": return <Liens toast={toast} />;
+    }
+  };
 
   return (
     <div className="app" data-page={fiche ? "fiche" : tab}>
-      <div className={`mini-bar ${compact ? "visible" : ""}`} aria-hidden={!compact}>{titreCourant}</div>
-      <div className="zone" ref={zone} onScroll={(e) => setCompact(e.currentTarget.scrollTop > 56)}>
-        <div className="shell">
-          <main className={`view ${sens}`} key={fiche ? `fiche-${fiche.id}` : tab}>
-          {fiche ? (
-            <FicheProspect
-              call={fiche}
-              autres={[...(calls ?? []), ...past]}
-              annulees={annulees}
-              visites={visites}
-              fiche={fiches[fiche.id] ?? {}}
-              now={now}
-              onBack={() => openFiche(null)}
-              onSave={(patch) => saveFiche(fiche.id, patch)}
-              toast={toast}
-            />
-          ) : (
-            <header className="head">
-              <p className="eyebrow">{salut} Hugo · {date}</p>
-              <h1 className="title">{TITLES[tab]}</h1>
-            </header>
-          )}
+      <div className={`mini-bar ${(fiche ? compactFiche : compact) ? "visible" : ""}`} aria-hidden="true">{fiche ? fiche.name : TABS[indexDe(tab)].titre}</div>
 
-          {!fiche && tab === "point" && (
-            <Point suivi={suivi} point={point} now={now} calls={calls} recents={recents} suivis={suivis} fiches={fiches} onOpenFiche={openFiche} />
-          )}
-          {!fiche && tab === "appels" && (
-            <Appels calls={calls} error={callsErr} now={now} recents={recents} suivis={suivis} fiches={fiches} onOpenFiche={openFiche} />
-          )}
-          {!fiche && tab === "vinted" && <Vinted toast={toast} />}
-          {!fiche && tab === "liens" && <Liens toast={toast} />}
-          </main>
+      <div className="ecran">
+        <div className="pager" ref={pager} onScroll={onPager}>
+          {TABS.map((t, i) => (
+            <section
+              key={t.id} className="page" data-tab={t.id} aria-hidden={t.id !== tab}
+              ref={(el) => { pages.current[i] = el; }}
+              onScroll={(e) => t.id === tabRef.current && setCompact(e.currentTarget.scrollTop > 56)}
+            >
+              <div className="shell">
+                <header className="head">
+                  <p className="eyebrow">{salut} Hugo · {date}</p>
+                  <h1 className="title">{t.titre}</h1>
+                </header>
+                {contenu(t.id)}
+              </div>
+            </section>
+          ))}
         </div>
+
+        {fiche && (
+          <div className="fiche-couche" ref={ficheEl} key={fiche.id} {...ficheTouch} onScroll={(e) => setCompactFiche(e.currentTarget.scrollTop > 56)}>
+            <div className="shell">
+              <FicheProspect
+                call={fiche} autres={tous} annulees={annulees} visites={visites}
+                fiche={fiches[fiche.id] ?? {}} now={now}
+                onBack={fermerFiche} onSave={(patch) => saveFiche(fiche.id, patch)} toast={toast}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {toastMsg && <div className="toast">{toastMsg}</div>}
 
-      <nav className="nav" style={{ "--i": iTab, "--n": TABS.length } as React.CSSProperties}>
+      <nav className="nav" ref={nav} style={{ "--n": TABS.length } as React.CSSProperties}>
         {TABS.map(({ id, label, Icon }) => (
           <button key={id} className={tab === id ? "on" : ""} onClick={() => go(id)}>
             <Icon />{label}
