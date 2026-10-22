@@ -3,6 +3,7 @@ import { apiFetch, hasCode, NEED_CODE_EVENT } from "@/lib/api";
 import { fetchUpcomingCalls, TZ, type Call } from "@/lib/cal";
 import { usePushSubscription } from "@/lib/usePushSubscription";
 import AccessGate from "@/components/AccessGate";
+import type { SuiviData } from "@/components/Suivi";
 import { IcCalendar, IcCopy, IcLink, IcSun } from "@/components/Icons";
 import Appels from "@/tabs/Appels";
 import Point from "@/tabs/Point";
@@ -28,6 +29,7 @@ export default function App() {
   const [calls, setCalls] = useState<Call[] | null>(null);
   const [callsErr, setCallsErr] = useState("");
   const [point, setPoint] = useState<{ markdown: string; updatedAt: string | null }>({ markdown: "", updatedAt: null });
+  const [suivi, setSuivi] = useState<SuiviData>({});
   const [now, setNow] = useState(Date.now());
   const [toastMsg, setToastMsg] = useState("");
   const { status: pushStatus, error: pushError, subscribe } = usePushSubscription();
@@ -53,6 +55,10 @@ export default function App() {
     apiFetch("/api/point")
       .then((r) => (r.ok ? r.json() : null))
       .then((p) => p && setPoint(p))
+      .catch(() => {});
+    apiFetch("/api/suivi")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setSuivi(d))
       .catch(() => {});
   }, []);
 
@@ -103,7 +109,7 @@ export default function App() {
           onOpenPoint={() => go("point")}
         />
       )}
-      {tab === "point" && <Point markdown={point.markdown} updatedAt={point.updatedAt} />}
+      {tab === "point" && <Point markdown={point.markdown} updatedAt={point.updatedAt} suivi={suivi} now={now} />}
       {tab === "vinted" && <Vinted toast={toast} />}
       {tab === "liens" && <Liens toast={toast} />}
 

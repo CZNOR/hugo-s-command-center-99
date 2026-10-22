@@ -105,3 +105,13 @@ svg.ic { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-wid
 .notif { display: flex; align-items: center; gap: 10px; font-size: 13.5px; }
 .notif .btn { width: auto; margin: 0; padding: 8px 12px; font-size: 13px; flex: none; }
 .amount { font-style: normal; color: var(--lav); font-weight: 500; }
+.live { padding: 10px 0; border-bottom: 1px solid var(--line); }
+.live:last-child { border: 0; padding-bottom: 0; }
+.live-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.live-top b { font-weight: 500; font-size: 15px; }
+.bar { height: 4px; border-radius: 4px; background: rgba(241, 240, 234, .08); margin: 7px 0 5px; overflow: hidden; }
+.bar i { display: block; height: 100%; border-radius: 4px; background: var(--lav); transition: width .4s; }
+.st { font-size: 12px; color: var(--muted); }
+.st.travaille { color: var(--lav); }
+.st.attend { color: #F2C14E; }
+.pt li > span.full { display: block; -webkit-line-clamp: unset; }
