@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { fmtCountdown, fmtDay, fmtDayShort, fmtTime, type Call } from "@/lib/cal";
+import { fmtCountdown, fmtDay, fmtDayShort, fmtTime, TZ, type Call } from "@/lib/cal";
 import { alertes, RESULTATS, type Fiche } from "@/lib/prospect";
 import { quandLisible, suiviEffectif } from "@/lib/messages";
 import { aFaire } from "@/lib/afaire";
 import { IcBell, IcCheck, IcClock, IcHistory, IcPhone } from "@/components/Icons";
+import { Nombre } from "@/components/Deco";
 
 interface Props {
   calls: Call[] | null;
@@ -23,10 +24,12 @@ function etat(c: Call, f?: Fiche): string {
   return r ?? (f.suivi.venu === "absent" ? "Pas venu" : f.suivi.venu === "venu" ? "Venu" : "À noter");
 }
 
-// Les appels : le prochain en grand, la suite, les récents (les relances sont dans « Aujourd'hui »)
+// Les appels : les chiffres en gros, les relances, le prochain appel en grand, la suite, les récents
 export default function Appels({ calls, error, now, recents, suivis, fiches, onOpenFiche }: Props) {
   const [next, ...rest] = calls ?? [];
   const taches = aFaire(suivis, recents, fiches, now);
+  const jour = (d: Date) => d.toLocaleDateString("fr-CA", { timeZone: TZ });
+  const auj = new Set([...(calls ?? []), ...recents].filter((c) => jour(c.start) === jour(new Date(now))).map((c) => c.id)).size;
 
   // Compte à rebours à la seconde dans la dernière heure avant l'appel
   const [tic, setTic] = useState(Date.now());
@@ -45,6 +48,12 @@ export default function Appels({ calls, error, now, recents, suivis, fiches, onO
 
   return (
     <>
+      <div className="kpis">
+        <div className="kpi accent"><b><Nombre n={auj} /></b><span>aujourd'hui</span></div>
+        <div className="kpi"><b><Nombre n={calls?.length ?? 0} /></b><span>à venir</span></div>
+        <div className={`kpi ${taches.length ? "chaud" : ""}`}><b><Nombre n={taches.length} /></b><span>à relancer</span></div>
+      </div>
+
       {/* À relancer : en tête, pour n'oublier personne */}
       <section className={`bloc ${taches.length ? "orange" : "vert"}`}>
         <h2 className="bloc-titre">
