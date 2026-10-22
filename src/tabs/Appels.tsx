@@ -1,28 +1,43 @@
 import { fmtCountdown, fmtDay, fmtDayShort, fmtTime, type Call } from "@/lib/cal";
 import { todayRows } from "@/lib/markdown";
 import { IcBell, IcPhone, IcVideo } from "@/components/Icons";
+import type { PushStatus } from "@/lib/usePushSubscription";
+
+// Bandeau visible tant que cet appareil n'a pas d'abonnement enregistré côté serveur
+const NOTIF_TEXT: Partial<Record<PushStatus, string>> = {
+  "off":           "Active les rappels d'appels sur cet appareil.",
+  "busy":          "Activation en cours…",
+  "denied":        "Notifications bloquées : Réglages iPhone → Notifications → Dring → Autoriser.",
+  "not-installed": "Ouvre l'app depuis l'icône Dring de l'écran d'accueil pour activer les rappels.",
+  "unsupported":   "Ce navigateur ne gère pas les notifications.",
+};
 
 interface Props {
   calls: Call[] | null;
   error: string;
   point: string;
   now: number;
-  notifOn: boolean;
+  pushStatus: PushStatus;
+  pushError: string;
   onEnableNotif: () => void;
   onOpenPoint: () => void;
 }
 
-export default function Appels({ calls, error, point, now, notifOn, onEnableNotif, onOpenPoint }: Props) {
+export default function Appels({ calls, error, point, now, pushStatus, pushError, onEnableNotif, onOpenPoint }: Props) {
   const [next, ...rest] = calls ?? [];
   const today = todayRows(point);
 
   return (
     <>
-      {!notifOn && (
+      {pushStatus !== "on" && pushStatus !== "checking" && (
         <div className="card notif">
           <IcBell />
-          <span style={{ flex: 1 }}>Active les notifs pour être prévenu de chaque appel.</span>
-          <button className="btn" onClick={onEnableNotif}>Activer</button>
+          <span style={{ flex: 1 }}>
+            {pushStatus === "error" ? `Activation impossible : ${pushError}` : NOTIF_TEXT[pushStatus]}
+          </span>
+          {(pushStatus === "off" || pushStatus === "error") && (
+            <button className="btn" onClick={onEnableNotif}>{pushStatus === "error" ? "Réessayer" : "Activer"}</button>
+          )}
         </div>
       )}
 

@@ -30,7 +30,7 @@ export default function App() {
   const [point, setPoint] = useState<{ markdown: string; updatedAt: string | null }>({ markdown: "", updatedAt: null });
   const [now, setNow] = useState(Date.now());
   const [toastMsg, setToastMsg] = useState("");
-  const { permission, subscribe } = usePushSubscription();
+  const { status: pushStatus, error: pushError, subscribe } = usePushSubscription();
 
   // Un appel refusé (401) ramène à l'écran de code
   useEffect(() => {
@@ -97,7 +97,8 @@ export default function App() {
           error={callsErr}
           point={point.markdown}
           now={now}
-          notifOn={permission === "granted" || !("Notification" in window)}
+          pushStatus={pushStatus}
+          pushError={pushError}
           onEnableNotif={subscribe}
           onOpenPoint={() => go("point")}
         />
