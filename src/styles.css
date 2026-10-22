@@ -188,3 +188,108 @@ button.item { color: inherit; }
 .btns.stack { flex-direction: column; gap: 8px; }
 .btns.stack .btn { margin-top: 0; }
 .offer .btns.stack { margin-top: 14px; }
+
+/* ══ Verre liquide ════════════════════════════════════════════════════════
+   Fond : formes lavande / glace / rose qui coulent lentement derrière tout.
+   Surfaces : verre dépoli (flou + reflet en haut), carte d'appel en lavande
+   liquide avec un reflet qui glisse. Apparitions en cascade à chaque écran.
+   Tout s'arrête si l'iPhone demande « réduire les animations ». */
+body { background: #0B0714; font-size: 16px; line-height: 1.6; }
+.liquid { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; background: radial-gradient(120% 80% at 50% -10%, #1C1033 0%, #0B0714 60%); }
+.liquid i { position: absolute; border-radius: 50%; filter: blur(70px); will-change: transform; opacity: .75; }
+.liquid .b1 { width: 70vmax; height: 70vmax; left: -25vmax; top: -30vmax; background: radial-gradient(circle, #8E6DFF 0%, transparent 65%); animation: coule1 26s ease-in-out infinite alternate; }
+.liquid .b2 { width: 55vmax; height: 55vmax; right: -25vmax; top: 25vh; background: radial-gradient(circle, #4FC3E8 0%, transparent 65%); opacity: .42; animation: coule2 32s ease-in-out infinite alternate; }
+.liquid .b3 { width: 60vmax; height: 60vmax; left: -10vmax; bottom: -35vmax; background: radial-gradient(circle, #D46BD8 0%, transparent 65%); opacity: .38; animation: coule3 38s ease-in-out infinite alternate; }
+@keyframes coule1 { to { transform: translate(18vmax, 22vmax) scale(1.15); } }
+@keyframes coule2 { to { transform: translate(-20vmax, 18vmax) scale(.9); } }
+@keyframes coule3 { to { transform: translate(22vmax, -18vmax) scale(1.1); } }
+
+/* Titre : lavande vers glace */
+.title em { background: linear-gradient(100deg, #C9B8FF 0%, #9CE3F5 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.sh { font-size: 12.5px; letter-spacing: .08em; margin: 30px 6px 10px; }
+
+/* Verre dépoli */
+.group, .alert-box, .msg-card, .banner, .note, .date-input, .seg, .choices button, .copy, .btn.ghost-dark {
+  background: linear-gradient(160deg, rgba(255, 255, 255, .095), rgba(255, 255, 255, .035));
+  border: 1px solid rgba(255, 255, 255, .1);
+  -webkit-backdrop-filter: blur(22px) saturate(1.5); backdrop-filter: blur(22px) saturate(1.5);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 12px 32px rgba(0, 0, 0, .28);
+}
+.group { border-radius: 24px; }
+.banner { background: linear-gradient(160deg, rgba(242, 193, 78, .2), rgba(242, 193, 78, .07)); border-color: rgba(242, 193, 78, .25); }
+.alert-box { background: linear-gradient(160deg, rgba(242, 193, 78, .18), rgba(242, 193, 78, .06)); border-color: rgba(242, 193, 78, .25); }
+.item-sub { font-size: 14.5px; line-height: 1.55; }
+.item-text, .kv { font-size: 15.5px; line-height: 1.55; }
+
+/* Lavande liquide (prochain appel, offre conseillée) */
+.hero, .offer { position: relative; overflow: hidden; isolation: isolate;
+  background: linear-gradient(135deg, #DCD0FF 0%, #B49CFF 40%, #8E6DFF 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .6), inset 0 -20px 40px rgba(110, 70, 230, .35), 0 18px 44px rgba(142, 109, 255, .35); }
+.hero::before, .offer::before { content: ""; position: absolute; inset: -40% -60%; z-index: -1;
+  background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, .45) 50%, transparent 60%);
+  animation: reflet 7s ease-in-out infinite; }
+.hero::after, .offer::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: radial-gradient(120% 60% at 30% -10%, rgba(255, 255, 255, .45), transparent 60%); }
+@keyframes reflet { 0%, 55% { transform: translateX(-60%); } 100% { transform: translateX(60%); } }
+.big { text-shadow: 0 2px 0 rgba(255, 255, 255, .35); }
+
+/* Barres : remplissage liquide qui scintille */
+.bar { height: 7px; background: rgba(255, 255, 255, .08); box-shadow: inset 0 1px 2px rgba(0, 0, 0, .3); }
+.bar i { position: relative; overflow: hidden; background: linear-gradient(90deg, #8E6DFF, #B19AFF 60%, #9CE3F5); box-shadow: 0 0 12px rgba(177, 154, 255, .6); transition: width .8s cubic-bezier(.2, .8, .2, 1); }
+.bar i::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .55), transparent); animation: scintille 2.4s ease-in-out infinite; }
+@keyframes scintille { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+
+/* Apparition en cascade à chaque écran */
+.view > * { animation: monte .55s cubic-bezier(.2, .8, .2, 1) both; }
+.view > *:nth-child(2) { animation-delay: .04s; } .view > *:nth-child(3) { animation-delay: .08s; }
+.view > *:nth-child(4) { animation-delay: .12s; } .view > *:nth-child(5) { animation-delay: .16s; }
+.view > *:nth-child(6) { animation-delay: .2s; }  .view > *:nth-child(n+7) { animation-delay: .24s; }
+@keyframes monte { from { opacity: 0; transform: translateY(14px) scale(.985); filter: blur(4px); } to { opacity: 1; transform: none; filter: none; } }
+
+/* Retour au toucher */
+button, .item, .btn, a.btn { transition: transform .18s cubic-bezier(.2, .8, .2, 1), background .2s, color .2s, box-shadow .2s; }
+button:active, .btn:active, button.item:active { transform: scale(.97); }
+.choices button.on { background: linear-gradient(135deg, #D6C8FF, #9C80FF); color: var(--nuit); border-color: rgba(255, 255, 255, .4); box-shadow: 0 6px 18px rgba(142, 109, 255, .4), inset 0 1px 0 rgba(255, 255, 255, .6); }
+.choices button.on.soft { background: rgba(177, 154, 255, .14); color: var(--lav); border: 1px dashed rgba(177, 154, 255, .6); box-shadow: none; }
+.copy.done { animation: pop .35s cubic-bezier(.2, .8, .2, 1.4); background: linear-gradient(135deg, #D6C8FF, #9C80FF); }
+@keyframes pop { 50% { transform: scale(1.15); } }
+
+/* Barre d'onglets en verre, onglet actif lumineux */
+.nav { background: linear-gradient(160deg, rgba(40, 28, 66, .72), rgba(20, 13, 34, .72)); border: 1px solid rgba(255, 255, 255, .1);
+  -webkit-backdrop-filter: blur(28px) saturate(1.6); backdrop-filter: blur(28px) saturate(1.6);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 16px 40px rgba(0, 0, 0, .45); }
+.nav button.on svg { filter: drop-shadow(0 0 8px rgba(177, 154, 255, .8)); }
+.toast { background: linear-gradient(135deg, #D6C8FF, #9C80FF); box-shadow: 0 10px 30px rgba(142, 109, 255, .45); animation: toast .35s cubic-bezier(.2, .8, .2, 1.2); }
+@keyframes toast { from { opacity: 0; transform: translate(-50%, 12px) scale(.95); } }
+
+/* ── Messages de suivi ──────────────────────────────────── */
+.plan-resume { font-size: 14.5px; line-height: 1.55; color: var(--muted); margin: -2px 6px 12px; }
+.msgs { display: grid; gap: 12px; }
+.msg-card { border-radius: 22px; padding: 16px; position: relative; }
+.msg-card::before { content: ""; position: absolute; left: 0; top: 18px; bottom: 18px; width: 3px; border-radius: 3px; background: rgba(255, 255, 255, .15); }
+.msg-card.aujourdhui::before { background: var(--lav); box-shadow: 0 0 10px var(--lav); }
+.msg-card.retard::before { background: var(--amber); box-shadow: 0 0 10px var(--amber); }
+.msg-card.envoye { opacity: .55; }
+.msg-card.envoye::before { background: var(--green); }
+.msg-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.msg-num { width: 30px; height: 30px; border-radius: 10px; flex: none; display: grid; place-items: center; font-weight: 700; font-size: 14px; color: var(--nuit); background: linear-gradient(135deg, #D6C8FF, #9C80FF); }
+.msg-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.msg-meta b { font-size: 15px; line-height: 1.35; }
+.msg-meta span { font-size: 13.5px; color: var(--muted); }
+.msg-etat { font-size: 12px; font-weight: 600; padding: 4px 9px; border-radius: 9px; flex: none; color: var(--muted); background: rgba(255, 255, 255, .07); }
+.msg-etat.aujourdhui { color: var(--lav); background: var(--lav-bg); }
+.msg-etat.retard { color: var(--amber); background: var(--amber-bg); }
+.msg-etat.envoye { color: var(--green); background: var(--green-bg); }
+.msg-card .msg { font-size: 15.5px; line-height: 1.65; white-space: pre-line; }
+.msg-actions { display: flex; gap: 8px; margin-top: 12px; }
+.msg-actions .btn { flex: 1; min-height: 44px; }
+.msg-actions .btn.done { color: var(--green); }
+.hint { font-size: 14.5px; color: var(--muted); margin: 16px 6px 0; line-height: 1.55; }
+.date-input { width: 100%; color: var(--tofu); border-radius: 16px; padding: 13px 16px; font: 500 16px Poppins; color-scheme: dark; }
+.link-btn { margin-left: auto; font-size: 13px; font-weight: 600; color: var(--lav); text-transform: none; letter-spacing: 0; }
+.note { border-radius: 20px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .liquid i, .hero::before, .offer::before, .bar i::after, .view > * { animation: none !important; }
+}
+.detail { font-style: normal; color: var(--muted); font-weight: 400; }

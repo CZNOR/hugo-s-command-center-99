@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { fmtDay, fmtTime, TZ, type Call } from "@/lib/cal";
 import {
-  alertes, duree, messageConfirmation, offre, pageLisible, provenanceLisible, questions, relances,
-  RESULTATS, sourceLisible, visiteDe, type Fiche, type Resultat, type Visite,
+  alertes, duree, FREINS, messageConfirmation, MODALITES, offre, pageLisible, PRODUITS, provenanceLisible,
+  questions, RESULTATS, sourceLisible, visiteDe, type Fiche, type Suivi, type Visite,
 } from "@/lib/prospect";
+import { etatMessage, lireNote, plan, quandLisible, suiviEffectif } from "@/lib/messages";
 import CopyButton, { copyText } from "@/components/CopyButton";
 import { IcPhone, IcVideo } from "@/components/Icons";
 
@@ -15,7 +16,7 @@ interface Props {
   fiche: Fiche;
   now: number;
   onBack: () => void;
-  onSave: (patch: { venu?: string; resultat?: string; note?: string }) => void;
+  onSave: (patch: Partial<Suivi>) => void;
   toast: (msg: string) => void;
 }
 
@@ -34,7 +35,30 @@ export default function FicheProspect({ call: c, autres, annulees, visites, fich
   const of = offre(c);
   const src = sourceLisible(fiche.source);
   const passe = c.start.getTime() <= now;
-  const rel = relances(c, of);
+  const su: Suivi = fiche.suivi ?? {};
+  const pl = plan(c, suiviEffectif(su));
+  const deduit = suiviEffectif(su);
+  const produitConseille = of?.nom === "Coaching +" ? "coaching" : "academie";
+  const avecProduit = su.resultat === "interesse" || su.resultat === "relancer" || su.resultat === "signe";
+  const avecFrein = su.resultat === "interesse" || su.resultat === "relancer" || su.resultat === "pas-interesse";
+  const produit = su.produit ?? produitConseille;
+
+  // À la sortie du champ note : on enregistre, et on devine frein et jour de rappel s'ils manquent
+  const finNote = () => {
+    if (note === (su.note ?? "")) return;
+    const lu = lireNote(note);
+    const patch: Partial<Suivi> = { note };
+    const vus: string[] = [];
+    if (lu.frein && !su.frein) { patch.frein = lu.frein; vus.push(`frein « ${FREINS.find((f) => f.id === lu.frein)?.label.toLowerCase()} »`); }
+    if (lu.rappel && !su.rappel) { patch.rappel = lu.rappel; vus.push(`rappel le ${new Date(lu.rappel + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric" })}`); }
+    onSave(patch);
+    if (vus.length) toast(`Lu dans ta note : ${vus.join(", ")}`);
+  };
+
+  const basculerEnvoye = (id: string) => {
+    const env = su.envoyes ?? [];
+    onSave({ envoyes: env.includes(id) ? env.filter((x) => x !== id) : [...env, id] });
+  };
   const reserve = c.createdAt?.toLocaleString("fr-FR", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: TZ });
 
   return (
@@ -56,36 +80,98 @@ export default function FicheProspect({ call: c, autres, annulees, visites, fich
       )}
 
       {passe && (
-        <>
+        <section className="apres">
           <h2 className="sh">Il est venu ?</h2>
           <div className="choices">
             {[["venu", "Venu"], ["absent", "Pas venu"]].map(([id, label]) => (
-              <button key={id} className={fiche.suivi?.venu === id ? "on" : ""} onClick={() => onSave({ venu: id })}>{label}</button>
+              <button key={id} className={su.venu === id ? "on" : ""} onClick={() => onSave({ venu: id as Suivi["venu"] })}>{label}</button>
             ))}
           </div>
-          <h2 className="sh">Résultat</h2>
-          <div className="choices">
-            {RESULTATS.map((r) => (
-              <button key={r.id} className={fiche.suivi?.resultat === r.id ? "on" : ""} onClick={() => onSave({ resultat: r.id as Resultat })}>{r.label}</button>
-            ))}
-          </div>
+
+          {su.venu === "venu" && (
+            <>
+              <h2 className="sh">Résultat</h2>
+              <div className="choices">
+                {RESULTATS.map((r) => (
+                  <button key={r.id} className={su.resultat === r.id ? "on" : ""} onClick={() => onSave({ resultat: r.id })}>{r.label}</button>
+                ))}
+              </div>
+            </>
+          )}
+
+          {su.venu === "venu" && avecProduit && (
+            <>
+              <h2 className="sh">Pour quel produit{!su.produit && <span>conseillé : {PRODUITS.find((x) => x.id === produitConseille)?.label}</span>}</h2>
+              <div className="choices">
+                {PRODUITS.map((x) => (
+                  <button key={x.id} className={produit === x.id ? (su.produit ? "on" : "on soft") : ""}
+                    onClick={() => onSave({ produit: x.id, modalite: x.id === "suivi" ? "echeances" : su.modalite === "echeances" ? "1fois" : su.modalite })}>{x.label}</button>
+                ))}
+              </div>
+              <h2 className="sh">Paiement</h2>
+              <div className="choices">
+                {MODALITES.filter((m) => (produit === "suivi") === (m.id === "echeances")).map((m) => (
+                  <button key={m.id} className={(su.modalite ?? (produit === "suivi" ? "echeances" : "1fois")) === m.id ? "on" : ""} onClick={() => onSave({ modalite: m.id })}>{m.label}</button>
+                ))}
+              </div>
+            </>
+          )}
+
+          {su.venu === "venu" && avecFrein && (
+            <>
+              <h2 className="sh">Ce qui le bloque</h2>
+              <div className="choices">
+                {FREINS.map((f) => (
+                  <button key={f.id} className={su.frein === f.id ? "on" : !su.frein && deduit.frein === f.id ? "on soft" : ""} onClick={() => onSave({ frein: su.frein === f.id ? undefined : f.id })}>{f.label}</button>
+                ))}
+              </div>
+            </>
+          )}
+
+          {su.venu === "venu" && (su.resultat === "relancer" || su.resultat === "interesse") && (
+            <>
+              <h2 className="sh">Le recontacter le{su.rappel && <button className="link-btn" onClick={() => onSave({ rappel: undefined })}>effacer</button>}</h2>
+              <input className="date-input" type="date" value={su.rappel ?? deduit.rappel ?? ""} onChange={(e) => onSave({ rappel: e.target.value || undefined })} />
+            </>
+          )}
+
           <h2 className="sh">Note</h2>
           <textarea
             className="note"
             value={note}
-            placeholder="Ce qu'il a dit, ce qui bloque, quand le rappeler…"
+            placeholder="Ce qu'il a dit, ce qui bloque, « rappeler jeudi »… Je lis ta note pour adapter les messages."
             onChange={(e) => setNote(e.target.value)}
-            onBlur={() => note !== (fiche.suivi?.note ?? "") && onSave({ note })}
+            onBlur={finNote}
           />
-          {fiche.suivi?.resultat && fiche.suivi.resultat !== "signe" && fiche.suivi.resultat !== "pas-interesse" && (
+
+          {pl ? (
             <>
-              <h2 className="sh">Relance J+1</h2>
-              <div className="group"><div className="item msg-row"><p className="msg">{rel.j1}</p><CopyButton text={rel.j1} onCopied={() => toast("Message copié")} /></div></div>
-              <h2 className="sh">Relance J+3</h2>
-              <div className="group"><div className="item msg-row"><p className="msg">{rel.j3}</p><CopyButton text={rel.j3} onCopied={() => toast("Message copié")} /></div></div>
+              <h2 className="sh">Tes 3 messages</h2>
+              <p className="plan-resume">{pl.resume}</p>
+              <div className="msgs">
+                {pl.messages.map((m, i) => {
+                  const etat = etatMessage(m, su, now);
+                  return (
+                    <div key={m.id} className={`msg-card ${etat}`}>
+                      <div className="msg-head">
+                        <span className="msg-num">{i + 1}</span>
+                        <div className="msg-meta"><b>{m.titre}</b><span>{quandLisible(m.quand, now)}</span></div>
+                        <span className={`msg-etat ${etat}`}>{etat === "envoye" ? "Envoyé" : etat === "retard" ? "En retard" : etat === "aujourdhui" ? "Aujourd'hui" : "Plus tard"}</span>
+                      </div>
+                      <p className="msg">{m.texte}</p>
+                      <div className="msg-actions">
+                        <button className="btn small" onClick={async () => { if (await copyText(m.texte)) toast("Message copié"); }}>Copier</button>
+                        <button className={`btn small ghost-dark ${etat === "envoye" ? "done" : ""}`} onClick={() => basculerEnvoye(m.id)}>{etat === "envoye" ? "✓ Envoyé" : "Marquer envoyé"}</button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </>
+          ) : (
+            <p className="hint">{su.venu ? "Choisis le résultat : je te prépare les 3 messages à envoyer, avec les dates." : "Dis-moi s'il est venu : je te prépare les messages de suivi."}</p>
           )}
-        </>
+        </section>
       )}
 
       {al.length > 0 && (
@@ -172,7 +258,7 @@ export default function FicheProspect({ call: c, autres, annulees, visites, fich
             {fiche.historique.slice().reverse().map((h, i) => (
               <div key={i} className="item kv">
                 <span>{new Date(h.quand).toLocaleDateString("fr-FR", { day: "numeric", month: "short", timeZone: TZ })}</span>
-                {[h.venu === "venu" ? "Venu" : h.venu === "absent" ? "Pas venu" : null, RESULTATS.find((r) => r.id === h.resultat)?.label].filter(Boolean).join(" · ")}
+                {[h.venu === "venu" ? "Venu" : h.venu === "absent" ? "Pas venu" : null, RESULTATS.find((r) => r.id === h.resultat)?.label, PRODUITS.find((x) => x.id === h.produit)?.label].filter(Boolean).join(" · ")}
               </div>
             ))}
           </div>

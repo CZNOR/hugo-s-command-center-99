@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { apiFetch, NEED_CODE_EVENT } from "@/lib/api";
 import { fetchCancelledCalls, fetchPastCalls, fetchUpcomingCalls, TZ, type Call } from "@/lib/cal";
-import type { Fiche, Visite } from "@/lib/prospect";
+import type { Fiche, Suivi, Visite } from "@/lib/prospect";
 import { usePushSubscription } from "@/lib/usePushSubscription";
 import AccessGate from "@/components/AccessGate";
 import type { SuiviData } from "@/components/Suivi";
@@ -24,7 +24,7 @@ const TITLES: Record<Tab, [string, string]> = {
   appels: ["Mes", "appels"],
   point:  ["Point du", "jour"],
   vinted: ["Textes", "Vinted"],
-  liens:  ["Liens", "en appel"],
+  liens:  ["Mes", "liens"],
 };
 const tabFromHash = (): Tab => {
   const h = window.location.hash.slice(1) as Tab;
@@ -36,6 +36,7 @@ const ficheFromHash = (): number | null => {
   return m ? Number(m[1]) : null;
 };
 const RECENTS_JOURS = 7;
+const SUIVI_JOURS = 45; // fiches chargées sur 45 jours : les relances courent jusqu'à J+30
 const HISTO_MS = 5 * 60_000; // passé, annulations et visites : relus toutes les 5 min (au lieu de chaque minute)
 const REFRESH_MS = 60_000;
 const SUIVI_MS = 20_000; // le Mac envoie l'avancement toutes les 20 s
@@ -95,8 +96,8 @@ export default function App() {
       loadVisites();
     }
     // Fiches (source + suivi) des appels à venir et des 7 derniers jours
-    const depuis = Date.now() - RECENTS_JOURS * 86_400_000;
-    const ids = [...(up ?? []), ...pa.filter((c) => c.start.getTime() > depuis)].map((c) => c.id);
+    const depuis = Date.now() - SUIVI_JOURS * 86_400_000;
+    const ids = [...(up ?? []), ...pa.filter((c) => c.start.getTime() > depuis)].map((c) => c.id).slice(0, 60);
     if (ids.length) {
       apiFetch(`/api/prospect?ids=${ids.join(",")}`)
         .then((r) => (r.ok ? r.json() : null))
@@ -145,11 +146,11 @@ export default function App() {
 
   // Suivi après l'appel : mis à jour tout de suite à l'écran, puis enregistré
   // On envoie tout le suivi à chaque fois : deux taps rapides ne s'écrasent pas côté serveur.
-  const saveFiche = (id: number, patch: { venu?: string; resultat?: string; note?: string }) => {
-    const suivi = { ...fiches[id]?.suivi, ...patch } as NonNullable<Fiche["suivi"]>;
+  const saveFiche = (id: number, patch: Partial<Suivi>) => {
+    const suivi: Suivi = { ...fiches[id]?.suivi, ...patch };
     setFiches((f) => ({ ...f, [id]: { ...f[id], suivi } }));
     // Enregistrements à la file : le serveur lit puis réécrit la fiche, deux envois simultanés se perdraient
-    saveQueue.current = saveQueue.current.catch(() => {}).then(() => apiFetch("/api/prospect", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, venu: suivi.venu, resultat: suivi.resultat, note: suivi.note }) }))
+    saveQueue.current = saveQueue.current.catch(() => {}).then(() => apiFetch("/api/prospect", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, ...suivi, frein: suivi.frein ?? null, rappel: suivi.rappel ?? "" }) }))
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => d && setFiches((f) => ({ ...f, [id]: { ...f[id], suivi: d.suivi, historique: d.historique } })))
       .then(() => toast("Enregistré"))
@@ -176,10 +177,13 @@ export default function App() {
 
   return (
     <div className="shell">
+      {/* Fond « liquide » : 3 formes floues qui dérivent lentement (transform seulement, fluide sur iPhone) */}
+      <div className="liquid" aria-hidden="true"><i className="b1" /><i className="b2" /><i className="b3" /></div>
       <header className="top">
         <img className="icon" src="/icon-192.png" alt="Dring" />
         <span className="date">{date}</span>
       </header>
+      <main className="view" key={fiche ? `fiche-${fiche.id}` : tab}>
       {fiche ? (
         <FicheProspect
           call={fiche}
@@ -205,6 +209,7 @@ export default function App() {
           onEnableNotif={subscribe}
           onOpenPoint={() => go("point")}
           recents={past.filter((c) => c.start.getTime() > now - RECENTS_JOURS * 86_400_000)}
+          suivis={past.filter((c) => c.start.getTime() > now - SUIVI_JOURS * 86_400_000)}
           fiches={fiches}
           onOpenFiche={openFiche}
         />
@@ -212,6 +217,7 @@ export default function App() {
       {!fiche && tab === "point" && <Point markdown={point.markdown} updatedAt={point.updatedAt} suivi={suivi} now={now} />}
       {!fiche && tab === "vinted" && <Vinted toast={toast} />}
       {!fiche && tab === "liens" && <Liens toast={toast} />}
+      </main>
 
       {toastMsg && <div className="toast">{toastMsg}</div>}
 

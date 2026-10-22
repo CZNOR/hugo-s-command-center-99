@@ -1,4 +1,4 @@
-// Liens à envoyer pendant un appel, groupés par usage.
+// Liens à envoyer à un prospect ou un client, groupés par usage.
 // Paiements : liens GoCardless d'Hugo (reports/liens-paiement-gocardless.md).
 // Les liens « Marvin » du commercial sont volontairement absents.
 export interface Lien {
@@ -14,12 +14,28 @@ export interface Groupe {
 
 export const GROUPES: Groupe[] = [
   {
+    title: "Moi",
+    liens: [
+      { label: "Mon TikTok", detail: "lives presque tous les soirs", url: "https://www.tiktok.com/@hugo.bnls" },
+      { label: "Mon Instagram", detail: "@hugo.bnls", url: "https://www.instagram.com/hugo.bnls/" },
+      { label: "Tous mes liens", url: "https://hugo-bnls.fr/" },
+    ],
+  },
+  {
     title: "Académie",
     liens: [
       { label: "Réserver un appel", url: "https://cal.com/team/made-academie/appel-coaching-academie" },
       { label: "Page Académie", url: "https://hugo-bnls.fr/academie/" },
+      { label: "Résultats des élèves", detail: "contre « pas confiance »", url: "https://hugo-bnls.fr/academie/#resultats" },
+      { label: "Les offres", detail: "Académie et Coaching +", url: "https://hugo-bnls.fr/academie/#offres" },
+      { label: "Questions fréquentes", url: "https://hugo-bnls.fr/academie/#faq" },
       { label: "Voyage Canton (Chine)", url: "https://hugo-bnls.fr/academie/chine/" },
-      { label: "Espace élèves", url: "https://made-academie.vercel.app/login" },
+      { label: "Espace élèves", detail: "après paiement", url: "https://made-academie.vercel.app/login" },
+    ],
+  },
+  {
+    title: "Agence",
+    liens: [
       { label: "Agence MADE", url: "https://agencemade.com" },
     ],
   },

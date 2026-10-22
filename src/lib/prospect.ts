@@ -6,10 +6,46 @@ import { GROUPES } from "@/content/liens";
 
 export interface Fiche {
   source?: Record<string, string>;
-  suivi?: { venu?: "venu" | "absent"; resultat?: Resultat; note?: string; maj?: string };
-  historique?: { quand: string; venu: string | null; resultat: string | null }[];
+  suivi?: Suivi;
+  historique?: { quand: string; venu: string | null; resultat: string | null; produit?: string | null }[];
 }
 export type Resultat = "interesse" | "relancer" | "pas-interesse" | "signe";
+export type Produit = "academie" | "coaching" | "suivi";
+export type Modalite = "1fois" | "3fois" | "echeances";
+export type Frein = "prix" | "temps" | "entourage" | "reflechir" | "moment" | "confiance" | "autre";
+
+// Ce qu'Hugo note après l'appel ; les messages proposés en découlent
+export interface Suivi {
+  venu?: "venu" | "absent";
+  resultat?: Resultat;
+  produit?: Produit;
+  modalite?: Modalite;
+  frein?: Frein;
+  rappel?: string;     // AAAA-MM-JJ : « le rappeler le… »
+  note?: string;
+  envoyes?: string[];  // identifiants des messages déjà envoyés
+  maj?: string;
+}
+
+export const PRODUITS: { id: Produit; label: string }[] = [
+  { id: "academie", label: "Académie" },
+  { id: "coaching", label: "Coaching +" },
+  { id: "suivi", label: "Académie + suivi" },
+];
+export const MODALITES: { id: Modalite; label: string }[] = [
+  { id: "1fois", label: "En 1 fois" },
+  { id: "3fois", label: "En 3 fois" },
+  { id: "echeances", label: "Échéances" },
+];
+export const FREINS: { id: Frein; label: string }[] = [
+  { id: "prix", label: "Le prix" },
+  { id: "temps", label: "Le temps" },
+  { id: "entourage", label: "En parler à un proche" },
+  { id: "reflechir", label: "Veut réfléchir" },
+  { id: "moment", label: "Pas le bon moment" },
+  { id: "confiance", label: "Pas encore confiance" },
+  { id: "autre", label: "Autre" },
+];
 
 export const RESULTATS: { id: Resultat; label: string }[] = [
   { id: "interesse", label: "Intéressé" },
@@ -117,13 +153,6 @@ export function messageConfirmation(c: Call): string {
   return `Salut ${prenom(c)} ! C'est Hugo, je confirme notre appel ${quand} ? Réponds juste « ok » 🙏`;
 }
 
-export function relances(c: Call, o: Offre | null): { j1: string; j3: string } {
-  const lien = o?.liens[0]?.url;
-  return {
-    j1: `Salut ${prenom(c)}, merci pour l'appel d'hier !${lien ? ` Comme promis, le lien pour ${o!.nom} : ${lien}` : ""} Dis-moi si tu as des questions 🙂`,
-    j3: `Hello ${prenom(c)}, tu as pu y réfléchir ? Je garde ta place jusqu'à la fin de la semaine.`,
-  };
-}
 
 // Source lisible : « TikTok · bio » à partir des utm_*
 export function sourceLisible(src?: Record<string, string>): string | null {

@@ -3,6 +3,7 @@ import { todayRows } from "@/lib/markdown";
 import { IcBell, IcPhone, IcVideo } from "@/components/Icons";
 import type { PushStatus } from "@/lib/usePushSubscription";
 import { alertes, RESULTATS, type Fiche } from "@/lib/prospect";
+import { etatMessage, prochain, quandLisible } from "@/lib/messages";
 
 // Bandeau visible tant que cet appareil n'a pas d'abonnement enregistré côté serveur
 const NOTIF_TEXT: Partial<Record<PushStatus, string>> = {
@@ -23,6 +24,7 @@ interface Props {
   onEnableNotif: () => void;
   onOpenPoint: () => void;
   recents: Call[];
+  suivis: Call[];        // appels des 45 derniers jours, pour les messages à envoyer
   fiches: Record<number, Fiche>;
   onOpenFiche: (id: number) => void;
 }
@@ -34,8 +36,16 @@ function etat(f?: Fiche): string {
   return r ?? (f.suivi.venu === "absent" ? "Pas venu" : f.suivi.venu === "venu" ? "Venu" : "À noter");
 }
 
-export default function Appels({ calls, error, point, now, pushStatus, pushError, onEnableNotif, onOpenPoint, recents, fiches, onOpenFiche }: Props) {
+export default function Appels({ calls, error, point, now, pushStatus, pushError, onEnableNotif, onOpenPoint, recents, suivis, fiches, onOpenFiche }: Props) {
   const [next, ...rest] = calls ?? [];
+  // Messages de suivi dus aujourd'hui (ou en retard), du plus ancien au plus récent
+  const aEnvoyer = suivis.flatMap((c) => {
+    const su = fiches[c.id]?.suivi;
+    const m = su ? prochain(c, su) : null;
+    if (!m || !su) return [];
+    const e = etatMessage(m, su, now);
+    return e === "retard" || e === "aujourdhui" ? [{ c, m, e }] : [];
+  }).sort((a, b) => a.m.quand.getTime() - b.m.quand.getTime());
   const today = todayRows(point);
 
   return (
@@ -48,6 +58,21 @@ export default function Appels({ calls, error, point, now, pushStatus, pushError
             <button className="btn small" onClick={onEnableNotif}>{pushStatus === "error" ? "Réessayer" : "Activer"}</button>
           )}
         </div>
+      )}
+
+      {aEnvoyer.length > 0 && (
+        <>
+          <h2 className="sh">À envoyer aujourd'hui <b className="count">{aEnvoyer.length}</b></h2>
+          <div className="group">
+            {aEnvoyer.map(({ c, m, e }) => (
+              <button key={c.id + m.id} className="item row" onClick={() => onOpenFiche(c.id)}>
+                <div className="n"><b>{c.name}</b><span>{m.titre}</span></div>
+                <span className={`etat ${e === "retard" ? "todo" : ""}`}>{e === "retard" ? "En retard" : quandLisible(m.quand, now).replace("Aujourd'hui ", "")}</span>
+                <span className="chev">›</span>
+              </button>
+            ))}
+          </div>
+        </>
       )}
 
       <h2 className="sh">Prochain appel{next && <span>{fmtCountdown(next.start, now)}</span>}</h2>

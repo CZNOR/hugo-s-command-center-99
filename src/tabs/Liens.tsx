@@ -11,7 +11,7 @@ export default function Liens({ toast }: { toast: (msg: string) => void }) {
             {g.liens.map((l) => (
               <div key={l.url} className="item row">
                 <a className="n" href={l.url} target="_blank" rel="noreferrer">
-                  <b>{l.label}{l.detail && <em className="amount"> · {l.detail}</em>}</b>
+                  <b>{l.label}{l.detail && <em className={g.title.startsWith("Paiement") ? "amount" : "detail"}> · {l.detail}</em>}</b>
                   <span>{l.url.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span>
                 </a>
                 <CopyButton text={l.url} onCopied={() => toast("Lien copié")} />
