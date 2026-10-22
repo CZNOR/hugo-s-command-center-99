@@ -27,7 +27,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           title: "✅ Test des notifs d'appels",
           body:  "Si tu lis ça, les notifs marchent toujours.",
           tag:   "cal-test",
-          url:   "/coaching/leads",
+          url:   "/",
         })
       );
       sent++;

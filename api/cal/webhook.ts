@@ -124,7 +124,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       title,
       body: `${dateStr} à ${timeStr}${tags ? ` · ${tags}` : ""}`,
       tag:  `cal-hook-${p.uid ?? p.bookingId ?? start.getTime()}`,
-      url:  "/coaching/leads",
+      url:  "/",
     });
 
     // Marque le call comme déjà notifié pour que le cron api/push/notify.ts

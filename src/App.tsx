@@ -1,97 +1,120 @@
-import { lazy, Suspense } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import AppLayout from "@/components/layout/AppLayout";
+import { useCallback, useEffect, useState } from "react";
+import { apiFetch, hasCode, NEED_CODE_EVENT } from "@/lib/api";
+import { fetchUpcomingCalls, TZ, type Call } from "@/lib/cal";
+import { usePushSubscription } from "@/lib/usePushSubscription";
+import AccessGate from "@/components/AccessGate";
+import { IcCalendar, IcCopy, IcLink, IcSun } from "@/components/Icons";
+import Appels from "@/tabs/Appels";
+import Point from "@/tabs/Point";
+import Vinted from "@/tabs/Vinted";
+import Liens from "@/tabs/Liens";
 
-// Eagerly loaded (home + high-traffic)
-import DashboardPage from "@/pages/DashboardPage";
-import CommandCenter from "@/pages/CommandCenter";
-import TasksPage from "@/pages/TasksPage";
-import AgendaPage from "@/pages/AgendaPage";
+type Tab = "appels" | "point" | "vinted" | "liens";
+const TABS: { id: Tab; label: string; Icon: () => JSX.Element }[] = [
+  { id: "appels", label: "Appels", Icon: IcCalendar },
+  { id: "point",  label: "Point",  Icon: IcSun },
+  { id: "vinted", label: "Vinted", Icon: IcCopy },
+  { id: "liens",  label: "Liens",  Icon: IcLink },
+];
+const tabFromHash = (): Tab => {
+  const h = window.location.hash.slice(1) as Tab;
+  return TABS.some((t) => t.id === h) ? h : "appels";
+};
+const REFRESH_MS = 60_000;
 
-// Lazy-loaded (split per route)
-const AgentsPage        = lazy(() => import("@/pages/AgentsPage"));
-const BusinessPage      = lazy(() => import("@/pages/BusinessPage"));
-const TeamPage          = lazy(() => import("@/pages/TeamPage"));
-const GoalsPage         = lazy(() => import("@/pages/GoalsPage"));
-const GamificationPage  = lazy(() => import("@/pages/GamificationPage"));
-const VentesPage        = lazy(() => import("@/pages/VentesPage"));
-const FinancesPage      = lazy(() => import("@/pages/FinancesPage"));
-const CoachingDashboard = lazy(() => import("@/pages/CoachingDashboard"));
-const SocialPage        = lazy(() => import("@/pages/SocialPage"));
-const BeaconsPage       = lazy(() => import("@/pages/BeaconsPage"));
-const LeadsPage         = lazy(() => import("@/pages/LeadsPage"));
-const PaiementsPage     = lazy(() => import("@/pages/PaiementsPage"));
-const ClientsPage       = lazy(() => import("@/pages/ClientsPage"));
-const AgencePage        = lazy(() => import("@/pages/AgencePage"));
-const EquipePage        = lazy(() => import("@/pages/EquipePage"));
-const CasinoDashboard   = lazy(() => import("@/pages/CasinoDashboard"));
-const CasinoSocialPage  = lazy(() => import("@/pages/CasinoSocialPage"));
-// /casino/depots and /casino/revshare now render CasinoDashboard (it detects the tab from the URL)
-const SettingsPage      = lazy(() => import("@/pages/SettingsPage"));
-const NotFound          = lazy(() => import("./pages/NotFound.tsx"));
+export default function App() {
+  const [locked, setLocked] = useState(!hasCode());
+  const [tab, setTab] = useState<Tab>(tabFromHash);
+  const [calls, setCalls] = useState<Call[] | null>(null);
+  const [callsErr, setCallsErr] = useState("");
+  const [point, setPoint] = useState<{ markdown: string; updatedAt: string | null }>({ markdown: "", updatedAt: null });
+  const [now, setNow] = useState(Date.now());
+  const [toastMsg, setToastMsg] = useState("");
+  const { permission, subscribe } = usePushSubscription();
 
-const queryClient = new QueryClient();
+  // Un appel refusé (401) ramène à l'écran de code
+  useEffect(() => {
+    const lock = () => setLocked(true);
+    window.addEventListener(NEED_CODE_EVENT, lock);
+    return () => window.removeEventListener(NEED_CODE_EVENT, lock);
+  }, []);
 
-const RouteFallback = () => (
-  <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-    <div style={{
-      width: 28, height: 28, borderRadius: "50%",
-      border: "2px solid rgba(255,255,255,0.1)", borderTopColor: "#a855f7",
-      animation: "spin 0.8s linear infinite",
-    }} />
-    <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-  </div>
-);
+  useEffect(() => {
+    const onHash = () => setTab(tabFromHash());
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Suspense fallback={<RouteFallback />}>
-          <Routes>
-            <Route element={<AppLayout />}>
-              <Route path="/" element={<Navigate to="/command-center" replace />} />
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/command-center" element={<CommandCenter />} />
-              <Route path="/agents" element={<AgentsPage />} />
-              <Route path="/business" element={<BusinessPage />} />
-              <Route path="/tasks" element={<TasksPage />} />
-              <Route path="/agenda" element={<AgendaPage />} />
-              <Route path="/team" element={<TeamPage />} />
-              <Route path="/goals" element={<GoalsPage />} />
-              <Route path="/gamification" element={<GamificationPage />} />
-              <Route path="/ventes" element={<VentesPage />} />
-              <Route path="/finances" element={<FinancesPage />} />
-              {/* Coaching */}
-              <Route path="/coaching" element={<CoachingDashboard />} />
-              <Route path="/coaching/social" element={<SocialPage />} />
-              <Route path="/coaching/beacons" element={<BeaconsPage />} />
-              <Route path="/coaching/leads" element={<LeadsPage />} />
-              <Route path="/coaching/clients" element={<ClientsPage />} />
-              <Route path="/coaching/agence" element={<AgencePage />} />
-              <Route path="/coaching/paiements" element={<PaiementsPage />} />
-              <Route path="/coaching/equipe" element={<EquipePage />} />
-              {/* Casino */}
-              <Route path="/casino" element={<CasinoDashboard />} />
-              <Route path="/casino/social" element={<CasinoSocialPage />} />
-              <Route path="/casino/depots" element={<CasinoDashboard />} />
-              <Route path="/casino/revshare" element={<CasinoDashboard />} />
-              {/* Settings */}
-              <Route path="/settings" element={<SettingsPage />} />
-            </Route>
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Suspense>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+  const load = useCallback(async () => {
+    setNow(Date.now());
+    fetchUpcomingCalls()
+      .then((c) => { setCalls(c); setCallsErr(""); })
+      .catch((e) => setCallsErr(String(e.message ?? e)));
+    apiFetch("/api/point")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((p) => p && setPoint(p))
+      .catch(() => {});
+  }, []);
 
-export default App;
-// deploy bump 1776875778
+  // Chargement, puis rafraîchissement chaque minute et au retour dans l'app
+  useEffect(() => {
+    if (locked) return;
+    load();
+    const id = setInterval(load, REFRESH_MS);
+    const onVisible = () => document.visibilityState === "visible" && load();
+    document.addEventListener("visibilitychange", onVisible);
+    return () => { clearInterval(id); document.removeEventListener("visibilitychange", onVisible); };
+  }, [locked, load]);
+
+  const go = (t: Tab) => {
+    window.location.hash = t === "appels" ? "" : t;
+    setTab(t);
+    window.scrollTo(0, 0);
+  };
+
+  const toast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(""), 1400);
+  };
+
+  if (locked) return <AccessGate onDone={() => { setLocked(false); window.location.reload(); }} />;
+
+  const date = new Date(now).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short", timeZone: TZ });
+
+  return (
+    <div className="shell">
+      <header className="top">
+        <div className="brand">
+          <img className="icon" src="/icon-192.png" alt="" />
+          <img className="word" src="/dring-wordmark.png" alt="Dring" />
+        </div>
+        <span className="date">{date}</span>
+      </header>
+
+      {tab === "appels" && (
+        <Appels
+          calls={calls}
+          error={callsErr}
+          point={point.markdown}
+          now={now}
+          notifOn={permission === "granted" || !("Notification" in window)}
+          onEnableNotif={subscribe}
+          onOpenPoint={() => go("point")}
+        />
+      )}
+      {tab === "point" && <Point markdown={point.markdown} updatedAt={point.updatedAt} />}
+      {tab === "vinted" && <Vinted toast={toast} />}
+      {tab === "liens" && <Liens toast={toast} />}
+
+      {toastMsg && <div className="toast">{toastMsg}</div>}
+
+      <nav className="nav">
+        {TABS.map(({ id, label, Icon }) => (
+          <button key={id} className={tab === id ? "on" : ""} onClick={() => go(id)}>
+            <Icon />{label}
+          </button>
+        ))}
+      </nav>
+    </div>
+  );
+}

@@ -1,5 +1,4 @@
-// ── CZN Service Worker — Push Notifications ──────────────────────────────────
-const CACHE_NAME = "czn-v1";
+// ── Dring Service Worker — notifications d'appels ───────────────────────────
 
 // Installation
 self.addEventListener("install", (e) => {
@@ -12,16 +11,16 @@ self.addEventListener("activate", (e) => {
 
 // ── Push reçu depuis le serveur ──────────────────────────────────────────────
 self.addEventListener("push", (e) => {
-  let data = { title: "CZN", body: "Rappel de tâche", url: "/tasks" };
+  let data = { title: "Dring", body: "Nouvel appel", url: "/" };
   try {
     if (e.data) data = { ...data, ...e.data.json() };
   } catch {}
 
   const options = {
     body:    data.body,
-    icon:    "/czn-logo.png",
-    badge:   "/czn-logo.png",
-    tag:     data.tag || "czn-notif",
+    icon:    "/icon-192.png",
+    badge:   "/icon-192.png",
+    tag:     data.tag || "dring-notif",
     data:    { url: data.url || "/" },
     vibrate: [200, 100, 200],
     requireInteraction: false,

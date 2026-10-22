@@ -108,7 +108,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           title: `⏰ Dans 5 min — ${task.title}`,
           body:  `${task.time ? `à ${task.time}` : "aujourd'hui"} · ${task.business}`,
           tag:   `5min-${task.id}`,
-          url:   "/tasks",
+          url:   "/",
         });
       }
       if (diffMs < 0 && diffMs > -180_000) {
@@ -116,7 +116,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           title: `🔴 En retard — ${task.title}`,
           body:  task.time ? `Prévu à ${task.time}` : "Prévu aujourd'hui",
           tag:   `late-${task.id}`,
-          url:   "/tasks",
+          url:   "/",
         });
       }
     }
@@ -165,7 +165,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             title: `📞 Nouveau call — ${attendee?.name ?? "Inconnu"}`,
             body:  `${dateStr} à ${timeStr}${tags ? ` · ${tags}` : ""}`,
             tag:   `cal-${b.id}`,
-            url:   "/coaching/leads",
+            url:   "/",
           });
           totalSent += sent;
           calDecisions.push({ id: b.id, notified: sent, attendee: attendee?.name, start: b.start });
@@ -219,7 +219,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             title: `⏰ Dans 5 min — Call ${attendee?.name ?? "Cal.com"}`,
             body:  `Rendez-vous à ${timeStr}`,
             tag:   `cal-remind-${b.id}`,
-            url:   "/coaching/leads",
+            url:   "/",
           });
           newlyReminded.push(key);
         }
@@ -239,7 +239,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             title: `⏰ Dans 5 min — ${mc.clientName}`,
             body:  `${mc.time} · ${mc.business}${mc.notes ? ` · ${String(mc.notes).slice(0, 60)}` : ""}`,
             tag:   `mc-remind-${mc.id}`,
-            url:   "/agenda",
+            url:   "/",
           });
           newlyReminded.push(key);
         }
