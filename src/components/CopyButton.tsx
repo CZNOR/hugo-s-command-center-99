@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { IcCheck, IcCopy } from "./Icons";
 
 export async function copyText(text: string): Promise<boolean> {
   try {
@@ -19,14 +18,14 @@ export async function copyText(text: string): Promise<boolean> {
   }
 }
 
-// Petit carré « copier » qui passe en lavande avec une coche pendant 1,5 s
-export default function CopyButton({ text, onCopied }: { text: string; onCopied?: () => void }) {
+// Bouton texte « Copier » qui devient « Copié » pendant 1,5 s
+export default function CopyButton({ text, onCopied, label = "Copier" }: { text: string; onCopied?: () => void; label?: string }) {
   const [done, setDone] = useState(false);
   return (
     <button
       className={`copy${done ? " done" : ""}`}
-      aria-label="Copier"
-      onClick={async () => {
+      onClick={async (e) => {
+        e.stopPropagation();
         if (await copyText(text)) {
           setDone(true);
           onCopied?.();
@@ -34,7 +33,7 @@ export default function CopyButton({ text, onCopied }: { text: string; onCopied?
         }
       }}
     >
-      {done ? <IcCheck /> : <IcCopy />}
+      {done ? "Copié" : label}
     </button>
   );
 }

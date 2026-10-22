@@ -23,12 +23,11 @@ export default function Suivi({ data, now }: { data: SuiviData; now: number }) {
     <>
       {!!data.attente?.length && (
         <>
-          <h2 className="sh">À toi de jouer <b className="count">{data.attente.length}</b></h2>
-          <div className="group">
+          <h2 className="sec">À toi de jouer<span>{data.attente.length}</span></h2>
+          <div className="list">
             {data.attente.map((a, i) => (
-              <div key={i} className="item">
-                <span className="chip">{a.qui}</span>
-                <p className="item-text">{a.quoi}</p>
+              <div key={i} className="li">
+                <span className="li-main"><span className="li-sub">{a.qui}</span><span className="li-title wrap">{a.quoi}</span></span>
               </div>
             ))}
           </div>
@@ -37,17 +36,15 @@ export default function Suivi({ data, now }: { data: SuiviData; now: number }) {
 
       {actives.length > 0 && (
         <>
-          <h2 className="sh">En cours{ageMin > 5 && <span>Mac hors ligne depuis {ageMin} min</span>}</h2>
-          <div className="group">
+          <h2 className="sec">En cours{ageMin > 5 && <span>Mac hors ligne depuis {ageMin} min</span>}</h2>
+          <div className="list">
             {actives.map((s, i) => (
-              <div key={i} className="item">
-                <div className="item-head">
-                  <b>{s.nom}</b>
-                  {s.statut === "attend"
-                    ? <span className="tag-amber">t'attend</span>
-                    : <span className="muted">{s.reste_min ? `~${s.reste_min} min` : "en cours"}</span>}
+              <div key={i} className="li stack">
+                <div className="li-row">
+                  <span className="li-title">{s.nom}</span>
+                  <span className={`li-side ${s.statut === "attend" ? "todo" : ""}`}>{s.statut === "attend" ? "t'attend" : s.reste_min ? `~${s.reste_min} min` : "en cours"}</span>
                 </div>
-                {s.etape && <p className="item-sub">{s.etape}</p>}
+                {s.etape && <span className="li-sub">{s.etape}</span>}
                 {s.pct != null && <Bar pct={s.pct} />}
               </div>
             ))}
@@ -57,21 +54,18 @@ export default function Suivi({ data, now }: { data: SuiviData; now: number }) {
 
       {!!data.projets?.length && (
         <>
-          <h2 className="sh">Projets</h2>
-          {data.projets.map((p, i) => (
-            <div key={i} className="group project">
-              <div className="item-head">
-                <b>{p.nom}</b>
-                <span className="pill">{p.faites}/{p.total}</span>
+          <h2 className="sec">Projets</h2>
+          <div className="list">
+            {data.projets.map((p, i) => (
+              <div key={i} className="li stack">
+                <div className="li-row"><span className="li-title">{p.nom}</span><span className="li-side">{p.faites}/{p.total}</span></div>
+                <Bar pct={p.total ? (100 * p.faites) / p.total : 0} />
+                {p.objectif && <span className="li-sub">Objectif : {p.objectif}</span>}
+                {(p.prochaine || p.etape) && <span className="li-text">Ensuite : {p.prochaine || p.etape}</span>}
+                {p.attend_hugo && <span className="li-text todo">Pour toi : {p.attend_hugo}</span>}
               </div>
-              <Bar pct={p.total ? (100 * p.faites) / p.total : 0} />
-              {p.objectif && <p className="item-sub clamp2">🎯 {p.objectif}</p>}
-              {(p.prochaine || p.etape) && (
-                <p className="next"><span>Ensuite</span>{p.prochaine || p.etape}</p>
-              )}
-              {p.attend_hugo && <p className="wait">👉 {p.attend_hugo}</p>}
-            </div>
-          ))}
+            ))}
+          </div>
         </>
       )}
     </>

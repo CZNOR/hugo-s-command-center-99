@@ -19,13 +19,8 @@ const TABS: { id: Tab; label: string; Icon: () => JSX.Element }[] = [
   { id: "vinted", label: "Vinted", Icon: IcCopy },
   { id: "liens",  label: "Liens",  Icon: IcLink },
 ];
-// Grand titre de chaque onglet : [blanc, lavande]
-const TITLES: Record<Tab, [string, string]> = {
-  appels: ["Mes", "appels"],
-  point:  ["Point du", "jour"],
-  vinted: ["Textes", "Vinted"],
-  liens:  ["Mes", "liens"],
-};
+// Grand titre de chaque onglet
+const TITLES: Record<Tab, string> = { appels: "Appels", point: "Point du jour", vinted: "Vinted", liens: "Liens" };
 const tabFromHash = (): Tab => {
   const h = window.location.hash.slice(1) as Tab;
   return TABS.some((t) => t.id === h) ? h : "appels";
@@ -177,10 +172,6 @@ export default function App() {
 
   return (
     <div className="shell">
-      <header className="top">
-        <img className="icon" src="/icon-192.png" alt="Dring" />
-        <span className="date">{date}</span>
-      </header>
       <main className="view" key={fiche ? `fiche-${fiche.id}` : tab}>
       {fiche ? (
         <FicheProspect
@@ -194,7 +185,12 @@ export default function App() {
           onSave={(patch) => saveFiche(fiche.id, patch)}
           toast={toast}
         />
-      ) : <h1 className="title">{TITLES[tab][0]} <em>{TITLES[tab][1]}</em></h1>}
+      ) : (
+        <header className="head">
+          <p className="eyebrow">{date}</p>
+          <h1 className="title">{TITLES[tab]}</h1>
+        </header>
+      )}
 
       {!fiche && tab === "appels" && (
         <Appels

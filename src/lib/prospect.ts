@@ -23,6 +23,7 @@ export interface Suivi {
   frein?: Frein;
   rappel?: string;     // AAAA-MM-JJ : « le rappeler le… »
   note?: string;
+  noteLe?: string;     // quand la note a été écrite (posé par le serveur) : base des « demain »
   envoyes?: string[];  // identifiants des messages déjà envoyés
   maj?: string;
 }

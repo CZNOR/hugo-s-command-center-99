@@ -14,10 +14,10 @@ export default function Point({ markdown, updatedAt, suivi, now }: Props) {
     <>
       <Suivi data={suivi} now={now} />
 
-      <h2 className="sh">Le point complet{when && <span>{when}</span>}</h2>
-      {!sections.length && <div className="group"><p className="item empty">Pas encore de point aujourd'hui.</p></div>}
+      <h2 className="sec">Le point complet{when && <span>{when}</span>}</h2>
+      {!sections.length && <p className="empty">Pas encore de point aujourd'hui.</p>}
       {sections.length > 0 && (
-        <div className="group">
+        <div className="list">
           {sections.map((s, i) => (
             <details key={s.title} className="acc" open={i === 0}>
               <summary>{s.title}</summary>

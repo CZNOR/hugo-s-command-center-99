@@ -4,9 +4,8 @@ import {
   alertes, duree, FREINS, messageConfirmation, MODALITES, offre, pageLisible, PRODUITS, provenanceLisible,
   questions, RESULTATS, sourceLisible, visiteDe, type Fiche, type Suivi, type Visite,
 } from "@/lib/prospect";
-import { etatMessage, lireNote, plan, quandLisible, suiviEffectif } from "@/lib/messages";
-import CopyButton, { copyText } from "@/components/CopyButton";
-import { IcPhone, IcVideo } from "@/components/Icons";
+import { etatMessage, lienSiOui, lireNote, plan, quandLisible, suiviEffectif } from "@/lib/messages";
+import CopyButton from "@/components/CopyButton";
 
 interface Props {
   call: Call;
@@ -63,204 +62,218 @@ export default function FicheProspect({ call: c, autres, annulees, visites, fich
   };
   const reserve = c.createdAt?.toLocaleString("fr-FR", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: TZ });
 
+  // Liste à coche, comme dans Réglages (un tap coche, un 2e tap décoche si « optionnel »)
+  const Coches = <T extends string>({ items, choisi, deduit: lu, onPick, optionnel }: {
+    items: { id: T; label: string }[]; choisi?: T; deduit?: T; onPick: (id: T | undefined) => void; optionnel?: boolean;
+  }) => (
+    <div className="list">
+      {items.map((x) => {
+        const on = choisi === x.id, propose = !choisi && lu === x.id;
+        return (
+          <button key={x.id} className="li check" onClick={() => onPick(on && optionnel ? undefined : x.id)}>
+            <span className="li-title">{x.label}{propose && <span className="hint-inline"> · lu dans ta note</span>}</span>
+            <span className={`tick ${on ? "on" : propose ? "maybe" : ""}`} aria-hidden="true">{on || propose ? "✓" : ""}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  const Segment = <T extends string>({ items, choisi, onPick }: { items: { id: T; label: string }[]; choisi?: T; onPick: (id: T) => void }) => (
+    <div className="segmented">
+      {items.map((x) => (
+        <button key={x.id} className={choisi === x.id ? "on" : ""} onClick={() => onPick(x.id)}>{x.label}</button>
+      ))}
+    </div>
+  );
+
+  const siOui = lienSiOui(deduit, c);
+  const modaliteChoisie = su.modalite ?? deduit.modalite ?? (produit === "suivi" ? "echeances" : "1fois");
+
   return (
     <>
-      <button className="back" onClick={onBack}>‹ Appels</button>
-      <h1 className="title fiche-name">{c.name}</h1>
-      <p className="fiche-when">{fmtDay(c.start)} · {fmtTime(c.start)}{reserve && ` · réservé ${reserve}`}</p>
-      <div className="badges">
-        <span className="badge lav">{precedents.length ? `${precedents.length + 1}e appel` : "1er appel"}</span>
-        {(visite || src) && <span className="badge green">{visite ? provenanceLisible(visite) : src!.split(" · ")[0]}</span>}
-        {al.length > 0 && <span className="badge amber">À confirmer</span>}
-      </div>
+      <button className="back" onClick={onBack}>Appels</button>
+      <h1 className="title">{c.name}</h1>
+      <p className="subtitle">
+        {fmtDay(c.start)} · {fmtTime(c.start)}{reserve && ` · réservé ${reserve}`}
+        <br />
+        {precedents.length ? `${precedents.length + 1}e appel` : "1er appel"}
+        {(visite || src) && ` · vient de ${visite ? provenanceLisible(visite) : src!.split(" · ")[0]}`}
+        {al.length > 0 && <span className="todo"> · à confirmer</span>}
+      </p>
 
       {!passe && (c.meetingUrl || c.phone) && (
-        <div className="btns">
-          {c.meetingUrl && <a className="btn" href={c.meetingUrl} target="_blank" rel="noreferrer"><IcVideo />Rejoindre</a>}
-          {c.phone && <a className="btn ghost-dark" href={`tel:${c.phone}`}><IcPhone />Appeler</a>}
+        <div className="list actions">
+          {c.meetingUrl && <a className="li action" href={c.meetingUrl} target="_blank" rel="noreferrer">Rejoindre la visio<span className="chev" aria-hidden="true" /></a>}
+          {c.phone && <a className="li action" href={`tel:${c.phone}`}>Appeler {c.phone}<span className="chev" aria-hidden="true" /></a>}
         </div>
       )}
 
       {passe && (
-        <section className="apres">
-          <h2 className="sh">Il est venu ?</h2>
-          <div className="choices">
-            {[["venu", "Venu"], ["absent", "Pas venu"]].map(([id, label]) => (
-              <button key={id} className={su.venu === id ? "on" : ""} onClick={() => onSave({ venu: id as Suivi["venu"] })}>{label}</button>
-            ))}
-          </div>
+        <>
+          <h2 className="sec">Il est venu ?</h2>
+          <Segment items={[{ id: "venu", label: "Venu" }, { id: "absent", label: "Pas venu" }]} choisi={su.venu} onPick={(id) => onSave({ venu: id as Suivi["venu"] })} />
 
           {su.venu === "venu" && (
             <>
-              <h2 className="sh">Résultat</h2>
-              <div className="choices">
-                {RESULTATS.map((r) => (
-                  <button key={r.id} className={su.resultat === r.id ? "on" : ""} onClick={() => onSave({ resultat: r.id })}>{r.label}</button>
-                ))}
-              </div>
+              <h2 className="sec">Résultat</h2>
+              <Coches items={RESULTATS} choisi={su.resultat} onPick={(id) => onSave({ resultat: id })} />
             </>
           )}
 
           {su.venu === "venu" && avecProduit && (
             <>
-              <h2 className="sh">Pour quel produit{!su.produit && <span>{deduit.produit ? "lu dans ta note" : `conseillé : ${PRODUITS.find((x) => x.id === produitConseille)?.label}`}</span>}</h2>
-              <div className="choices">
-                {PRODUITS.map((x) => (
-                  <button key={x.id} className={produit === x.id ? (su.produit ? "on" : "on soft") : ""}
-                    onClick={() => onSave({ produit: x.id, modalite: x.id === "suivi" ? "echeances" : su.modalite === "echeances" ? "1fois" : su.modalite })}>{x.label}</button>
-                ))}
-              </div>
-              <h2 className="sh">Paiement</h2>
-              <div className="choices">
-                {MODALITES.filter((m) => (produit === "suivi") === (m.id === "echeances")).map((m) => (
-                  <button key={m.id} className={(su.modalite ?? deduit.modalite ?? (produit === "suivi" ? "echeances" : "1fois")) === m.id ? (su.modalite ? "on" : "on soft") : ""} onClick={() => onSave({ modalite: m.id })}>{m.label}</button>
-                ))}
-              </div>
+              <h2 className="sec">Produit</h2>
+              <Coches items={PRODUITS} choisi={su.produit} deduit={deduit.produit ?? produitConseille}
+                onPick={(id) => id && onSave({ produit: id, modalite: id === "suivi" ? "echeances" : su.modalite === "echeances" ? "1fois" : su.modalite })} />
+              {produit !== "suivi" && (
+                <>
+                  <h2 className="sec">Paiement</h2>
+                  <Segment items={MODALITES.filter((m) => m.id !== "echeances")} choisi={modaliteChoisie} onPick={(id) => onSave({ modalite: id })} />
+                </>
+              )}
             </>
           )}
 
           {su.venu === "venu" && avecFrein && (
             <>
-              <h2 className="sh">Ce qui le bloque</h2>
-              <div className="choices">
-                {FREINS.map((f) => (
-                  <button key={f.id} className={su.frein === f.id ? "on" : !su.frein && deduit.frein === f.id ? "on soft" : ""} onClick={() => onSave({ frein: su.frein === f.id ? undefined : f.id })}>{f.label}</button>
-                ))}
-              </div>
+              <h2 className="sec">Ce qui le bloque</h2>
+              <Coches items={FREINS} choisi={su.frein} deduit={deduit.frein} optionnel onPick={(id) => onSave({ frein: id })} />
             </>
           )}
 
           {su.venu === "venu" && (su.resultat === "relancer" || su.resultat === "interesse") && (
             <>
-              <h2 className="sh">Le recontacter le{su.rappel && <button className="link-btn" onClick={() => onSave({ rappel: undefined })}>effacer</button>}</h2>
-              <input className="date-input" type="date" value={su.rappel ?? deduit.rappel ?? ""} onChange={(e) => onSave({ rappel: e.target.value || undefined })} />
+              <h2 className="sec">Le recontacter le{(su.rappel || deduit.rappel) && <button className="sec-link" onClick={() => onSave({ rappel: undefined })}>Effacer</button>}</h2>
+              <input className="field" type="date" value={su.rappel ?? deduit.rappel ?? ""} onChange={(e) => onSave({ rappel: e.target.value || undefined })} />
             </>
           )}
 
-          <h2 className="sh">Note</h2>
+          <h2 className="sec">Note</h2>
           <textarea
-            className="note"
+            className="field note"
             value={note}
-            placeholder="Ce qu'il a dit, ce qui bloque, « rappeler jeudi »… Je lis ta note pour adapter les messages."
+            placeholder="Ce qu'il a dit, ce qui bloque, « rappeler jeudi »…"
             onChange={(e) => setNote(e.target.value)}
             onBlur={finNote}
           />
 
           {pl ? (
             <>
-              <h2 className="sh">Tes 3 messages</h2>
-              <p className="plan-resume">{pl.resume}</p>
-              <div className="msgs">
+              <h2 className="sec">Messages à envoyer</h2>
+              <p className="explain">{pl.resume}</p>
+              <div className="list">
                 {pl.messages.map((m, i) => {
                   const etat = etatMessage(m, su, now);
                   return (
-                    <div key={m.id} className={`msg-card ${etat}`}>
-                      <div className="msg-head">
-                        <span className="msg-num">{i + 1}</span>
-                        <div className="msg-meta"><b>{m.titre}</b><span>{quandLisible(m.quand, now)}</span></div>
-                        <span className={`msg-etat ${etat}`}>{etat === "envoye" ? "Envoyé" : etat === "retard" ? "En retard" : etat === "aujourdhui" ? "Aujourd'hui" : "Plus tard"}</span>
+                    <div key={m.id} className={`li message ${etat}`}>
+                      <div className="message-top">
+                        <span>{i + 1}. {m.titre}</span>
+                        <span className={etat === "retard" ? "late" : etat === "aujourdhui" ? "todo" : etat === "envoye" ? "done" : ""}>
+                          {etat === "envoye" ? "Envoyé" : etat === "retard" ? `En retard · ${quandLisible(m.quand, now)}` : quandLisible(m.quand, now)}
+                        </span>
                       </div>
-                      <p className="msg">{m.texte}</p>
-                      <div className="msg-actions">
-                        <button className="btn small" onClick={async () => { if (await copyText(m.texte)) toast("Message copié"); }}>Copier</button>
-                        <button className={`btn small ghost-dark ${etat === "envoye" ? "done" : ""}`} onClick={() => basculerEnvoye(m.id)}>{etat === "envoye" ? "✓ Envoyé" : "Marquer envoyé"}</button>
+                      <p className="message-text">{m.texte}</p>
+                      <div className="message-actions">
+                        <CopyButton text={m.texte} onCopied={() => toast("Message copié")} />
+                        <button className="textbtn" onClick={() => basculerEnvoye(m.id)}>{etat === "envoye" ? "Annuler « envoyé »" : "Marquer envoyé"}</button>
                       </div>
                     </div>
                   );
                 })}
               </div>
+              {su.venu === "venu" && (su.resultat === "interesse" || su.resultat === "relancer") && (
+                <>
+                  <h2 className="sec">S'il dit oui</h2>
+                  <div className="list">
+                    {siOui.length ? siOui.map((l) => (
+                      <div key={l.url} className="li">
+                        <span className="li-main"><span className="li-title">Lien de paiement</span><span className="li-sub">{l.label}</span></span>
+                        <CopyButton text={l.url} onCopied={() => toast("Lien de paiement copié")} />
+                      </div>
+                    )) : <p className="empty">Pas de lien GoCardless pour le coaching ads : envoie-le à part.</p>}
+                  </div>
+                </>
+              )}
             </>
           ) : (
-            <p className="hint">{su.venu ? "Choisis le résultat : je te prépare les 3 messages à envoyer, avec les dates." : "Dis-moi s'il est venu : je te prépare les messages de suivi."}</p>
-          )}
-        </section>
-      )}
-
-      {al.length > 0 && (
-        <>
-          <h2 className="sh">Signaux d'alerte</h2>
-          <div className="alert-box"><ul>{al.map((a) => <li key={a}>{a}</li>)}</ul></div>
-          {!passe && (
-            <>
-              <h2 className="sh">Message de confirmation</h2>
-              <div className="group"><div className="item msg-row"><p className="msg">{messageConfirmation(c)}</p><CopyButton text={messageConfirmation(c)} onCopied={() => toast("Message copié")} /></div></div>
-            </>
+            <p className="explain">{su.venu ? "Choisis le résultat : je te prépare les messages, avec les dates." : "Dis-moi s'il est venu : je te prépare les messages de suivi."}</p>
           )}
         </>
       )}
 
-      <h2 className="sh">Ses réponses</h2>
-      <div className="group">
-        {c.answers.length ? c.answers.map((a) => (
-          <div key={a.label} className="item kv"><span>{a.label}</span>{a.value}</div>
-        )) : <p className="item empty">Pas de réponse au formulaire.</p>}
-        {(c.email || c.phone) && <div className="item kv"><span>Contact</span>{[c.phone, c.email].filter(Boolean).join(" · ")}</div>}
-      </div>
-
-      <h2 className="sh">D'où il vient</h2>
-      <div className="group">
-        {visite && (
-          <div className="item">
-            <b>{provenanceLisible(visite)} · {visite.appareil}</b>
-            <p className="item-sub">
-              {duree(visite.duree_s)} sur le site · {visite.visites > 1 ? `${visite.visites}e visite (1re le ${new Date(visite.premiere).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })})` : "1re visite"}
-              {visite.bouton && ` · a cliqué « ${visite.bouton} »`}
-            </p>
+      {al.length > 0 && (
+        <>
+          <h2 className="sec">À vérifier</h2>
+          <div className="list">
+            {al.map((a) => <div key={a} className="li"><span className="li-title todo">{a}</span></div>)}
           </div>
-        )}
-        {visite?.pages.filter((p) => p.page).map((p, i) => (
-          <div key={i} className="item">
-            <div className="item-head"><span>{pageLisible(p.page)}</span><span className="muted">{p.lu} % lu · {duree(p.s)}</span></div>
-            <div className="bar"><i style={{ width: `${Math.max(3, p.lu)}%` }} /></div>
-          </div>
-        ))}
-        {!!visite?.faq.length && (
-          <div className="item"><span className="muted">FAQ ouverte :</span> {visite.faq.join(" · ")}</div>
-        )}
-        {(src || !visite) && (
-          <div className="item">
-            {src ? <span>Lien Cal : <b>{src}</b></span> : <span className="muted">Pas de visite du site retrouvée : il a sûrement réservé directement depuis le lien Cal.</span>}
-          </div>
-        )}
-        {precedents.length > 0 && (
-          <div className="item"><span className="muted">Appels précédents :</span> {precedents.map((p) => p.start.toLocaleDateString("fr-FR", { day: "numeric", month: "short", timeZone: TZ })).join(", ")}</div>
-        )}
-      </div>
-
-      <h2 className="sh">Offre conseillée</h2>
-      {of ? (
-        <div className="offer">
-          <div className="offer-k">Selon son budget et son niveau</div>
-          <div className="offer-n">{of.nom}</div>
-          <div className="offer-p">{of.prix}</div>
-          <p className="offer-why">{of.pourquoi}</p>
-          <div className="btns stack">
-            {of.liens.slice(0, 2).map((l, i) => (
-              <button key={l.url} className={`btn ${i ? "ghost" : ""}`} onClick={async () => { if (await copyText(l.url)) toast("Lien de paiement copié"); }}>
-                {l.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div className="group"><p className="item muted">Budget sous 500 € : pas d'offre adaptée. Confirme d'abord sa venue et son budget.</p></div>
+          {!passe && (
+            <div className="list">
+              <div className="li message">
+                <div className="message-top"><span>Message de confirmation</span></div>
+                <p className="message-text">{messageConfirmation(c)}</p>
+                <div className="message-actions"><CopyButton text={messageConfirmation(c)} onCopied={() => toast("Message copié")} /></div>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
-      <h2 className="sh">3 questions pour l'appel</h2>
-      <div className="group">
+      <h2 className="sec">Ses réponses</h2>
+      <div className="list">
+        {c.answers.length ? c.answers.map((a) => (
+          <div key={a.label} className="li kv"><span>{a.label}</span><span>{a.value}</span></div>
+        )) : <p className="empty">Pas de réponse au formulaire.</p>}
+        {c.phone && <div className="li kv"><span>Téléphone</span><span>{c.phone}</span></div>}
+        {c.email && <div className="li kv"><span>Mail</span><span>{c.email}</span></div>}
+      </div>
+
+      <h2 className="sec">D'où il vient</h2>
+      <div className="list">
+        {visite && (
+          <>
+            <div className="li kv"><span>Provenance</span><span>{provenanceLisible(visite)} · {visite.appareil}</span></div>
+            <div className="li kv"><span>Sur le site</span><span>{duree(visite.duree_s)} · {visite.visites > 1 ? `${visite.visites}e visite` : "1re visite"}</span></div>
+            {visite.pages.filter((x) => x.page).map((x, i) => (
+              <div key={i} className="li kv"><span>{pageLisible(x.page)}</span><span>{x.lu} % lu · {duree(x.s)}</span></div>
+            ))}
+            {!!visite.faq.length && <div className="li kv"><span>FAQ ouverte</span><span>{visite.faq.join(" · ")}</span></div>}
+            {visite.bouton && <div className="li kv"><span>A cliqué</span><span>{visite.bouton}</span></div>}
+          </>
+        )}
+        {src && <div className="li kv"><span>Lien Cal</span><span>{src}</span></div>}
+        {!visite && !src && <p className="empty">Pas de visite du site retrouvée : il a sûrement réservé directement depuis le lien Cal.</p>}
+        {precedents.length > 0 && (
+          <div className="li kv"><span>Appels avant</span><span>{precedents.map((x) => x.start.toLocaleDateString("fr-FR", { day: "numeric", month: "short", timeZone: TZ })).join(", ")}</span></div>
+        )}
+      </div>
+
+      <h2 className="sec">Offre conseillée</h2>
+      {of ? (
+        <div className="list">
+          <div className="li">
+            <span className="li-main"><span className="li-title">{of.nom}</span><span className="li-sub">{of.prix}</span></span>
+          </div>
+          <p className="explain inset">{of.pourquoi}</p>
+        </div>
+      ) : <p className="empty">Budget sous 500 € : pas d'offre adaptée. Confirme d'abord sa venue et son budget.</p>}
+
+      <h2 className="sec">Questions pour l'appel</h2>
+      <div className="list">
         {questions(c).map((q, i) => (
-          <div key={i} className="item q"><b>{i + 1}</b><span>{q}</span></div>
+          <div key={i} className="li"><span className="li-title wrap">{i + 1}. {q}</span></div>
         ))}
       </div>
 
       {!!fiche.historique?.length && (
         <>
-          <h2 className="sh">Historique</h2>
-          <div className="group">
+          <h2 className="sec">Historique</h2>
+          <div className="list">
             {fiche.historique.slice().reverse().map((h, i) => (
-              <div key={i} className="item kv">
+              <div key={i} className="li kv">
                 <span>{new Date(h.quand).toLocaleDateString("fr-FR", { day: "numeric", month: "short", timeZone: TZ })}</span>
-                {[h.venu === "venu" ? "Venu" : h.venu === "absent" ? "Pas venu" : null, RESULTATS.find((r) => r.id === h.resultat)?.label, PRODUITS.find((x) => x.id === h.produit)?.label].filter(Boolean).join(" · ")}
+                <span>{[h.venu === "venu" ? "Venu" : h.venu === "absent" ? "Pas venu" : null, RESULTATS.find((r) => r.id === h.resultat)?.label, PRODUITS.find((x) => x.id === h.produit)?.label].filter(Boolean).join(" · ")}</span>
               </div>
             ))}
           </div>

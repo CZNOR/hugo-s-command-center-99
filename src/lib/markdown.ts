@@ -3,7 +3,7 @@
 const esc = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-const STATUS: Record<string, string> = { "🟢": "ok", "🟡": "mid", "🔴": "bad", "⚪": "none" };
+const STATUS: Record<string, [string, string]> = { "🟢": ["ok", "bon"], "🟡": ["mid", "moyen"], "🔴": ["bad", "à revoir"], "⚪": ["none", "—"] };
 
 function inline(t: string): string {
   let s = esc(t);
@@ -11,8 +11,8 @@ function inline(t: string): string {
   s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
   s = s.replace(/(^|[^*])\*([^*]+)\*(?!\*)/g, "$1<em>$2</em>");
   s = s.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>');
-  for (const [emoji, cls] of Object.entries(STATUS)) {
-    s = s.split(emoji).join(`<i class="dot ${cls}"></i>`);
+  for (const [emoji, [cls, mot]] of Object.entries(STATUS)) {
+    s = s.split(emoji).join(`<span class="state ${cls}">${mot}</span>`);
   }
   return s;
 }

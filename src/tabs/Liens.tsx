@@ -6,13 +6,13 @@ export default function Liens({ toast }: { toast: (msg: string) => void }) {
     <>
       {GROUPES.map((g) => (
         <section key={g.title}>
-          <h2 className="sh">{g.title}</h2>
-          <div className="group">
+          <h2 className="sec">{g.title}</h2>
+          <div className="list">
             {g.liens.map((l) => (
-              <div key={l.url} className="item row">
-                <a className="n" href={l.url} target="_blank" rel="noreferrer">
-                  <b>{l.label}{l.detail && <em className={g.title.startsWith("Paiement") ? "amount" : "detail"}> · {l.detail}</em>}</b>
-                  <span>{l.url.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span>
+              <div key={l.url} className="li">
+                <a className="li-main" href={l.url} target="_blank" rel="noreferrer">
+                  <span className="li-title">{l.label}{l.detail && <span className={g.title.startsWith("Paiement") ? "price" : "li-note"}> · {l.detail}</span>}</span>
+                  <span className="li-sub ellipsis">{l.url.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span>
                 </a>
                 <CopyButton text={l.url} onCopied={() => toast("Lien copié")} />
               </div>
@@ -20,7 +20,6 @@ export default function Liens({ toast }: { toast: (msg: string) => void }) {
           </div>
         </section>
       ))}
-      <p className="foot">Un tap sur le carré copie le lien.</p>
     </>
   );
 }

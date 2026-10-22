@@ -42,7 +42,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (b.frein === null) delete suivi.frein;
     if (typeof b.rappel === "string") suivi.rappel = /^\d{4}-\d{2}-\d{2}$/.test(b.rappel) ? b.rappel : undefined;
     if (Array.isArray(b.envoyes)) suivi.envoyes = b.envoyes.filter((x: unknown) => typeof x === "string").slice(0, 20).map((x: string) => x.slice(0, 30));
-    if (typeof b.note === "string") suivi.note = b.note.slice(0, 2000);
+    if (typeof b.note === "string") {
+      const note = b.note.slice(0, 2000);
+      // Date de la note : « relancer demain » se compte à partir d'ici
+      if (note !== (fiche.suivi?.note ?? "")) suivi.noteLe = new Date().toISOString();
+      suivi.note = note;
+    }
     suivi.maj = new Date().toISOString();
     // Historique pour le futur tableau des ventes : une entrée par changement de statut
     const historique = [...(fiche.historique ?? [])];

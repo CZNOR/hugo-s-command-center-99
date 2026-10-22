@@ -1,6 +1,5 @@
 import { fmtCountdown, fmtDay, fmtDayShort, fmtTime, type Call } from "@/lib/cal";
 import { todayRows } from "@/lib/markdown";
-import { IcBell, IcPhone, IcVideo } from "@/components/Icons";
 import type { PushStatus } from "@/lib/usePushSubscription";
 import { alertes, RESULTATS, type Fiche } from "@/lib/prospect";
 import { etatMessage, prochain, quandLisible } from "@/lib/messages";
@@ -56,80 +55,67 @@ export default function Appels({ calls, error, point, now, pushStatus, pushError
   return (
     <>
       {pushStatus !== "on" && pushStatus !== "checking" && (
-        <div className="banner">
-          <IcBell />
-          <span>{pushStatus === "error" ? `Activation impossible : ${pushError}` : NOTIF_TEXT[pushStatus]}</span>
+        <div className="notice">
+          <p>{pushStatus === "error" ? `Activation impossible : ${pushError}` : NOTIF_TEXT[pushStatus]}</p>
           {(pushStatus === "off" || pushStatus === "error") && (
-            <button className="btn small" onClick={onEnableNotif}>{pushStatus === "error" ? "Réessayer" : "Activer"}</button>
+            <button className="textbtn" onClick={onEnableNotif}>{pushStatus === "error" ? "Réessayer" : "Activer"}</button>
           )}
         </div>
       )}
 
       {aFaire.length > 0 && (
         <>
-          <h2 className="sh">À faire aujourd'hui <b className="count">{aFaire.length}</b></h2>
-          <div className="group">
+          <h2 className="sec">À faire aujourd'hui<span>{aFaire.length}</span></h2>
+          <div className="list">
             {aFaire.map(({ c, titre, quand, e }) => (
-              <button key={`${c.id}-${titre}`} className="item row" onClick={() => onOpenFiche(c.id)}>
-                <div className="n"><b>{c.name}</b><span>{titre}</span></div>
-                <span className={`etat ${e === "retard" ? "late" : "todo"}`}>
+              <button key={`${c.id}-${titre}`} className="li" onClick={() => onOpenFiche(c.id)}>
+                <span className="li-main"><span className="li-title">{c.name}</span><span className="li-sub">{titre}</span></span>
+                <span className={`li-side ${e === "retard" ? "late" : "todo"}`}>
                   {e === "retard" ? "En retard" : e === "noter" ? "À noter" : quandLisible(quand, now).replace("Aujourd'hui ", "")}
                 </span>
-                <span className="chev">›</span>
+                <span className="chev" aria-hidden="true" />
               </button>
             ))}
           </div>
         </>
       )}
 
-      <h2 className="sh">Prochain appel{next && <span>{fmtCountdown(next.start, now)}</span>}</h2>
-      {calls === null && !error && <div className="group"><p className="item empty">Chargement…</p></div>}
-      {error && <div className="group"><p className="item empty">Appels indisponibles : {error}</p></div>}
-      {calls && !next && (
-        <div className="group">
-          <div className="item">
-            <b className="item-title">Aucun appel prévu</b>
-            <p className="item-sub">Les réservations Cal apparaissent ici dès qu'elles tombent.</p>
-          </div>
-        </div>
-      )}
+      <h2 className="sec">Prochain appel{next && <span>{fmtCountdown(next.start, now)}</span>}</h2>
+      {calls === null && !error && <p className="empty">Chargement…</p>}
+      {error && <p className="empty">Appels indisponibles : {error}</p>}
+      {calls && !next && <p className="empty">Aucun appel prévu. Les réservations Cal arrivent ici dès qu'elles tombent.</p>}
 
       {next && (
-        <div className="hero">
-          <div className="big">{fmtTime(next.start)}</div>
-          <div className="who">{next.name}{alertes(next).length > 0 && <span className="hero-flag">à confirmer</span>}</div>
-          <div className="when-day">{fmtDay(next.start)}</div>
-          {next.answers.length > 0 && (
-            <dl className="answers">
-              {next.answers.map((a) => (
-                <div key={a.label}><dt>{a.label}</dt><dd>{a.value}</dd></div>
-              ))}
-            </dl>
-          )}
-          <button className="btn fiche-btn" onClick={() => onOpenFiche(next.id)}>Voir sa fiche</button>
-          <div className="btns">
-            {next.meetingUrl && (
-              <a className="btn" href={next.meetingUrl} target="_blank" rel="noreferrer"><IcVideo />Rejoindre</a>
-            )}
-            {next.phone && (
-              <a className="btn ghost" href={`tel:${next.phone}`}><IcPhone />Appeler</a>
-            )}
+        <>
+          <div className="lead">
+            <div className="lead-time">{fmtTime(next.start)}</div>
+            <div className="lead-name">{next.name}</div>
+            <div className="lead-meta">{fmtDay(next.start)}{alertes(next).length > 0 && <span className="todo"> · à confirmer</span>}</div>
           </div>
-        </div>
+          {next.answers.length > 0 && (
+            <div className="list">
+              {next.answers.map((a) => (
+                <div key={a.label} className="li kv"><span>{a.label}</span><span>{a.value}</span></div>
+              ))}
+            </div>
+          )}
+          <div className="list actions">
+            {next.meetingUrl && <a className="li action" href={next.meetingUrl} target="_blank" rel="noreferrer">Rejoindre la visio<span className="chev" aria-hidden="true" /></a>}
+            {next.phone && <a className="li action" href={`tel:${next.phone}`}>Appeler {next.phone}<span className="chev" aria-hidden="true" /></a>}
+            <button className="li action" onClick={() => onOpenFiche(next.id)}>Ouvrir sa fiche<span className="chev" aria-hidden="true" /></button>
+          </div>
+        </>
       )}
 
       {rest.length > 0 && (
         <>
-          <h2 className="sh">Ensuite</h2>
-          <div className="group">
+          <h2 className="sec">Ensuite</h2>
+          <div className="list">
             {rest.map((c) => (
-              <button key={c.id} className="item row" onClick={() => onOpenFiche(c.id)}>
-                <div className="t"><small>{fmtDayShort(c.start)}</small>{fmtTime(c.start)}</div>
-                <div className="n">
-                  <b>{c.name}</b>
-                  <span>{c.answers.map((a) => a.value).slice(0, 2).join(" · ") || c.email}</span>
-                </div>
-                <span className="chev">›</span>
+              <button key={c.id} className="li" onClick={() => onOpenFiche(c.id)}>
+                <span className="li-time"><small>{fmtDayShort(c.start)}</small>{fmtTime(c.start)}</span>
+                <span className="li-main"><span className="li-title">{c.name}</span><span className="li-sub">{c.answers.map((a) => a.value).slice(0, 2).join(" · ") || c.email}</span></span>
+                <span className="chev" aria-hidden="true" />
               </button>
             ))}
           </div>
@@ -138,28 +124,30 @@ export default function Appels({ calls, error, point, now, pushStatus, pushError
 
       {recents.length > 0 && (
         <>
-          <h2 className="sh">Appels récents</h2>
-          <div className="group">
-            {recents.slice(0, 8).map((c) => (
-              <button key={c.id} className="item row" onClick={() => onOpenFiche(c.id)}>
-                <div className="t"><small>{fmtDayShort(c.start)}</small>{fmtTime(c.start)}</div>
-                <div className="n"><b>{c.name}</b><span>{c.answers[0]?.value ?? c.email}</span></div>
-                <span className={`etat ${etat(fiches[c.id]) === "À noter" ? "todo" : ""}`}>{etat(fiches[c.id])}</span>
-              </button>
-            ))}
+          <h2 className="sec">Appels récents</h2>
+          <div className="list">
+            {recents.slice(0, 8).map((c) => {
+              const t = etat(fiches[c.id]);
+              return (
+                <button key={c.id} className="li" onClick={() => onOpenFiche(c.id)}>
+                  <span className="li-time"><small>{fmtDayShort(c.start)}</small>{fmtTime(c.start)}</span>
+                  <span className="li-main"><span className="li-title">{c.name}</span><span className="li-sub">{c.answers[0]?.value ?? c.email}</span></span>
+                  <span className={`li-side ${t === "À noter" ? "todo" : ""}`}>{t}</span>
+                  <span className="chev" aria-hidden="true" />
+                </button>
+              );
+            })}
           </div>
         </>
       )}
 
-      <h2 className="sh">Aujourd'hui</h2>
-      <div className="group">
+      <h2 className="sec">Aujourd'hui<button className="sec-link" onClick={onOpenPoint}>Le point</button></h2>
+      <div className="list">
         {today.length ? today.map((r, i) => (
-          <div key={i} className="item">
-            <span className="chip">{r.when}</span>
-            <p className="item-text">{r.what}</p>
+          <div key={i} className="li">
+            <span className="li-main"><span className="li-sub">{r.when}</span><span className="li-title wrap">{r.what}</span></span>
           </div>
-        )) : <p className="item empty">Pas encore de point aujourd'hui.</p>}
-        <button className="item link" onClick={onOpenPoint}>Voir le point complet</button>
+        )) : <p className="empty">Pas encore de point aujourd'hui.</p>}
       </div>
     </>
   );

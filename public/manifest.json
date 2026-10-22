@@ -4,8 +4,8 @@
   "description": "Mes appels, le point du jour, mes textes et mes liens.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0E0E10",
-  "theme_color": "#0E0E10",
+  "background_color": "#000000",
+  "theme_color": "#000000",
   "orientation": "portrait",
   "icons": [
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },

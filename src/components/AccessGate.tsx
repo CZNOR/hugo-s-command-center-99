@@ -22,8 +22,8 @@ export default function AccessGate({ onDone }: { onDone: () => void }) {
   return (
     <form className="gate" onSubmit={submit}>
       <img src="/icon-192.png" alt="" />
-      <h1 className="h">Code <em>d'accès</em></h1>
-      <p className="sub">À saisir une seule fois sur cet appareil.</p>
+      <h1 className="title">Code d'accès</h1>
+      <p className="explain">À saisir une seule fois sur cet appareil.</p>
       <input
         value={code}
         onChange={(e) => setCode(e.target.value)}
