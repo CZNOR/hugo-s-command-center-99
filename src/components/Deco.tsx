@@ -19,8 +19,8 @@ export function Nombre({ n }: { n: number }) {
   return <>{v}</>;
 }
 
-// Anneau d'avancement (comme le widget Suivi) : se remplit selon la part faite, le chiffre au centre
-export function Anneau({ part, children }: { part: number; children?: React.ReactNode }) {
+// Anneau d'avancement (comme le widget Suivi) : se remplit selon la part faite ; au centre, ce qui reste (pastille ambre)
+export function Anneau({ part, calme, children }: { part: number; calme?: boolean; children?: React.ReactNode }) {
   const r = 19, c = 2 * Math.PI * r;
   return (
     <span className="anneau">
@@ -28,7 +28,7 @@ export function Anneau({ part, children }: { part: number; children?: React.Reac
         <circle cx="23" cy="23" r={r} className="anneau-fond" />
         <circle cx="23" cy="23" r={r} className="anneau-plein" style={{ strokeDasharray: c, strokeDashoffset: c * (1 - Math.max(0, Math.min(1, part))) }} />
       </svg>
-      <span className="anneau-centre">{children}</span>
+      <span className={`anneau-centre ${calme ? "calme" : ""}`}>{children}</span>
     </span>
   );
 }

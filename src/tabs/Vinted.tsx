@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { memo, useState } from "react";
 import { VINTED } from "@/content/vinted";
 import { copyText } from "@/components/CopyButton";
 
-export default function Vinted({ toast }: { toast: (msg: string) => void }) {
+function Vinted({ toast }: { toast: (msg: string) => void }) {
   const [id, setId] = useState(VINTED[0].id);
   const item = VINTED.find((v) => v.id === id)!;
 
@@ -19,3 +19,5 @@ export default function Vinted({ toast }: { toast: (msg: string) => void }) {
     </>
   );
 }
+
+export default memo(Vinted);

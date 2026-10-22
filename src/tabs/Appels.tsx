@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { fmtCountdown, fmtDay, fmtDayShort, fmtTime, TZ, type Call } from "@/lib/cal";
 import { alertes, RESULTATS, type Fiche } from "@/lib/prospect";
 import { quandLisible, suiviEffectif } from "@/lib/messages";
 import { aFaire } from "@/lib/afaire";
-import { IcBell, IcCheck, IcClock, IcHistory, IcPhone } from "@/components/Icons";
 import { Nombre } from "@/components/Deco";
+import { Age, Barre } from "@/components/Suivi";
 
 interface Props {
   calls: Call[] | null;
@@ -26,7 +26,7 @@ function etat(c: Call, f?: Fiche): string {
 }
 
 // Les appels : les chiffres en gros, les relances, le prochain appel en grand, la suite, les récents
-export default function Appels({ calls, error, maj, now, recents, suivis, fiches, onOpenFiche }: Props) {
+function Appels({ calls, error, maj, now, recents, suivis, fiches, onOpenFiche }: Props) {
   const [next, ...rest] = calls ?? [];
   const taches = aFaire(suivis, recents, fiches, now);
   const jour = (d: Date) => d.toLocaleDateString("fr-CA", { timeZone: TZ });
@@ -51,7 +51,7 @@ export default function Appels({ calls, error, maj, now, recents, suivis, fiches
     <>
       <p className={`live ${error || !maj ? "eteint" : ""}`}>
         <i aria-hidden="true" />
-        {error ? "Cal injoignable, nouvel essai dans 30 s" : maj ? `Cal en direct · lu il y a ${Math.max(0, Math.round((now - maj) / 1000))} s` : "Lecture de Cal…"}
+        {error ? "Cal injoignable, nouvel essai dans 30 s" : maj ? <>Cal en direct · lu <Age ms={maj} /></> : "Lecture de Cal…"}
       </p>
       <div className="kpis">
         <div className="kpi accent"><b><Nombre n={auj} /></b><span>aujourd'hui</span></div>
@@ -60,78 +60,88 @@ export default function Appels({ calls, error, maj, now, recents, suivis, fiches
       </div>
 
       {/* À relancer : en tête, pour n'oublier personne */}
-      <section className={`bloc ${taches.length ? "orange" : "vert"}`}>
-        <h2 className="bloc-titre">
-          {taches.length > 0 ? <span className="cloche"><IcBell /></span> : <IcCheck />}
-          {taches.length ? "À relancer" : "Tout est à jour"}
-          {taches.length > 0 && <span className="pastille-n">{taches.length}</span>}
-        </h2>
-        {taches.length === 0 && <p className="ligne-sous">Personne à relancer, aucun appel à noter.</p>}
+      <h2 className="sec-titre ambre">À relancer<span className="sec-droite">{taches.length ? `${taches.length}` : "personne"}</span></h2>
+      <div className="cartes">
+        {taches.length === 0 && (
+          <p className="carte"><span className="carte-haut"><i className="pastille vert" /><b>Tout est à jour</b></span><span className="texte doux">Personne à relancer, aucun appel à noter.</span></p>
+        )}
         {taches.map(({ c, titre, quand, e }) => (
-          <button key={`${c.id}-${titre}`} className="ligne cliquable" onClick={() => onOpenFiche(c.id)}>
-            <span className="ligne-haut"><b>{c.name}</b><span className={`fraction ${e === "retard" ? "en-retard" : "a-faire"}`}>{e === "retard" ? "en retard" : e === "noter" ? "à noter" : quandLisible(quand, now).replace("Aujourd'hui ", "")}</span></span>
-            <span className="ligne-sous">{titre}</span>
+          <button key={`${c.id}-${titre}`} className="carte cliquable" onClick={() => onOpenFiche(c.id)}>
+            <span className="carte-haut">
+              <i className={`pastille ${e === "retard" ? "rouge" : "ambre"}`} />
+              <b>{c.name}</b>
+              <span className={`etat ${e === "retard" ? "rouge" : "ambre"}`}>{e === "retard" ? "en retard" : e === "noter" ? "à noter" : quandLisible(quand, now).replace("Aujourd'hui ", "")}</span>
+            </span>
+            <span className="texte doux">{titre}</span>
           </button>
         ))}
-      </section>
+      </div>
 
-      {/* Prochain appel */}
-      <section className="bloc lavande">
-        <h2 className="bloc-titre"><IcPhone />Prochain appel{next && <span className="bloc-droite">{fmtCountdown(next.start, now)}</span>}</h2>
-        {calls === null && !error && <p className="ligne-sous">Chargement…</p>}
-        {error && <p className="ligne-sous">Appels indisponibles : {error}</p>}
-        {calls && !next && <p className="ligne-sous">Aucun appel prévu. Les réservations Cal arrivent ici dès qu'elles tombent.</p>}
-        {next && (
-          <>
-            <div className="gros-chiffre">{fmtTime(next.start)}</div>
-            <b className="gros-nom">{next.name}</b>
-            <span className="ligne-sous">{fmtDay(next.start)}{alertes(next).length > 0 && " · à confirmer"}</span>
-            {imminent && (
-              <>
-                <div className="compte">{compte}</div>
-                <div className="barre"><i style={{ width: `${Math.min(100, Math.max(4, 100 - reste / 36_000))}%` }} /></div>
-              </>
-            )}
-            {next.answers.length > 0 && (
-              <div className="reponses">
-                {next.answers.map((a) => <span key={a.label}><em>{a.label}</em>{a.value}</span>)}
-              </div>
-            )}
-            <div className="boutons">
-              {next.meetingUrl && <a className="bouton noir" href={next.meetingUrl} target="_blank" rel="noreferrer">Rejoindre</a>}
-              {next.phone && <a className="bouton clair" href={`tel:${next.phone}`}>Appeler</a>}
+      {/* Prochain appel : l'heure en très grand */}
+      <h2 className="sec-titre">Prochain appel{next && <span className="sec-droite">{fmtCountdown(next.start, now)}</span>}</h2>
+      {calls === null && !error && <p className="carte"><span className="texte doux">Chargement…</span></p>}
+      {error && <p className="carte"><span className="texte ambre">Appels indisponibles : {error}</span></p>}
+      {calls && !next && <p className="carte"><span className="texte doux">Aucun appel prévu. Les réservations Cal arrivent ici dès qu'elles tombent.</span></p>}
+      {next && (
+        <div className="carte prochain">
+          <div className="gros-chiffre">{fmtTime(next.start)}</div>
+          <b className="gros-nom">{next.name}</b>
+          <span className="texte doux">{fmtDay(next.start)}{alertes(next).length > 0 && " · à confirmer"}</span>
+          {imminent && (
+            <>
+              <div className="compte">{compte}</div>
+              <Barre pct={Math.min(100, Math.max(4, 100 - reste / 36_000))} vivante />
+            </>
+          )}
+          {next.answers.length > 0 && (
+            <div className="reponses">
+              {next.answers.map((a) => <span key={a.label}><em>{a.label}</em>{a.value}</span>)}
             </div>
-            <button className="bouton clair plein" onClick={() => onOpenFiche(next.id)}>Ouvrir sa fiche</button>
-          </>
-        )}
-      </section>
+          )}
+          <div className="boutons">
+            {next.meetingUrl && <a className="bouton noir" href={next.meetingUrl} target="_blank" rel="noreferrer">Rejoindre</a>}
+            {next.phone && <a className="bouton clair" href={`tel:${next.phone}`}>Appeler</a>}
+          </div>
+          <button className="bouton clair plein" onClick={() => onOpenFiche(next.id)}>Ouvrir sa fiche</button>
+        </div>
+      )}
 
       {rest.length > 0 && (
-        <section className="bloc sombre">
-          <h2 className="bloc-titre"><IcClock />Ensuite</h2>
-          {rest.map((c) => (
-            <button key={c.id} className="ligne cliquable" onClick={() => onOpenFiche(c.id)}>
-              <span className="ligne-haut"><b>{c.name}</b><span className="fraction">{fmtDayShort(c.start)} {fmtTime(c.start)}</span></span>
-              <span className="ligne-sous">{c.answers.map((a) => a.value).slice(0, 2).join(" · ") || c.email}</span>
-            </button>
-          ))}
-        </section>
+        <>
+          <h2 className="sec-titre">Ensuite</h2>
+          <div className="cartes">
+            {rest.map((c) => (
+              <button key={c.id} className="carte cliquable" onClick={() => onOpenFiche(c.id)}>
+                <span className="carte-haut"><i className="pastille lavande" /><b>{c.name}</b><span className="etat">{fmtDayShort(c.start)} {fmtTime(c.start)}</span></span>
+                <span className="texte doux">{c.answers.map((a) => a.value).slice(0, 2).join(" · ") || c.email}</span>
+              </button>
+            ))}
+          </div>
+        </>
       )}
 
       {recents.length > 0 && (
-        <section className="bloc sombre">
-          <h2 className="bloc-titre"><IcHistory />Appels récents</h2>
-          {recents.slice(0, 10).map((c) => {
-            const t = etat(c, fiches[c.id]);
-            return (
-              <button key={c.id} className="ligne cliquable" onClick={() => onOpenFiche(c.id)}>
-                <span className="ligne-haut"><b>{c.name}</b><span className={`fraction ${t === "À noter" ? "a-faire" : ""}`}>{t}</span></span>
-                <span className="ligne-sous">{fmtDayShort(c.start)} {fmtTime(c.start)} · {c.answers[0]?.value ?? c.email}</span>
-              </button>
-            );
-          })}
-        </section>
+        <>
+          <h2 className="sec-titre">Appels récents</h2>
+          <div className="cartes">
+            {recents.slice(0, 10).map((c) => {
+              const t = etat(c, fiches[c.id]);
+              return (
+                <button key={c.id} className="carte cliquable" onClick={() => onOpenFiche(c.id)}>
+                  <span className="carte-haut">
+                    <i className={`pastille ${t === "À noter" ? "ambre" : t === "Signé" ? "vert" : ""}`} />
+                    <b>{c.name}</b>
+                    <span className={`etat ${t === "À noter" ? "ambre" : "gris"}`}>{t}</span>
+                  </span>
+                  <span className="texte doux">{fmtDayShort(c.start)} {fmtTime(c.start)} · {c.answers[0]?.value ?? c.email}</span>
+                </button>
+              );
+            })}
+          </div>
+        </>
       )}
     </>
   );
 }
+
+export default memo(Appels);

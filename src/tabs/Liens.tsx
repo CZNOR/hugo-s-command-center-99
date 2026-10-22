@@ -1,7 +1,8 @@
+import { memo } from "react";
 import { GROUPES } from "@/content/liens";
 import CopyButton from "@/components/CopyButton";
 
-export default function Liens({ toast }: { toast: (msg: string) => void }) {
+function Liens({ toast }: { toast: (msg: string) => void }) {
   return (
     <>
       {GROUPES.map((g) => (
@@ -23,3 +24,5 @@ export default function Liens({ toast }: { toast: (msg: string) => void }) {
     </>
   );
 }
+
+export default memo(Liens);

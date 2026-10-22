@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { apiFetch, NEED_CODE_EVENT } from "@/lib/api";
 import { fetchCancelledCalls, fetchPastCalls, fetchUpcomingCalls, TZ, type Call } from "@/lib/cal";
 import type { Fiche, Suivi, Visite } from "@/lib/prospect";
@@ -62,7 +62,8 @@ export default function App() {
   const pastRef = useRef<Call[]>([]);
   const pager = useRef<HTMLDivElement>(null);
   const pages = useRef<(HTMLElement | null)[]>([]);
-  const nav = useRef<HTMLElement>(null);
+  const pastilleNav = useRef<HTMLSpanElement>(null);
+  const memes = useRef<Record<string, string>>({}); // dernière version reçue de chaque donnée : pas de rendu si rien n'a changé
   const ficheEl = useRef<HTMLDivElement>(null);
   const { status: pushStatus, error: pushError, subscribe } = usePushSubscription();
 
@@ -74,8 +75,15 @@ export default function App() {
   }, []);
 
   // ── Données : tout se relit souvent, et tout de suite au retour dans l'app ──
+  // Une donnée identique à la précédente ne redessine rien : l'app reste fluide pendant qu'on fait défiler.
+  const nouveau = (cle: string, v: unknown) => {
+    const k = JSON.stringify(v);
+    if (memes.current[cle] === k) return false;
+    memes.current[cle] = k;
+    return true;
+  };
   const loadVisites = useCallback(() => {
-    apiFetch("/api/visite").then((r) => (r.ok ? r.json() : null)).then((v) => v && setVisites(v)).catch(() => {});
+    apiFetch("/api/visite").then((r) => (r.ok ? r.json() : null)).then((v) => v && nouveau("visites", v) && setVisites(v)).catch(() => {});
   }, []);
 
   const load = useCallback(async (forcer = false) => {
@@ -85,20 +93,20 @@ export default function App() {
       fetchUpcomingCalls().catch((e) => { setCallsErr(String(e.message ?? e)); return null; }),
       histoAJour ? Promise.resolve(pastRef.current) : fetchPastCalls().catch(() => pastRef.current),
     ]);
-    if (up) { setCalls(up); setCallsErr(""); setCallsMaj(Date.now()); }
+    if (up) { if (nouveau("calls", up)) setCalls(up); setCallsErr(""); setCallsMaj(Date.now()); }
     if (!histoAJour) {
       lastHisto.current = Date.now();
       pastRef.current = pa;
-      setPast(pa);
-      fetchCancelledCalls().then(setAnnulees).catch(() => {});
+      if (nouveau("past", pa)) setPast(pa);
+      fetchCancelledCalls().then((a) => nouveau("annulees", a) && setAnnulees(a)).catch(() => {});
       loadVisites();
     }
     // Fiches (source + suivi) des appels à venir et des 45 derniers jours
     const depuis = Date.now() - SUIVI_JOURS * 86_400_000;
     const ids = [...(up ?? []), ...pa.filter((c) => c.start.getTime() > depuis)].map((c) => c.id).slice(0, 60);
     await Promise.all([
-      ids.length && apiFetch(`/api/prospect?ids=${ids.join(",")}`).then((r) => (r.ok ? r.json() : null)).then((f) => f && setFiches(f)).catch(() => {}),
-      apiFetch("/api/point").then((r) => (r.ok ? r.json() : null)).then((p) => p && setPoint(p)).catch(() => {}),
+      ids.length && apiFetch(`/api/prospect?ids=${ids.join(",")}`).then((r) => (r.ok ? r.json() : null)).then((f) => f && nouveau("fiches", f) && setFiches(f)).catch(() => {}),
+      apiFetch("/api/point").then((r) => (r.ok ? r.json() : null)).then((p) => p && nouveau("point", p.markdown) && setPoint(p)).catch(() => {}),
     ]);
   }, [loadVisites]);
 
@@ -113,7 +121,7 @@ export default function App() {
     const ids = [
       setInterval(() => document.visibilityState === "visible" && load(), APPELS_MS),
       setInterval(() => document.visibilityState === "visible" && loadSuivi(), SUIVI_MS),
-      setInterval(() => setNow(Date.now()), 5_000), // « il y a 12 s », comptes à rebours
+      setInterval(() => setNow(Date.now()), 30_000), // l'heure qui avance (les « il y a 12 s » ont leur propre minuteur)
     ];
     const retour = () => { if (document.visibilityState === "visible") { load(true); loadSuivi(); } };
     document.addEventListener("visibilitychange", retour);
@@ -128,15 +136,22 @@ export default function App() {
   useLayoutEffect(() => {
     if (locked || !pager.current) return;
     pager.current.scrollLeft = indexDe(tab) * largeur();
-    nav.current?.style.setProperty("--i", String(indexDe(tab)));
-    const recaler = () => { if (pager.current) pager.current.scrollLeft = indexDe(tabRef.current) * largeur(); };
+    placerPastille(indexDe(tab));
+    const recaler = () => { if (pager.current) pager.current.scrollLeft = indexDe(tabRef.current) * largeur(); placerPastille(indexDe(tabRef.current)); };
     window.addEventListener("resize", recaler);
     return () => window.removeEventListener("resize", recaler);
   }, [locked]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // La pastille du menu bouge par transformation (fluide, sans recalcul de mise en page)
+  function placerPastille(pos: number) {
+    const el = pastilleNav.current;
+    if (!el?.parentElement) return;
+    const pas = (el.parentElement.clientWidth - 20) / TABS.length;
+    el.style.transform = `translateX(${(pos * pas).toFixed(1)}px)`;
+  }
   const onPager = () => {
     const pos = (pager.current?.scrollLeft ?? 0) / largeur();
-    nav.current?.style.setProperty("--i", pos.toFixed(3));
+    placerPastille(pos);
     const t = TABS[Math.max(0, Math.min(TABS.length - 1, Math.round(pos)))].id;
     if (t !== tabRef.current) {
       tabRef.current = t;
@@ -153,12 +168,12 @@ export default function App() {
   };
 
   // ── Fiche prospect : s'ouvre par-dessus, se referme d'un glissement vers la droite ──
-  const openFiche = (id: number) => {
+  const openFiche = useCallback((id: number) => {
     setFicheId(id);
     setCompactFiche(false);
     history.pushState(null, "", `#appel-${id}`);
     loadVisites(); // visite toute fraîche (réservation faite il y a quelques minutes)
-  };
+  }, [loadVisites]);
   const fermerFiche = () => {
     setFicheId(null);
     history.replaceState(null, "", tab === "point" ? location.pathname : `#${tab}`);
@@ -252,10 +267,14 @@ export default function App() {
     },
   };
 
-  const toast = (msg: string) => {
+  const toast = useCallback((msg: string) => {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(""), 1400);
-  };
+  }, []);
+
+  // Listes dérivées gardées tant que rien ne change : les pages ne se redessinent pas pour rien
+  const recents = useMemo(() => past.filter((c) => c.start.getTime() > now - RECENTS_JOURS * 86_400_000), [past, now]);
+  const suivis = useMemo(() => past.filter((c) => c.start.getTime() > now - SUIVI_JOURS * 86_400_000), [past, now]);
 
   if (locked) return <AccessGate onDone={() => { setLocked(false); window.location.reload(); }} />;
 
@@ -264,8 +283,6 @@ export default function App() {
   const date = new Date(now).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: TZ });
   const heure = Number(new Date(now).toLocaleTimeString("fr-FR", { hour: "2-digit", hour12: false, timeZone: TZ }).slice(0, 2));
   const salut = heure < 5 ? "Bonne nuit" : heure < 12 ? "Bonjour" : heure < 18 ? "Bon après-midi" : "Bonsoir";
-  const recents = past.filter((c) => c.start.getTime() > now - RECENTS_JOURS * 86_400_000);
-  const suivis = past.filter((c) => c.start.getTime() > now - SUIVI_JOURS * 86_400_000);
 
   const contenu = (t: Tab) => {
     switch (t) {
@@ -321,7 +338,8 @@ export default function App() {
 
       {toastMsg && <div className="toast">{toastMsg}</div>}
 
-      <nav className="nav" ref={nav} style={{ "--n": TABS.length } as React.CSSProperties}>
+      <nav className="nav">
+        <span className="nav-pastille" ref={pastilleNav} aria-hidden="true" />
         {TABS.map(({ id, label, Icon }) => (
           <button key={id} className={tab === id ? "on" : ""} onClick={() => go(id)}>
             <Icon />{label}
