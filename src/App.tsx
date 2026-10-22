@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { apiFetch, NEED_CODE_EVENT } from "@/lib/api";
-import { fetchPastCalls, fetchUpcomingCalls, TZ, type Call } from "@/lib/cal";
-import type { Fiche } from "@/lib/prospect";
+import { fetchCancelledCalls, fetchPastCalls, fetchUpcomingCalls, TZ, type Call } from "@/lib/cal";
+import type { Fiche, Visite } from "@/lib/prospect";
 import { usePushSubscription } from "@/lib/usePushSubscription";
 import AccessGate from "@/components/AccessGate";
 import type { SuiviData } from "@/components/Suivi";
@@ -36,6 +36,7 @@ const ficheFromHash = (): number | null => {
   return m ? Number(m[1]) : null;
 };
 const RECENTS_JOURS = 7;
+const HISTO_MS = 5 * 60_000; // passé, annulations et visites : relus toutes les 5 min (au lieu de chaque minute)
 const REFRESH_MS = 60_000;
 const SUIVI_MS = 20_000; // le Mac envoie l'avancement toutes les 20 s
 
@@ -47,9 +48,13 @@ export default function App() {
   const [calls, setCalls] = useState<Call[] | null>(null);
   const [callsErr, setCallsErr] = useState("");
   const [past, setPast] = useState<Call[]>([]);
+  const [annulees, setAnnulees] = useState<Call[]>([]);
+  const [visites, setVisites] = useState<Visite[]>([]);
   const [fiches, setFiches] = useState<Record<number, Fiche>>({});
   const [ficheId, setFicheId] = useState<number | null>(ficheFromHash);
   const saveQueue = useRef<Promise<unknown>>(Promise.resolve());
+  const lastHisto = useRef(0);
+  const pastRef = useRef<Call[]>([]);
   const [point, setPoint] = useState<{ markdown: string; updatedAt: string | null }>({ markdown: "", updatedAt: null });
   const [suivi, setSuivi] = useState<SuiviData>({});
   const [now, setNow] = useState(Date.now());
@@ -71,12 +76,20 @@ export default function App() {
 
   const load = useCallback(async () => {
     setNow(Date.now());
+    // Les appels à venir chaque minute ; le reste (lourd, qui bouge peu) toutes les 5 min
+    const histoAJour = Date.now() - lastHisto.current < HISTO_MS;
     const [up, pa] = await Promise.all([
       fetchUpcomingCalls().catch((e) => { setCallsErr(String(e.message ?? e)); return null; }),
-      fetchPastCalls().catch(() => [] as Call[]),
+      histoAJour ? Promise.resolve(pastRef.current) : fetchPastCalls().catch(() => pastRef.current),
     ]);
     if (up) { setCalls(up); setCallsErr(""); }
-    setPast(pa);
+    if (!histoAJour) {
+      lastHisto.current = Date.now();
+      pastRef.current = pa;
+      setPast(pa);
+      fetchCancelledCalls().then(setAnnulees).catch(() => {});
+      apiFetch("/api/visite").then((r) => (r.ok ? r.json() : [])).then(setVisites).catch(() => {});
+    }
     // Fiches (source + suivi) des appels à venir et des 7 derniers jours
     const depuis = Date.now() - RECENTS_JOURS * 86_400_000;
     const ids = [...(up ?? []), ...pa.filter((c) => c.start.getTime() > depuis)].map((c) => c.id);
@@ -166,6 +179,8 @@ export default function App() {
         <FicheProspect
           call={fiche}
           autres={[...(calls ?? []), ...past]}
+          annulees={annulees}
+          visites={visites}
           fiche={fiches[fiche.id] ?? {}}
           now={now}
           onBack={() => openFiche(null)}

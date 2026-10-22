@@ -133,3 +133,32 @@ export function sourceLisible(src?: Record<string, string>): string | null {
   const detail = [src.utm_medium, src.utm_content, src.utm_campaign].filter(Boolean).join(" · ");
   return detail ? `${nom} · ${detail}` : nom;
 }
+
+// ── Visite du site (envoyée par hugo-bnls.fr au clic sur « Réserver ») ─────
+export interface Visite {
+  quand: string; bouton: string; duree_s: number; provenance: string; appareil: string;
+  pages: { page: string; lu: number; s: number }[]; faq: string[];
+  utm: Record<string, string>; visites: number; premiere: string;
+}
+
+// La visite dont le clic précède la réservation de 0 à 45 min (le plus proche)
+export function visiteDe(c: Call, visites: Visite[]): Visite | null {
+  if (!c.createdAt) return null;
+  const t = c.createdAt.getTime();
+  let best: Visite | null = null, ecart = Infinity;
+  for (const v of visites) {
+    const d = t - new Date(v.quand).getTime();
+    if (d >= -2 * 60_000 && d <= 45 * 60_000 && Math.abs(d) < ecart) { best = v; ecart = Math.abs(d); }
+  }
+  return best;
+}
+
+export const duree = (s: number) => (s < 60 ? `${s} s` : `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, "0")}`);
+
+export function provenanceLisible(v: Visite): string {
+  const p = v.provenance.toLowerCase();
+  return /tiktok/.test(p) ? "TikTok" : /instagram/.test(p) ? "Instagram" : /google/.test(p) ? "Google" : /youtube/.test(p) ? "YouTube" : p === "direct" ? "Accès direct" : v.provenance;
+}
+
+const PAGES: Record<string, string> = { accueil: "Accueil", academie: "Page Académie", "academie/chine": "Page Chine" };
+export const pageLisible = (p: string) => PAGES[p] ?? p;

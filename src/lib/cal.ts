@@ -64,12 +64,12 @@ function toCall(b: any): Call {
   };
 }
 
-async function fetchCalls(status: "upcoming" | "past", limit: number): Promise<Call[]> {
+async function fetchCalls(status: "upcoming" | "past" | "cancelled", limit: number): Promise<Call[]> {
   const res = await apiFetch(`/api/cal/bookings?status=${status}&limit=${limit}`);
   if (!res.ok) throw new Error(`Cal ${res.status}`);
   const json = await res.json();
   const data: any[] = Array.isArray(json?.data) ? json.data : [];
-  return data.filter((b) => b.status !== "cancelled" && b.status !== "rejected").map(toCall);
+  return (status === "cancelled" ? data : data.filter((b) => b.status !== "cancelled" && b.status !== "rejected")).map(toCall);
 }
 
 export async function fetchUpcomingCalls(): Promise<Call[]> {
@@ -83,6 +83,9 @@ export async function fetchUpcomingCalls(): Promise<Call[]> {
 export async function fetchPastCalls(): Promise<Call[]> {
   return (await fetchCalls("past", 150)).sort((a, b) => b.start.getTime() - a.start.getTime());
 }
+
+// Réservations annulées : pour repérer qui a déjà annulé
+export const fetchCancelledCalls = () => fetchCalls("cancelled", 100);
 
 // ── Formats en heure de Paris ─────────────────────────────────
 export const fmtTime = (d: Date) =>

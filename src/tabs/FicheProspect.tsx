@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { fmtDay, fmtTime, TZ, type Call } from "@/lib/cal";
 import {
-  alertes, messageConfirmation, offre, questions, relances, RESULTATS, sourceLisible,
-  type Fiche, type Resultat,
+  alertes, duree, messageConfirmation, offre, pageLisible, provenanceLisible, questions, relances,
+  RESULTATS, sourceLisible, visiteDe, type Fiche, type Resultat, type Visite,
 } from "@/lib/prospect";
 import CopyButton, { copyText } from "@/components/CopyButton";
 import { IcPhone, IcVideo } from "@/components/Icons";
@@ -10,6 +10,8 @@ import { IcPhone, IcVideo } from "@/components/Icons";
 interface Props {
   call: Call;
   autres: Call[];        // tous les appels connus (pour compter ses appels précédents)
+  annulees: Call[];      // réservations annulées (pour repérer qui annule souvent)
+  visites: Visite[];     // visites du site envoyées par hugo-bnls.fr
   fiche: Fiche;
   now: number;
   onBack: () => void;
@@ -20,13 +22,15 @@ interface Props {
 const same = (a: string, b: string) => !!a && !!b && a.trim().toLowerCase() === b.trim().toLowerCase();
 const digits = (s?: string) => (s ?? "").replace(/\D/g, "").slice(-9);
 
-export default function FicheProspect({ call: c, autres, fiche, now, onBack, onSave, toast }: Props) {
+export default function FicheProspect({ call: c, autres, annulees, visites, fiche, now, onBack, onSave, toast }: Props) {
   const [note, setNote] = useState(fiche.suivi?.note ?? "");
   useEffect(() => setNote(fiche.suivi?.note ?? ""), [fiche.suivi?.note]);
 
-  const precedents = autres.filter((o) => o.id !== c.id && o.start < c.start &&
-    (same(o.email, c.email) || (digits(o.phone) && digits(o.phone) === digits(c.phone))));
-  const al = alertes(c);
+  const memePersonne = (o: Call) => o.id !== c.id && (same(o.email, c.email) || (!!digits(o.phone) && digits(o.phone) === digits(c.phone)));
+  const annuls = annulees.filter(memePersonne);
+  const al = [...alertes(c), ...(annuls.length ? [`A déjà annulé ${annuls.length} fois`] : [])];
+  const visite = visiteDe(c, visites);
+  const precedents = autres.filter((o) => o.start < c.start && memePersonne(o));
   const of = offre(c);
   const src = sourceLisible(fiche.source);
   const passe = c.start.getTime() <= now;
@@ -40,7 +44,7 @@ export default function FicheProspect({ call: c, autres, fiche, now, onBack, onS
       <p className="fiche-when">{fmtDay(c.start)} · {fmtTime(c.start)}{reserve && ` · réservé ${reserve}`}</p>
       <div className="badges">
         <span className="badge lav">{precedents.length ? `${precedents.length + 1}e appel` : "1er appel"}</span>
-        {src && <span className="badge green">{src.split(" · ")[0]}</span>}
+        {(visite || src) && <span className="badge green">{visite ? provenanceLisible(visite) : src!.split(" · ")[0]}</span>}
         {al.length > 0 && <span className="badge amber">À confirmer</span>}
       </div>
 
@@ -107,12 +111,32 @@ export default function FicheProspect({ call: c, autres, fiche, now, onBack, onS
 
       <h2 className="sh">D'où il vient</h2>
       <div className="group">
-        <div className="item">
-          {src ? <b>{src}</b> : <span className="muted">Source inconnue : seules les réservations à partir d'aujourd'hui la gardent.</span>}
-          {precedents.length > 0 && (
-            <p className="item-sub">Appels précédents : {precedents.map((p) => p.start.toLocaleDateString("fr-FR", { day: "numeric", month: "short", timeZone: TZ })).join(", ")}</p>
-          )}
-        </div>
+        {visite && (
+          <div className="item">
+            <b>{provenanceLisible(visite)} · {visite.appareil}</b>
+            <p className="item-sub">
+              {duree(visite.duree_s)} sur le site · {visite.visites > 1 ? `${visite.visites}e visite (1re le ${new Date(visite.premiere).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })})` : "1re visite"}
+              {visite.bouton && ` · a cliqué « ${visite.bouton} »`}
+            </p>
+          </div>
+        )}
+        {visite?.pages.filter((p) => p.page).map((p, i) => (
+          <div key={i} className="item">
+            <div className="item-head"><span>{pageLisible(p.page)}</span><span className="muted">{p.lu} % lu · {duree(p.s)}</span></div>
+            <div className="bar"><i style={{ width: `${Math.max(3, p.lu)}%` }} /></div>
+          </div>
+        ))}
+        {!!visite?.faq.length && (
+          <div className="item"><span className="muted">FAQ ouverte :</span> {visite.faq.join(" · ")}</div>
+        )}
+        {(src || !visite) && (
+          <div className="item">
+            {src ? <span>Lien Cal : <b>{src}</b></span> : <span className="muted">Pas de visite du site retrouvée : il a sûrement réservé directement depuis le lien Cal.</span>}
+          </div>
+        )}
+        {precedents.length > 0 && (
+          <div className="item"><span className="muted">Appels précédents :</span> {precedents.map((p) => p.start.toLocaleDateString("fr-FR", { day: "numeric", month: "short", timeZone: TZ })).join(", ")}</div>
+        )}
       </div>
 
       <h2 className="sh">Offre conseillée</h2>
