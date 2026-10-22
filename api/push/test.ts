@@ -24,10 +24,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       await webpush.sendNotification(
         { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } } as any,
         JSON.stringify({
-          title: "📞 Nouveau call — Alexandre Dupont",
-          body:  "Lundi 14 avril · 10h00 — Budget : 3 000€ · Niveau : Débutant",
+          title: "✅ Test des notifs d'appels",
+          body:  "Si tu lis ça, les notifs marchent toujours.",
           tag:   "cal-test",
-          url:   "/calls",
+          url:   "/coaching/leads",
         })
       );
       sent++;
