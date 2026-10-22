@@ -10,6 +10,12 @@
 import type { VercelRequest } from "@vercel/node";
 import { timingSafeEqual } from "node:crypto";
 
+// Les en-têtes HTTP ne portent que de l'ASCII : l'app encode le code (encodeURIComponent)
+const decodeHeader = (v: unknown) => {
+  const s = String(v ?? "");
+  try { return decodeURIComponent(s); } catch { return s; }
+};
+
 export const SB_URL   = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL)!;
 const SB_ANON         = process.env.VITE_SUPABASE_ANON_KEY!;
 const SB_SERVER_KEY   = process.env.SUPABASE_SERVER_KEY!;
@@ -25,10 +31,16 @@ export const calHeaders = {
   "cal-api-version": "2024-08-13",
 };
 
+// Le clavier iPhone ajoute majuscules, accents et tirets longs : on compare
+// le code sans eux, pour qu'un code bien saisi ne soit jamais refusé.
+const normalize = (s: string) =>
+  s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+    .replace(/[\u2010-\u2015\u2212]/g, "-").replace(/\s+/g, "");
+
 // Vrai si la requête porte le bon code d'accès de l'app
 export function hasAccess(req: VercelRequest): boolean {
-  const expected = process.env.APP_ACCESS_CODE || "";
-  const given = String(req.headers["x-app-key"] ?? "");
+  const expected = normalize(process.env.APP_ACCESS_CODE || "");
+  const given = normalize(decodeHeader(req.headers["x-app-key"]));
   if (!expected || given.length !== expected.length) return false;
   return timingSafeEqual(Buffer.from(given), Buffer.from(expected));
 }
