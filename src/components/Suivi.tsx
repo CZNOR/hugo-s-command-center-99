@@ -9,64 +9,70 @@ export interface SuiviData {
   }[];
 }
 
-const STATUT: Record<string, string> = { travaille: "travaille", attend: "attend ta réponse", pause: "en pause", fini: "fini" };
-
 const Bar = ({ pct }: { pct: number }) => (
-  <div className="bar"><i style={{ width: `${Math.max(2, Math.min(100, pct))}%` }} /></div>
+  <div className="bar"><i style={{ width: `${Math.max(3, Math.min(100, pct))}%` }} /></div>
 );
 
 export default function Suivi({ data, now }: { data: SuiviData; now: number }) {
   if (!data.maj) return null;
   const ageMin = Math.round((now / 1000 - data.maj) / 60);
-  const stale = ageMin > 5;
+  // Seules les sessions qui avancent ou t'attendent : le reste est du bruit
+  const actives = (data.direct ?? []).filter((s) => s.statut === "travaille" || s.statut === "attend");
 
   return (
     <>
       {!!data.attente?.length && (
-        <div className="card hero">
-          <div className="lbl">À toi de jouer</div>
-          <ul className="pt" style={{ marginTop: 6 }}>
+        <>
+          <h2 className="sh">À toi de jouer <b className="count">{data.attente.length}</b></h2>
+          <div className="group">
             {data.attente.map((a, i) => (
-              <li key={i}><span className="when">{a.qui}</span><span className="full">{a.quoi}</span></li>
+              <div key={i} className="item">
+                <span className="chip">{a.qui}</span>
+                <p className="item-text">{a.quoi}</p>
+              </div>
             ))}
-          </ul>
-        </div>
+          </div>
+        </>
       )}
 
-      {!!data.direct?.length && (
-        <div className="card">
-          <div className="lbl">En direct{stale ? ` · Mac hors ligne depuis ${ageMin} min` : ""}</div>
-          {data.direct.map((s, i) => (
-            <div key={i} className="live">
-              <div className="live-top">
-                <b>{s.nom}</b>
-                <span className={`st ${s.statut}`}>{STATUT[s.statut] ?? s.statut}</span>
+      {actives.length > 0 && (
+        <>
+          <h2 className="sh">En cours{ageMin > 5 && <span>Mac hors ligne depuis {ageMin} min</span>}</h2>
+          <div className="group">
+            {actives.map((s, i) => (
+              <div key={i} className="item">
+                <div className="item-head">
+                  <b>{s.nom}</b>
+                  {s.statut === "attend"
+                    ? <span className="tag-amber">t'attend</span>
+                    : <span className="muted">{s.reste_min ? `~${s.reste_min} min` : "en cours"}</span>}
+                </div>
+                {s.etape && <p className="item-sub">{s.etape}</p>}
+                {s.pct != null && <Bar pct={s.pct} />}
               </div>
-              {s.etape && <div className="sub">{s.etape}</div>}
-              {s.pct != null && (
-                <>
-                  <Bar pct={s.pct} />
-                  <div className="sub">{s.pct} %{s.reste_min ? ` · ~${s.reste_min} min restantes` : ""}</div>
-                </>
-              )}
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </>
       )}
 
       {!!data.projets?.length && (
-        <div className="card">
-          <div className="lbl">Projets</div>
+        <>
+          <h2 className="sh">Projets</h2>
           {data.projets.map((p, i) => (
-            <div key={i} className="live">
-              <div className="live-top"><b>{p.nom}</b><span className="sub">{p.faites}/{p.total}</span></div>
+            <div key={i} className="group project">
+              <div className="item-head">
+                <b>{p.nom}</b>
+                <span className="pill">{p.faites}/{p.total}</span>
+              </div>
               <Bar pct={p.total ? (100 * p.faites) / p.total : 0} />
-              {p.objectif && <div className="fiche">🎯 {p.objectif}</div>}
-              {(p.prochaine || p.etape) && <div className="fiche">→ {p.prochaine || p.etape}</div>}
-              {p.attend_hugo && <div className="fiche ambre">👉 {p.attend_hugo}</div>}
+              {p.objectif && <p className="item-sub clamp2">🎯 {p.objectif}</p>}
+              {(p.prochaine || p.etape) && (
+                <p className="next"><span>Ensuite</span>{p.prochaine || p.etape}</p>
+              )}
+              {p.attend_hugo && <p className="wait">👉 {p.attend_hugo}</p>}
             </div>
           ))}
-        </div>
+        </>
       )}
     </>
   );

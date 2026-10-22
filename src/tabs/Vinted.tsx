@@ -14,19 +14,19 @@ export default function Vinted({ toast }: { toast: (msg: string) => void }) {
           <button key={v.id} className={v.id === id ? "on" : ""} onClick={() => setId(v.id)}>{v.label}</button>
         ))}
       </div>
-      <div className="card">
-        <div className="row" style={{ alignItems: "flex-start" }}>
-          <div className="n">
-            <div className="lbl">Description</div>
-            <div className="txt">{item.text}</div>
+      <div className="group">
+        <div className="item">
+          <div className="item-head">
+            <span className="lbl">Description</span>
+            <CopyButton text={item.text} onCopied={() => toast("Texte copié")} />
           </div>
-          <CopyButton text={item.text} onCopied={() => toast("Texte copié")} />
+          <div className="txt">{item.text}</div>
         </div>
       </div>
       <button className="btn" onClick={async () => { if (await copyText(item.text)) toast("Texte copié"); }}>
         <IcCopy />Copier le texte
       </button>
-      <p className="sub" style={{ marginTop: 10, textAlign: "center" }}>Couleur et taille à remplir dans l'annonce.</p>
+      <p className="foot">Couleur et taille à remplir dans l'annonce.</p>
     </>
   );
 }

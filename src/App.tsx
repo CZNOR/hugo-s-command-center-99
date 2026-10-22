@@ -29,6 +29,7 @@ const tabFromHash = (): Tab => {
   return TABS.some((t) => t.id === h) ? h : "appels";
 };
 const REFRESH_MS = 60_000;
+const SUIVI_MS = 20_000; // le Mac envoie l'avancement toutes les 20 s
 
 export default function App() {
   const [locked, setLocked] = useState(!hasCode());
@@ -63,11 +64,24 @@ export default function App() {
       .then((r) => (r.ok ? r.json() : null))
       .then((p) => p && setPoint(p))
       .catch(() => {});
+  }, []);
+
+  // Avancement en direct : relu toutes les 20 s, seulement quand l'app est à l'écran
+  const loadSuivi = useCallback(() => {
+    if (document.visibilityState !== "visible") return;
     apiFetch("/api/suivi")
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => d && setSuivi(d))
+      .then((d) => { if (d) { setSuivi(d); setNow(Date.now()); } })
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (locked) return;
+    loadSuivi();
+    const id = setInterval(loadSuivi, SUIVI_MS);
+    document.addEventListener("visibilitychange", loadSuivi);
+    return () => { clearInterval(id); document.removeEventListener("visibilitychange", loadSuivi); };
+  }, [locked, loadSuivi]);
 
   // Chargement, puis rafraîchissement chaque minute et au retour dans l'app
   useEffect(() => {

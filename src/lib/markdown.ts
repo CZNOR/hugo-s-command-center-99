@@ -32,13 +32,15 @@ export function renderMarkdown(md: string): string {
         i++;
       }
       const [head, ...body] = rows;
-      // Au-delà de 3 colonnes, un tableau est illisible sur iPhone : une fiche par ligne
-      if (head.length > 3) {
+      // Au-delà de 2 colonnes, un tableau est illisible sur iPhone : une fiche par ligne
+      // (1re colonne en étiquette, 2e en texte principal, les autres en détails)
+      if (head.length > 2) {
         out.push(
           '<div class="rows">' +
             body.map((r) =>
-              `<div class="rowcard"><b>${inline(r[0] ?? "")}</b>` +
-              r.slice(1).map((c, k) => (c && c !== "—" ? `<div><span>${inline(head[k + 1] ?? "")}</span>${inline(c)}</div>` : "")).join("") +
+              `<div class="rowcard"><span class="chip">${inline(r[0] ?? "")}</span>` +
+              `<p class="rc-main">${inline(r[1] ?? "")}</p>` +
+              r.slice(2).map((c, k) => (c && c !== "—" ? `<div><span>${inline(head[k + 2] ?? "")}</span>${inline(c)}</div>` : "")).join("") +
               "</div>",
             ).join("") +
             "</div>",
@@ -86,4 +88,18 @@ export function todayRows(md: string, max = 3): { when: string; what: string }[]
     if (rows.length >= max) break;
   }
   return rows;
+}
+
+// Découpe le point en sections (une par titre « ## »), pour l'affichage repliable.
+// Le titre principal (« # ») et son chapeau sont ignorés : l'app a déjà son titre.
+export function markdownSections(md: string): { title: string; html: string }[] {
+  const sections: { title: string; lines: string[] }[] = [];
+  for (const line of md.replace(/\r/g, "").split("\n")) {
+    const h = line.match(/^##\s+(.*)/);
+    if (h) sections.push({ title: h[1].replace(/^\d+\.\s*/, "").replace(/\*\*/g, ""), lines: [] });
+    else if (sections.length) sections[sections.length - 1].lines.push(line);
+  }
+  return sections
+    .map((s) => ({ title: s.title, html: renderMarkdown(s.lines.join("\n").replace(/^\s*---\s*$/gm, "")) }))
+    .filter((s) => s.html.trim());
 }

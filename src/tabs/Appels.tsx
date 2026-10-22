@@ -30,32 +30,32 @@ export default function Appels({ calls, error, point, now, pushStatus, pushError
   return (
     <>
       {pushStatus !== "on" && pushStatus !== "checking" && (
-        <div className="card notif">
+        <div className="banner">
           <IcBell />
-          <span style={{ flex: 1 }}>
-            {pushStatus === "error" ? `Activation impossible : ${pushError}` : NOTIF_TEXT[pushStatus]}
-          </span>
+          <span>{pushStatus === "error" ? `Activation impossible : ${pushError}` : NOTIF_TEXT[pushStatus]}</span>
           {(pushStatus === "off" || pushStatus === "error") && (
-            <button className="btn" onClick={onEnableNotif}>{pushStatus === "error" ? "Réessayer" : "Activer"}</button>
+            <button className="btn small" onClick={onEnableNotif}>{pushStatus === "error" ? "Réessayer" : "Activer"}</button>
           )}
         </div>
       )}
 
-      {calls === null && !error && <div className="card empty">Chargement des appels…</div>}
-      {error && <div className="card empty">Appels indisponibles : {error}</div>}
+      <h2 className="sh">Prochain appel{next && <span>{fmtCountdown(next.start, now)}</span>}</h2>
+      {calls === null && !error && <div className="group"><p className="item empty">Chargement…</p></div>}
+      {error && <div className="group"><p className="item empty">Appels indisponibles : {error}</p></div>}
       {calls && !next && (
-        <div className="card hero">
-          <div className="lbl">Prochain appel</div>
-          <div className="who" style={{ marginTop: 6 }}>Aucun appel prévu.</div>
-          <div className="sub">Les réservations Cal apparaissent ici dès qu'elles tombent.</div>
+        <div className="group">
+          <div className="item">
+            <b className="item-title">Aucun appel prévu</b>
+            <p className="item-sub">Les réservations Cal apparaissent ici dès qu'elles tombent.</p>
+          </div>
         </div>
       )}
 
       {next && (
-        <div className="card hero">
-          <div className="lbl">Prochain appel · {fmtCountdown(next.start, now)}</div>
+        <div className="hero">
           <div className="big">{fmtTime(next.start)}</div>
-          <div className="who">{next.name} <span className="sub">· {fmtDay(next.start)}</span></div>
+          <div className="who">{next.name}</div>
+          <div className="when-day">{fmtDay(next.start)}</div>
           {next.answers.length > 0 && (
             <dl className="answers">
               {next.answers.map((a) => (
@@ -75,35 +75,31 @@ export default function Appels({ calls, error, point, now, pushStatus, pushError
       )}
 
       {rest.length > 0 && (
-        <div className="card">
-          <div className="lbl">Ensuite</div>
-          {rest.map((c, i) => (
-            <div key={c.id}>
-              {i > 0 && <div className="sep" />}
-              <div className="row" style={{ marginTop: i === 0 ? 12 : 0 }}>
+        <>
+          <h2 className="sh">Ensuite</h2>
+          <div className="group">
+            {rest.map((c) => (
+              <div key={c.id} className="item row">
                 <div className="t"><small>{fmtDayShort(c.start)}</small>{fmtTime(c.start)}</div>
                 <div className="n">
                   <b>{c.name}</b>
                   <span>{c.answers.map((a) => a.value).slice(0, 2).join(" · ") || c.email}</span>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </>
       )}
 
-      <div className="card">
-        <div className="lbl">Point du jour</div>
-        {today.length ? (
-          <ul className="pt" style={{ marginTop: 8 }}>
-            {today.map((r, i) => (
-              <li key={i}><span className="when">{r.when}</span><span>{r.what}</span></li>
-            ))}
-          </ul>
-        ) : (
-          <p className="empty" style={{ marginTop: 6 }}>Pas encore de point aujourd'hui.</p>
-        )}
-        <button className="more" onClick={onOpenPoint}>Voir le point complet →</button>
+      <h2 className="sh">Aujourd'hui</h2>
+      <div className="group">
+        {today.length ? today.map((r, i) => (
+          <div key={i} className="item">
+            <span className="chip">{r.when}</span>
+            <p className="item-text">{r.what}</p>
+          </div>
+        )) : <p className="item empty">Pas encore de point aujourd'hui.</p>}
+        <button className="item link" onClick={onOpenPoint}>Voir le point complet</button>
       </div>
     </>
   );
