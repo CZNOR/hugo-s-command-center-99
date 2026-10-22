@@ -2,10 +2,10 @@
 // sur la fiche (venu, résultat, produit, modalité, frein, date de rappel, note).
 // Tout est calculé dans l'app, sans IA payante : des scénarios écrits à la main,
 // avec des variantes par frein et par produit. L'app n'envoie rien : Hugo copie.
-import type { Call } from "./cal";
-import { TZ } from "./cal";
-import { GROUPES } from "@/content/liens";
-import { offre, type Frein, type Modalite, type Produit, type Suivi } from "./prospect";
+import type { Call } from "./booking.js";
+import { TZ } from "./tz.js";
+import { GROUPES } from "../content/liens.js";
+import { offre, type Frein, type Modalite, type Produit, type Suivi } from "./prospect.js";
 
 export interface Message {
   id: string;        // stable : sert à cocher « envoyé »

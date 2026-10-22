@@ -53,3 +53,18 @@ export async function metaSet(key: string, value: unknown): Promise<boolean> {
   });
   return r.ok;
 }
+
+// Plusieurs lignes JSON d'un coup (une seule requête)
+export async function metaGetMany<T>(keys: string[]): Promise<Record<string, T>> {
+  if (!keys.length) return {};
+  const liste = keys.map((k) => `"${k.replace(/"/g, "")}"`).join(",");
+  const r = await fetch(`${SB_URL}/rest/v1/task_meta?notion_id=in.(${encodeURIComponent(liste)})&select=notion_id,completed_at`, {
+    headers: sbHeaders(),
+  });
+  const rows: any[] = await r.json().catch(() => []);
+  const out: Record<string, T> = {};
+  for (const row of rows ?? []) {
+    try { out[row.notion_id] = JSON.parse(row.completed_at); } catch { /* ligne illisible */ }
+  }
+  return out;
+}

@@ -177,8 +177,6 @@ export default function App() {
 
   return (
     <div className="shell">
-      {/* Fond « liquide » : 3 formes floues qui dérivent lentement (transform seulement, fluide sur iPhone) */}
-      <div className="liquid" aria-hidden="true"><i className="b1" /><i className="b2" /><i className="b3" /></div>
       <header className="top">
         <img className="icon" src="/icon-192.png" alt="Dring" />
         <span className="date">{date}</span>

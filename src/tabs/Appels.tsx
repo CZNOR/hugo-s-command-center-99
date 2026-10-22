@@ -38,14 +38,19 @@ function etat(f?: Fiche): string {
 
 export default function Appels({ calls, error, point, now, pushStatus, pushError, onEnableNotif, onOpenPoint, recents, suivis, fiches, onOpenFiche }: Props) {
   const [next, ...rest] = calls ?? [];
-  // Messages de suivi dus aujourd'hui (ou en retard), du plus ancien au plus récent
+  // À faire aujourd'hui : messages dus (ou en retard), puis appels passés pas encore notés
   const aEnvoyer = suivis.flatMap((c) => {
     const su = fiches[c.id]?.suivi;
     const m = su ? prochain(c, su) : null;
     if (!m || !su) return [];
     const e = etatMessage(m, su, now);
-    return e === "retard" || e === "aujourdhui" ? [{ c, m, e }] : [];
-  }).sort((a, b) => a.m.quand.getTime() - b.m.quand.getTime());
+    return e === "retard" || e === "aujourdhui" ? [{ c, titre: m.titre, quand: m.quand, e }] : [];
+  }).sort((a, b) => a.quand.getTime() - b.quand.getTime());
+  const aNoter = recents.filter((c) => {
+    const su = fiches[c.id]?.suivi;
+    return !su?.venu || (su.venu === "venu" && !su.resultat);
+  });
+  const aFaire = [...aEnvoyer, ...aNoter.map((c) => ({ c, titre: "Appel à noter dans la fiche", quand: c.start, e: "noter" as const }))];
   const today = todayRows(point);
 
   return (
@@ -60,14 +65,16 @@ export default function Appels({ calls, error, point, now, pushStatus, pushError
         </div>
       )}
 
-      {aEnvoyer.length > 0 && (
+      {aFaire.length > 0 && (
         <>
-          <h2 className="sh">À envoyer aujourd'hui <b className="count">{aEnvoyer.length}</b></h2>
+          <h2 className="sh">À faire aujourd'hui <b className="count">{aFaire.length}</b></h2>
           <div className="group">
-            {aEnvoyer.map(({ c, m, e }) => (
-              <button key={c.id + m.id} className="item row" onClick={() => onOpenFiche(c.id)}>
-                <div className="n"><b>{c.name}</b><span>{m.titre}</span></div>
-                <span className={`etat ${e === "retard" ? "todo" : ""}`}>{e === "retard" ? "En retard" : quandLisible(m.quand, now).replace("Aujourd'hui ", "")}</span>
+            {aFaire.map(({ c, titre, quand, e }) => (
+              <button key={`${c.id}-${titre}`} className="item row" onClick={() => onOpenFiche(c.id)}>
+                <div className="n"><b>{c.name}</b><span>{titre}</span></div>
+                <span className={`etat ${e === "retard" ? "late" : "todo"}`}>
+                  {e === "retard" ? "En retard" : e === "noter" ? "À noter" : quandLisible(quand, now).replace("Aujourd'hui ", "")}
+                </span>
                 <span className="chev">›</span>
               </button>
             ))}

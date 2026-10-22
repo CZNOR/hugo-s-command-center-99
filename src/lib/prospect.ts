@@ -1,8 +1,8 @@
 // Analyse d'un prospect à partir de sa réservation Cal : alertes, offre conseillée,
 // questions de découverte et messages de relance. Tout est calculé dans l'app.
-import type { Call } from "./cal";
-import { TZ } from "./cal";
-import { GROUPES } from "@/content/liens";
+import type { Call } from "./booking.js";
+import { TZ } from "./tz.js";
+import { GROUPES } from "../content/liens.js";
 
 export interface Fiche {
   source?: Record<string, string>;

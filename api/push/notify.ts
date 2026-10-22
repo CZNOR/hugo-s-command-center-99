@@ -2,6 +2,8 @@
 // Vérifie tâches + nouveaux calls Cal.com et envoie les pushs natifs
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { SB_URL, APP_TZ, sbHeaders, calHeaders, hasAccess } from "../_lib/server.js";
+import { calculerRelances } from "../_lib/relances.js";
+import { metaGet, metaSet } from "../_lib/push.js";
 import webpush from "web-push";
 
 const VAPID_PUBLIC  = process.env.VAPID_PUBLIC_KEY!;
@@ -274,6 +276,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     } catch (remErr) {
       console.error("Reminder error:", remErr);
+    }
+
+    // ── 5. RELANCES DU JOUR : 9h30 et 17h30 (Paris), s'il reste quelqu'un ──
+    // Le cron passe chaque minute : fenêtre de 10 min, une seule notif par créneau.
+    try {
+      const hm = new Date(now).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: APP_TZ });
+      const creneau = hm >= "09:30" && hm < "09:40" ? "matin" : hm >= "17:30" && hm < "17:40" ? "soir" : null;
+      if (creneau) {
+        const cle = `${new Date(now).toLocaleDateString("fr-CA", { timeZone: APP_TZ })}-${creneau}`;
+        if ((await metaGet<string>("__relances_notif__")) !== cle) {
+          await metaSet("__relances_notif__", cle);
+          const { aEnvoyer, aNoter } = await calculerRelances(now);
+          const noms = [...aEnvoyer, ...aNoter].map((x) => x.nom.split(" ")[0]);
+          trace.relances = { creneau, aEnvoyer: aEnvoyer.length, aNoter: aNoter.length };
+          if (noms.length) {
+            const parts = [
+              aEnvoyer.length ? `${aEnvoyer.length} message${aEnvoyer.length > 1 ? "s" : ""} à envoyer` : "",
+              aNoter.length ? `${aNoter.length} appel${aNoter.length > 1 ? "s" : ""} à noter` : "",
+            ].filter(Boolean).join(" · ");
+            totalSent += await sendToAll(subs, {
+              title: `Dring · ${parts}`,
+              body:  [...new Set(noms)].slice(0, 5).join(", "),
+              tag:   `relances-${cle}`,
+              url:   "/",
+            });
+          }
+        }
+      }
+    } catch (relErr) {
+      console.error("Relances error:", relErr);
     }
 
     return res.status(200).json(debug ? { sent: totalSent, trace } : { sent: totalSent });
