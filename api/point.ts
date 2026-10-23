@@ -15,8 +15,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (req.method === "GET") {
     const r = await fetch(`${SB_URL}/rest/v1/task_meta?notion_id=eq.${ROW}&select=completed_at,updated_at&limit=1`, {
-      headers: sbHeaders(),
-    });
+      headers: sbHeaders(), signal: AbortSignal.timeout(9000),
+    }).catch(() => null);
+    if (!r?.ok) return res.status(503).json({ error: "base Supabase injoignable", markdown: "", updatedAt: null });
     const rows: any[] = await r.json().catch(() => []);
     return res.status(200).json({
       markdown:  rows?.[0]?.completed_at ?? "",
@@ -35,7 +36,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         notion_id: ROW, business: "__snapshot__", priority: "normale", time: null,
         completed_at: markdown, updated_at: new Date().toISOString(),
       }),
-    });
+      signal: AbortSignal.timeout(9000),
+    }).catch(() => null);
+    // Base injoignable (panne Supabase) : réponse claire en moins de 10 s au lieu d'un délai dépassé
+    if (!r) return res.status(503).json({ ok: false, error: "base Supabase injoignable, réessaie plus tard" });
     // Notif silencieuse « point du jour prêt » : une seule par jour, au point du matin (heure de Paris)
     let notifie = false;
     if (r.ok) {

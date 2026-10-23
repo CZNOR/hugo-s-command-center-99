@@ -11,7 +11,7 @@ webpush.setVapidDetails(
 export interface PushPayload { title: string; body: string; tag: string; url: string; silent?: boolean }
 
 export async function pushAll(payload: PushPayload): Promise<number> {
-  const r = await fetch(`${SB_URL}/rest/v1/push_subscriptions?select=*`, { headers: sbHeaders() });
+  const r = await fetch(`${SB_URL}/rest/v1/push_subscriptions?select=*`, { headers: sbHeaders(), signal: AbortSignal.timeout(9000) });
   const subs: any[] = await r.json().catch(() => []);
   let sent = 0;
   for (const sub of subs ?? []) {
@@ -36,22 +36,23 @@ export async function pushAll(payload: PushPayload): Promise<number> {
 // Lecture / écriture d'une ligne JSON de task_meta (stockage clé → valeur de l'app)
 export async function metaGet<T>(key: string): Promise<T | null> {
   const r = await fetch(`${SB_URL}/rest/v1/task_meta?notion_id=eq.${encodeURIComponent(key)}&select=completed_at&limit=1`, {
-    headers: sbHeaders(),
-  });
+    headers: sbHeaders(), signal: AbortSignal.timeout(9000),
+  }).catch(() => null); // base injoignable : comme une ligne absente
+  if (!r) return null;
   const rows: any[] = await r.json().catch(() => []);
   try { return rows?.[0]?.completed_at ? JSON.parse(rows[0].completed_at) : null; } catch { return null; }
 }
 
 export async function metaSet(key: string, value: unknown): Promise<boolean> {
   const r = await fetch(`${SB_URL}/rest/v1/task_meta?on_conflict=notion_id`, {
-    method: "POST",
+    method: "POST", signal: AbortSignal.timeout(9000),
     headers: sbHeaders({ "Content-Type": "application/json", Prefer: "resolution=merge-duplicates" }),
     body: JSON.stringify({
       notion_id: key, business: "__snapshot__", priority: "normale", time: null,
       completed_at: JSON.stringify(value), updated_at: new Date().toISOString(),
     }),
-  });
-  return r.ok;
+  }).catch(() => null);
+  return !!r?.ok;
 }
 
 // Plusieurs lignes JSON d'un coup (une seule requête)
